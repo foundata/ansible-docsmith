@@ -1,0 +1,16 @@
+[project]
+name = "ansible-docsmith"
+version = "0.1.0"
+description = "Ansible role documentation automation (helper using argument_specs.yml)"
+authors = [
+    { name = "Andreas Haerter", email = "ah@foundata.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+ansible-docsmith = "ansible_docsmith:main"
+
+[build-system]
+requires = ["uv_build>=0.8.3,<0.9.0"]
+build-backend = "uv_build"
