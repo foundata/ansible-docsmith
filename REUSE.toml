@@ -1,0 +1,20 @@
+version = 1
+SPDX-PackageName = "Ansible DocSmith: Ansible role documentation helper using argument_specs.yml"
+SPDX-PackageDownloadLocation = "https://github.com/foundata/ansible-docsmith"
+SPDX-PackageSupplier = "foundata GmbH (https://foundata.com)"
+SPDX-PackageComment = """
+This project may include calls to Application Programming Interfaces
+("API calls"), as well as their respective specifications and code that
+allows software to communicate with other software. API calls to products
+or services developed outside of this project are not licensed under the
+licensing or usage terms that govern this project. Any use of such API
+calls and related external products is subject to applicable additional
+agreements with their respective provider and does not alter, expand or
+supersede any terms of these additional agreements.
+"""
+
+[[annotations]]
+path = "**"
+precedence = "closest"
+SPDX-FileCopyrightText = "foundata GmbH (https://foundata.com)"
+SPDX-License-Identifier = "GPL-3.0-or-later"
