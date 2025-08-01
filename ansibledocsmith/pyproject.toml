@@ -15,7 +15,13 @@ maintainers = [
   { name = "Andreas Haerter", email = "ah@foundata.com" },
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "jinja2>=3.1.6",
+    "pydantic>=2.11.7",
+    "rich>=14.1.0",
+    "ruamel-yaml>=0.18.14",
+    "typer[all]>=0.16.0",
+]
 
 # https://pypi.org/classifiers/
 classifiers = [
@@ -39,7 +45,7 @@ classifiers = [
 ]
 
 [project.scripts]
-ansible-docsmith = "ansible_docsmith:main"
+ansible-docsmith = "ansible_docsmith.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/foundata/ansible-docsmith"
