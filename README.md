@@ -2,11 +2,13 @@
 
 **⚠⚠⚠ WARNING: NOT FOR PRODUCTION USE YET, HIGHLY EXPERIMENTAL ⚠⚠⚠**
 
-**This project is *not* associated with Red Hat nor the [Ansible project](https://ansible.com/).** Please [report any bugs or suggestions to us](./CONTRIBUTING.md), do NOT use the official Red Hat or Ansible support channels.
+**This project is *not* associated with [Red Hat](https://www.redhat.com/) nor the [Ansible project](https://ansible.com/).** Please [report any bugs or suggestions to us](./CONTRIBUTING.md), do NOT use the official Red Hat or Ansible support channels.
 
 ---
 
-DocSmith helps to maintain Ansible role variable documentation by automatically generating the needed parts of a role's `README.md` and `defaults/main.yml` inline comments. It uses your [`meta/argument_specs.yml`](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#specification-format) definitions as single source of truth. No more documentation drift, no more manual updates. Just write your variable specs once and let DocSmith handle the rest.
+DocSmith helps to maintain Ansible role variable documentation by automatically generating the needed parts of a role's `README.md` and `defaults/main.yml` inline comments.
+
+It uses your [`meta/argument_specs.yml`](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#specification-format) definitions as single source of truth. No more documentation drift, no more manual updates. Just write your variable specs once and let DocSmith handle the rest.
 
 The `argument_specs.yml` is used by [Ansible's built-in role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). By using it in combination with DocSmith, you get effortless validation of passed role variables and nice documentation for free.
 
@@ -15,25 +17,24 @@ DocSmith is compatible with roles in Ansible collections as well as stand-alone 
 
 **Features:**
 
-- **Single Source of Truth**: Uses `argument_specs.yml` as the canonical source for all documentation.
-- **Rich Documentation**:
+- **Single source of truth**: Uses `argument_specs.yml` as the canonical source for all documentation.
+- **Rich documentation**:
   - Generates beautiful tables and descriptions for your role's `README.md` (as new file or ad an partial update between markers).
   - Adds the descriptions as comment blocks above the variable default in `defaults/main.yml`.
-- **Zero Configuration**: Works out-of-the-box with sensible defaults.
+- **Zero configuration**: Works out-of-the-box with sensible defaults.
 - **Validation**: Ensures your argument specs are valid and complete.
-- **CI/CD Ready**: Perfect for automation pipelines and pre-commit hooks.
+- **CI/CD ready**: Perfect for automation pipelines and pre-commit hooks.
 
 
 
 
-
-## Installation
+## Installation<a id="installation"></a>
 
 FIXME will be added after packaging tests are done / pypi release is prepared.
 
 
 
-## Usage
+## Usage<a id="usage"></a>
 
 **How DocSmith works:**
 
@@ -43,6 +44,7 @@ FIXME will be added after packaging tests are done / pypi release is prepared.
    * Generate a new readme `README.md` (if not existing) or update the variable description between special markers (preserves custom content)
    * Add or update inline comments in `defaults/main.yml`
 4. **Validates** everything is correct and complete
+
 
 ### Quick Start
 
@@ -68,6 +70,7 @@ ansible-docsmith generate /path/to/role --verbose
 # Validate argument_specs.yml structure
 ansible-docsmith validate /path/to/your/ansible/role
 ```
+
 
 ## Licensing, copyright<a id="licensing-copyright"></a>
 
