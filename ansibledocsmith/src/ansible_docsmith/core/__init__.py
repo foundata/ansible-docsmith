@@ -1,12 +1,9 @@
-"""Ansible DocSmith: role documentation automation (helper using argument_specs.yml)"""
+"""Core functionality for ansible-docsmith."""
 
-__version__ = "0.1.0"
-__author__ = "foundata GmbH"
-
-from .core.processor import RoleProcessor
-from .core.parser import ArgumentSpecParser
-from .core.generator import DocumentationGenerator, DefaultsCommentGenerator
-from .core.exceptions import (
+from .processor import RoleProcessor
+from .parser import ArgumentSpecParser
+from .generator import DocumentationGenerator, DefaultsCommentGenerator
+from .exceptions import (
     AnsibleDocSmithError,
     ValidationError,
     ParseError,
@@ -16,8 +13,6 @@ from .core.exceptions import (
 )
 
 __all__ = [
-    "__version__",
-    "__author__",
     "RoleProcessor",
     "ArgumentSpecParser",
     "DocumentationGenerator",
