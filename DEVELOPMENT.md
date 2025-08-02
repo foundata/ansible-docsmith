@@ -64,8 +64,8 @@ This file provides information for maintainers and contributors to `ansible-docs
    # Show version
    uv run ansible-docsmith --version
 
-   # Test with example role
-   uv run ansible-docsmith generate ../example-role --dry-run
+   # Test with example role fixture
+   uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
    ```
 
 
@@ -85,7 +85,6 @@ ansible-docsmith/
 │   │   └── cli.py                # CLI interface
 │   ├── tests/                    # Test suite
 │   └── pyproject.toml            # Project configuration
-├── example-role/                 # Example Ansible role
 └── DEVELOPMENT.md                # This file
 ```
 
@@ -177,15 +176,15 @@ Test your changes with real-world scenarios:
 Example manual test commands:
 
 ```bash
-# Test with example role
-uv run ansible-docsmith generate ../example-role --dry-run
+# Test with example role fixture
+uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
 
 # Test validation
-uv run ansible-docsmith validate ../example-role
+uv run ansible-docsmith validate tests/fixtures/example-role
 
 # Test with different options
-uv run ansible-docsmith generate ../example-role --no-defaults
-uv run ansible-docsmith generate ../example-role --no-readme
+uv run ansible-docsmith generate tests/fixtures/example-role --no-defaults
+uv run ansible-docsmith generate tests/fixtures/example-role --no-readme
 ```
 
 
@@ -246,7 +245,7 @@ uv run pytest
 
 # 4. Test CLI functionality
 uv run ansible-docsmith --help
-uv run ansible-docsmith generate ../example-role --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
 ```
 
 

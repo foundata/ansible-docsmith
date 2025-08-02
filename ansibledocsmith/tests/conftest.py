@@ -30,68 +30,28 @@ def sample_role_path(temp_dir):
 
 
 @pytest.fixture
-def sample_role_with_specs(sample_role_path):
-    """Create a sample role with argument_specs.yml."""
+def sample_role_fixture_path():
+    """Get path to the example role fixture."""
+    return Path(__file__).parent / "fixtures" / "example-role"
+
+
+@pytest.fixture
+def sample_role_with_specs(sample_role_path, sample_role_fixture_path):
+    """Create a sample role with argument_specs.yml from fixtures."""
+    # Copy the comprehensive argument_specs.yml from fixtures
+    fixture_spec = sample_role_fixture_path / "meta" / "argument_specs.yml"
     spec_file = sample_role_path / "meta" / "argument_specs.yml"
-    spec_content = """---
-argument_specs:
-  main:
-    short_description: Test role for acme-shell
-    description:
-      - "This role manages SSL certificates using acme-shell tool"
-      - "It can obtain, renew, and manage certificates from Let's Encrypt"
-    author:
-      - "foundata GmbH"
-      - "Andreas Haerter <ah@foundata.com>"
-    version_added: "1.0.0"
-    options:
-      acmesh_domain:
-        type: str
-        required: true
-        description: "Primary domain name for the certificate"
-      acmesh_email:
-        type: str
-        required: true
-        description: "Email address for ACME account registration"
-      acmesh_staging:
-        type: bool
-        required: false
-        default: false
-        description: "Use Let's Encrypt staging environment for testing"
-      acmesh_config:
-        type: dict
-        required: false
-        default: {}
-        description: "Additional configuration options"
-        suboptions:
-          force_renewal:
-            type: bool
-            default: false
-            description: "Force certificate renewal even if not expired"
-          key_size:
-            type: int
-            default: 2048
-            choices: [2048, 4096]
-            description: "RSA key size in bits"
-"""
-    spec_file.write_text(spec_content)
+    spec_file.write_text(fixture_spec.read_text(encoding="utf-8"))
     return sample_role_path
 
 
 @pytest.fixture
-def sample_role_with_specs_and_defaults(sample_role_with_specs):
-    """Create a sample role with both argument specs and defaults."""
+def sample_role_with_specs_and_defaults(
+    sample_role_with_specs, sample_role_fixture_path
+):
+    """Create a sample role with both argument specs and defaults from fixtures."""
+    # Copy the comprehensive defaults file from fixtures
+    fixture_defaults = sample_role_fixture_path / "defaults" / "main.yml"
     defaults_file = sample_role_with_specs / "defaults" / "main.yml"
-    defaults_content = """---
-# Default configuration for test role
-
-acmesh_domain: "example.com"
-acmesh_email: "admin@example.com"
-acmesh_staging: false
-
-acmesh_config:
-  force_renewal: false
-  key_size: 2048
-"""
-    defaults_file.write_text(defaults_content)
+    defaults_file.write_text(fixture_defaults.read_text(encoding="utf-8"))
     return sample_role_with_specs
