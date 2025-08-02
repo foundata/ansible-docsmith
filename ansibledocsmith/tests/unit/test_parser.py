@@ -153,7 +153,7 @@ argument_specs:
         assert result == ["John Doe", "Jane Smith"]
 
     def test_normalize_options_with_suboptions(self, sample_role_path):
-        """Test options normalization with suboptions."""
+        """Test options normalization with nested options."""
         parser = ArgumentSpecParser()
 
         spec_file = sample_role_path / "meta" / "argument_specs.yml"
@@ -163,7 +163,7 @@ argument_specs:
     options:
       complex_var:
         type: dict
-        suboptions:
+        options:
           sub_var:
             type: str
             default: "test"

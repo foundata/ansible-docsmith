@@ -14,6 +14,10 @@ The following variables can be configured for this role:
 | `acmesh_email` | str | ✅ | N/A | Email address for ACME account registration |
 | `acmesh_staging` | bool | ❌ | `false` | Use Let's Encrypt staging environment for testing |
 | `acmesh_challenge_type` | str | ❌ | `"http-01"` | ACME challenge type to use for domain validation |
+| `acmesh_webroot_path` | path | ❌ | `"/var/www/html"` | Path to webroot directory for HTTP-01 challenge |
+| `acmesh_dns_provider` | str | ❌ | N/A | DNS provider for DNS-01 challenge |
+| `acmesh_config` | dict | ❌ | `{}` | Additional configuration options |
+| `acmesh_hooks` | dict | ❌ | `{}` | Custom hooks for certificate lifecycle events |
 
 ### Variable Details
 
@@ -64,6 +68,55 @@ ACME challenge type to use for domain validation
 - **Choices**: `http-01`, `dns-01`
 
 
+#### acmesh_webroot_path
+
+Path to webroot directory for HTTP-01 challenge
+
+- **Type**: `path`
+- **Required**: No
+- **Default**: `/var/www/html`
+
+
+#### acmesh_dns_provider
+
+DNS provider for DNS-01 challenge
+
+- **Type**: `str`
+- **Required**: No
+- **Choices**: `cloudflare`, `route53`, `digitalocean`
+
+
+#### acmesh_config
+
+Additional configuration options
+
+- **Type**: `dict`
+- **Required**: No
+- **Default**: `{}`
+
+**Suboptions**:
+
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `force_renewal` | bool | ❌ | `false` | Force certificate renewal even if not expired |
+| `key_size` | int | ❌ | `2048` | RSA key size in bits |
+
+#### acmesh_hooks
+
+Custom hooks for certificate lifecycle events
+
+- **Type**: `dict`
+- **Required**: No
+- **Default**: `{}`
+
+**Suboptions**:
+
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `pre_issue` | str | ❌ | N/A | Command to run before certificate issuance |
+| `post_issue` | str | ❌ | N/A | Command to run after certificate issuance |
+| `deploy` | str | ❌ | N/A | Command to run for certificate deployment |
+
 
 ## Example Playbook
 
@@ -77,6 +130,10 @@ ACME challenge type to use for domain validation
     # acmesh_email: # Email address for ACME account registration
     acmesh_staging: False
     acmesh_challenge_type: http-01
+    acmesh_webroot_path: /var/www/html
+    # acmesh_dns_provider: # DNS provider for DNS-01 challenge
+    acmesh_config: {}
+    acmesh_hooks: {}
 
   roles:
     - example-role

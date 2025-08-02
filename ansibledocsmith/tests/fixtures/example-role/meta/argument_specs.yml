@@ -65,7 +65,7 @@ argument_specs:
         required: false
         default: {}
         description: "Additional configuration options"
-        suboptions:
+        options:
           force_renewal:
             type: bool
             default: false
@@ -81,7 +81,7 @@ argument_specs:
         required: false
         default: {}
         description: "Custom hooks for certificate lifecycle events"
-        suboptions:
+        options:
           pre_issue:
             type: str
             description: "Command to run before certificate issuance"

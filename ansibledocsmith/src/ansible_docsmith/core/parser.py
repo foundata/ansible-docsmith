@@ -98,7 +98,7 @@ class ArgumentSpecParser:
                 "no_log": param_spec.get("no_log", False),
                 "version_added": param_spec.get("version_added"),
                 "deprecated": param_spec.get("deprecated", {}),
-                "suboptions": self._normalize_options(param_spec.get("suboptions", {})),
+                "suboptions": self._normalize_options(param_spec.get("options", {})),
             }
 
         return normalized
