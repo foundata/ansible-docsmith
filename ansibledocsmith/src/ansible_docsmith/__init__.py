@@ -3,17 +3,17 @@
 __version__ = "0.1.0"
 __author__ = "foundata GmbH"
 
-from .core.processor import RoleProcessor
-from .core.parser import ArgumentSpecParser
-from .core.generator import DocumentationGenerator, DefaultsCommentGenerator
 from .core.exceptions import (
     AnsibleDocSmithError,
-    ValidationError,
+    FileOperationError,
     ParseError,
     ProcessingError,
     TemplateError,
-    FileOperationError
+    ValidationError,
 )
+from .core.generator import DefaultsCommentGenerator, DocumentationGenerator
+from .core.parser import ArgumentSpecParser
+from .core.processor import RoleProcessor
 
 __all__ = [
     "__version__",

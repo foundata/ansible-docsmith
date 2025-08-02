@@ -1,6 +1,5 @@
 """Tests for CLI functionality."""
 
-import pytest
 from typer.testing import CliRunner
 
 from ansible_docsmith.cli import app

@@ -1,16 +1,16 @@
 """Core functionality for ansible-docsmith."""
 
-from .processor import RoleProcessor
-from .parser import ArgumentSpecParser
-from .generator import DocumentationGenerator, DefaultsCommentGenerator
 from .exceptions import (
     AnsibleDocSmithError,
-    ValidationError,
+    FileOperationError,
     ParseError,
     ProcessingError,
     TemplateError,
-    FileOperationError
+    ValidationError,
 )
+from .generator import DefaultsCommentGenerator, DocumentationGenerator
+from .parser import ArgumentSpecParser
+from .processor import RoleProcessor
 
 __all__ = [
     "RoleProcessor",

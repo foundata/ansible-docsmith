@@ -61,4 +61,31 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "ruff>=0.12.7",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "B008",  # Allow function calls in argument defaults for Typer
+    "B904",  # Allow raise without from for CLI error handling
+    "B017",  # Allow asserting on Exception in tests
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

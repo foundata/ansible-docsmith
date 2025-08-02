@@ -1,9 +1,9 @@
 """Logging configuration for ansible-docsmith."""
 
 import logging
-import sys
-from rich.logging import RichHandler
+
 from rich.console import Console
+from rich.logging import RichHandler
 
 
 def setup_logging(verbose: bool = False) -> logging.Logger:
@@ -24,7 +24,7 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
         show_time=False,
         show_path=verbose,
         markup=True,
-        rich_tracebacks=True
+        rich_tracebacks=True,
     )
 
     # Set format

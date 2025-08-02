@@ -3,18 +3,17 @@
 Ansible-DocSmith CLI - Generate Ansible role documentation from argument_specs.yml
 """
 
-import typer
 from pathlib import Path
-from typing import Optional
-from rich.console import Console
+
+import typer
 from rich import print as rprint
+from rich.console import Console
 from rich.table import Table
 
 from . import __version__
+from .core.exceptions import ProcessingError, ValidationError
 from .core.processor import RoleProcessor
-from .core.exceptions import ValidationError, ProcessingError
 from .utils.logging import setup_logging
-
 
 app = typer.Typer(
     name="ansible-docsmith",
@@ -23,23 +22,26 @@ app = typer.Typer(
 )
 console = Console()
 
+
 def version_callback(value: bool):
     if value:
         rprint(f"Ansible-DocSmith version: {__version__}")
         raise typer.Exit()
 
+
 @app.callback()
 def main(
-    version: Optional[bool] = typer.Option(
+    version: bool | None = typer.Option(
         None,
         "--version",
         callback=version_callback,
         is_eager=True,
-        help="Show version and exit"
+        help="Show version and exit",
     ),
 ):
     """Ansible-DocSmith - Modern Ansible role documentation automation."""
     pass
+
 
 @app.command()
 def generate(
@@ -48,35 +50,32 @@ def generate(
         help="Path to Ansible role directory",
         exists=True,
         file_okay=False,
-        dir_okay=True
+        dir_okay=True,
     ),
     output_readme: bool = typer.Option(
-        True,
-        "--readme/--no-readme",
-        help="Generate/update README.md documentation"
+        True, "--readme/--no-readme", help="Generate/update README.md documentation"
     ),
     update_defaults: bool = typer.Option(
         True,
         "--defaults/--no-defaults",
-        help="Add inline comments to defaults/main.yml"
+        help="Add inline comments to defaults/main.yml",
     ),
     dry_run: bool = typer.Option(
-        False,
-        "--dry-run",
-        help="Preview changes without writing files"
+        False, "--dry-run", help="Preview changes without writing files"
     ),
     verbose: bool = typer.Option(
-        False,
-        "-v", "--verbose",
-        help="Enable verbose logging"
-    )
+        False, "-v", "--verbose", help="Enable verbose logging"
+    ),
 ):
     """Generate comprehensive documentation for an Ansible role."""
 
     logger = setup_logging(verbose)
 
     console.print(f"[bold green]Processing role:[/bold green] {role_path}")
-    console.print(f"[blue]Options:[/blue] README={output_readme}, Defaults={update_defaults}, Dry-run={dry_run}")
+    console.print(
+        f"[blue]Options:[/blue] README={output_readme}, "
+        f"Defaults={update_defaults}, Dry-run={dry_run}"
+    )
 
     if dry_run:
         console.print("[yellow]DRY RUN MODE - No files will be modified[/yellow]")
@@ -89,7 +88,7 @@ def generate(
         results = processor.process_role(
             role_path=role_path,
             generate_readme=output_readme,
-            update_defaults=update_defaults
+            update_defaults=update_defaults,
         )
 
         # Display results
@@ -108,8 +107,10 @@ def generate(
         logger.error(f"Unexpected error: {e}")
         if verbose:
             import traceback
+
             traceback.print_exc()
         raise typer.Exit(1)
+
 
 @app.command()
 def validate(
@@ -118,13 +119,11 @@ def validate(
         help="Path to Ansible role directory",
         exists=True,
         file_okay=False,
-        dir_okay=True
+        dir_okay=True,
     ),
     verbose: bool = typer.Option(
-        False,
-        "-v", "--verbose",
-        help="Enable verbose logging"
-    )
+        False, "-v", "--verbose", help="Enable verbose logging"
+    ),
 ):
     """Validate argument_specs.yml structure and content."""
 
@@ -151,6 +150,7 @@ def validate(
         logger.error(f"Unexpected error: {e}")
         if verbose:
             import traceback
+
             traceback.print_exc()
         raise typer.Exit(1)
 
@@ -187,27 +187,28 @@ def _display_results(results, dry_run: bool):
         for error in results.errors:
             console.print(f"  • {error}", style="red")
 
+
 def _display_validation_results(role_data):
     """Display validation results."""
 
-    specs = role_data['specs']
-    spec_file = role_data['spec_file']
-    role_name = role_data['role_name']
+    specs = role_data["specs"]
+    spec_file = role_data["spec_file"]
+    role_name = role_data["role_name"]
 
     console.print(f"[green]Found spec file:[/green] {spec_file}")
     console.print(f"[green]Role name:[/green] {role_name}")
     console.print(f"[green]Entry points:[/green] {', '.join(specs.keys())}")
 
     # Show options count for main entry point
-    main_spec = specs.get('main', {})
-    options_count = len(main_spec.get('options', {}))
+    main_spec = specs.get("main", {})
+    options_count = len(main_spec.get("options", {}))
     console.print(f"[green]Variables defined:[/green] {options_count}")
 
     if options_count > 0:
         console.print("\n[blue]Variables:[/blue]")
-        for var_name, var_spec in main_spec.get('options', {}).items():
-            required = "required" if var_spec.get('required') else "optional"
-            var_type = var_spec.get('type', 'str')
+        for var_name, var_spec in main_spec.get("options", {}).items():
+            required = "required" if var_spec.get("required") else "optional"
+            var_type = var_spec.get("type", "str")
             console.print(f"  • {var_name} ({var_type}, {required})")
 
 

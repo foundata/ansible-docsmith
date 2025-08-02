@@ -1,13 +1,10 @@
 """Tests for documentation generators."""
 
-import pytest
-from pathlib import Path
 from ansible_docsmith.core.generator import (
-    DocumentationGenerator,
     DefaultsCommentGenerator,
-    ReadmeUpdater
+    DocumentationGenerator,
+    ReadmeUpdater,
 )
-from ansible_docsmith.core.exceptions import TemplateError, FileOperationError
 
 
 class TestDocumentationGenerator:
@@ -16,7 +13,7 @@ class TestDocumentationGenerator:
     def test_generate_role_documentation(self, sample_role_with_specs):
         """Test generating role documentation."""
         generator = DocumentationGenerator()
-        
+
         # Parse the specs from fixture
         specs = {
             "main": {
@@ -30,16 +27,16 @@ class TestDocumentationGenerator:
                         "default": None,
                         "description": "A test variable",
                         "choices": [],
-                        "suboptions": {}
+                        "suboptions": {},
                     }
-                }
+                },
             }
         }
-        
+
         result = generator.generate_role_documentation(
             specs, "test-role", sample_role_with_specs
         )
-        
+
         assert "## Role Variables" in result
         assert "test_var" in result
         assert "A test variable" in result
@@ -49,72 +46,72 @@ class TestDocumentationGenerator:
     def test_generate_documentation_no_options(self, sample_role_path):
         """Test generating documentation with no options."""
         generator = DocumentationGenerator()
-        
+
         specs = {
             "main": {
                 "short_description": "Test role",
                 "description": "A test role",
                 "author": [],
-                "options": {}
+                "options": {},
             }
         }
-        
+
         result = generator.generate_role_documentation(
             specs, "test-role", sample_role_path
         )
-        
+
         assert "No variables are defined for this role" in result
 
     def test_ansible_escape_filter(self):
         """Test Ansible variable escaping."""
         generator = DocumentationGenerator()
-        
+
         result = generator._ansible_escape_filter("{{ variable }}")
         assert result == "\\{\\{ variable \\}\\}"
-        
+
         result = generator._ansible_escape_filter(None)
         assert result == "N/A"
 
     def test_code_escape_filter(self):
         """Test code escaping for Markdown."""
         generator = DocumentationGenerator()
-        
+
         result = generator._code_escape_filter("test|value")
         assert result == "`test\\|value`"
-        
+
         result = generator._code_escape_filter("test`value")
         assert result == "`test\\`value`"
-        
+
         result = generator._code_escape_filter(None)
         assert result == "N/A"
 
     def test_format_default_filter(self):
         """Test default value formatting."""
         generator = DocumentationGenerator()
-        
+
         # String
         result = generator._format_default_filter("test")
         assert result == '`"test"`'
-        
+
         # Boolean
         result = generator._format_default_filter(True)
         assert result == "`true`"
-        
+
         result = generator._format_default_filter(False)
         assert result == "`false`"
-        
+
         # List
         result = generator._format_default_filter([1, 2, 3])
         assert result == "`[1, 2, 3]`"
-        
+
         # Dict
         result = generator._format_default_filter({"key": "value"})
         assert result == "`{'key': 'value'}`"
-        
+
         # None
         result = generator._format_default_filter(None)
         assert result == "N/A"
-        
+
         # Number
         result = generator._format_default_filter(42)
         assert result == "`42`"
@@ -126,9 +123,9 @@ class TestDefaultsCommentGenerator:
     def test_add_comments_success(self, sample_role_with_specs_and_defaults):
         """Test adding comments to defaults file."""
         generator = DefaultsCommentGenerator()
-        
+
         defaults_path = sample_role_with_specs_and_defaults / "defaults" / "main.yml"
-        
+
         specs = {
             "main": {
                 "options": {
@@ -139,14 +136,16 @@ class TestDefaultsCommentGenerator:
                         "description": "Email address for ACME account registration"
                     },
                     "acmesh_staging": {
-                        "description": "Use Let's Encrypt staging environment for testing"
-                    }
+                        "description": (
+                            "Use Let's Encrypt staging environment for testing"
+                        )
+                    },
                 }
             }
         }
-        
+
         result = generator.add_comments(defaults_path, specs)
-        
+
         assert result is not None
         assert "Primary domain name" in result
         assert "Email address for ACME" in result
@@ -155,41 +154,44 @@ class TestDefaultsCommentGenerator:
     def test_add_comments_missing_file(self, sample_role_path):
         """Test adding comments to non-existent file."""
         generator = DefaultsCommentGenerator()
-        
+
         defaults_path = sample_role_path / "defaults" / "main.yml"
         specs = {"main": {"options": {}}}
-        
+
         result = generator.add_comments(defaults_path, specs)
-        
+
         assert result is None
 
     def test_add_comments_empty_file(self, sample_role_path):
         """Test adding comments to empty file."""
         generator = DefaultsCommentGenerator()
-        
+
         defaults_path = sample_role_path / "defaults" / "main.yml"
         defaults_path.write_text("")
-        
+
         specs = {"main": {"options": {}}}
-        
+
         result = generator.add_comments(defaults_path, specs)
-        
+
         assert result is None
 
     def test_wrap_text(self):
         """Test text wrapping functionality."""
         generator = DefaultsCommentGenerator()
-        
+
         # Short text (no wrapping needed)
         result = generator._wrap_text("This is a test description")
         assert result == ["This is a test description"]
-        
+
         # Long text (should wrap)
-        long_text = "This is a very long description that should be wrapped because it exceeds the maximum width limit that we have set for our comments"
+        long_text = (
+            "This is a very long description that should be wrapped because "
+            "it exceeds the maximum width limit that we have set for our comments"
+        )
         result = generator._wrap_text(long_text, max_width=50)
         assert len(result) > 1
         assert all(len(line) <= 50 for line in result)
-        
+
         # Empty text
         result = generator._wrap_text("")
         assert result == [""]
@@ -202,14 +204,14 @@ class TestReadmeUpdater:
         """Test creating new README file."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
-        
+
         new_content = "## Role Variables\n\nTest content"
-        
+
         result = updater.update_readme(readme_path, new_content)
-        
+
         assert result is True
         assert readme_path.exists()
-        
+
         content = readme_path.read_text()
         assert "Test content" in content
         assert "<!-- BEGIN ANSIBLE DOCSMITH -->" in content
@@ -219,16 +221,16 @@ class TestReadmeUpdater:
         """Test updating existing README without markers."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
-        
+
         existing_content = "# My Role\n\nExisting content"
         readme_path.write_text(existing_content)
-        
+
         new_content = "## Role Variables\n\nNew content"
-        
+
         result = updater.update_readme(readme_path, new_content)
-        
+
         assert result is True
-        
+
         content = readme_path.read_text()
         assert "Existing content" in content
         assert "New content" in content
@@ -238,8 +240,8 @@ class TestReadmeUpdater:
         """Test updating existing README with markers."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
-        
-        existing_content = '''# My Role
+
+        existing_content = """# My Role
 
 Existing content
 
@@ -247,15 +249,15 @@ Existing content
 Old documentation
 <!-- END ANSIBLE DOCSMITH -->
 
-More content'''
+More content"""
         readme_path.write_text(existing_content)
-        
+
         new_content = "## Role Variables\n\nNew documentation"
-        
+
         result = updater.update_readme(readme_path, new_content)
-        
+
         assert result is True
-        
+
         content = readme_path.read_text()
         assert "Existing content" in content
         assert "More content" in content
@@ -265,10 +267,10 @@ More content'''
     def test_create_new_readme(self):
         """Test creating new README template."""
         updater = ReadmeUpdater()
-        
+
         role_content = "## Role Variables\n\nTest variables"
         result = updater._create_new_readme(role_content, "test-role")
-        
+
         assert "# test-role" in result
         assert "Test variables" in result
         assert "## License" in result
@@ -277,23 +279,22 @@ More content'''
     def test_custom_markers(self, temp_dir):
         """Test using custom markers."""
         updater = ReadmeUpdater(
-            start_marker="<!-- START CUSTOM -->",
-            end_marker="<!-- END CUSTOM -->"
+            start_marker="<!-- START CUSTOM -->", end_marker="<!-- END CUSTOM -->"
         )
-        
+
         readme_path = temp_dir / "README.md"
-        existing_content = '''# My Role
+        existing_content = """# My Role
 
 <!-- START CUSTOM -->
 Old content
-<!-- END CUSTOM -->'''
+<!-- END CUSTOM -->"""
         readme_path.write_text(existing_content)
-        
+
         new_content = "New content"
         result = updater.update_readme(readme_path, new_content)
-        
+
         assert result is True
-        
+
         content = readme_path.read_text()
         assert "<!-- START CUSTOM -->" in content
         assert "<!-- END CUSTOM -->" in content

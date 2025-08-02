@@ -1,17 +1,17 @@
 """Main processor for ansible-docsmith operations."""
 
-from pathlib import Path
-from typing import NamedTuple
 from dataclasses import dataclass
+from pathlib import Path
 
+from .exceptions import ProcessingError, ValidationError
+from .generator import DefaultsCommentGenerator, DocumentationGenerator, ReadmeUpdater
 from .parser import ArgumentSpecParser
-from .generator import DocumentationGenerator, DefaultsCommentGenerator, ReadmeUpdater
-from .exceptions import ValidationError, ProcessingError
 
 
 @dataclass
 class ProcessingResults:
     """Results from role processing operation."""
+
     operations: list[tuple[Path, str, str]]  # (file, action, status)
     errors: list[str]
     warnings: list[str]
@@ -42,7 +42,7 @@ class RoleProcessor:
         self,
         role_path: Path,
         generate_readme: bool = True,
-        update_defaults: bool = True
+        update_defaults: bool = True,
     ) -> ProcessingResults:
         """Process the entire role for documentation generation."""
 
@@ -51,8 +51,8 @@ class RoleProcessor:
         try:
             # Validate and parse role
             role_data = self.validate_role(role_path)
-            specs = role_data['specs']
-            role_name = role_data['role_name']
+            specs = role_data["specs"]
+            role_name = role_data["role_name"]
 
             # Generate README documentation
             if generate_readme:
@@ -70,11 +70,7 @@ class RoleProcessor:
         return results
 
     def _process_readme(
-        self,
-        role_path: Path,
-        specs: dict,
-        role_name: str,
-        results: ProcessingResults
+        self, role_path: Path, specs: dict, role_name: str, results: ProcessingResults
     ):
         """Generate/update README.md file."""
 
@@ -97,23 +93,20 @@ class RoleProcessor:
             results.errors.append(f"README generation failed: {e}")
 
     def _process_defaults(
-        self,
-        role_path: Path,
-        specs: dict,
-        results: ProcessingResults
+        self, role_path: Path, specs: dict, results: ProcessingResults
     ):
         """Add inline comments to defaults/main.yml."""
 
         defaults_path = self._find_defaults_file(role_path)
 
         if not defaults_path:
-            results.warnings.append("No defaults/main.yml found - skipping comment injection")
+            results.warnings.append(
+                "No defaults/main.yml found - skipping comment injection"
+            )
             return
 
         try:
-            updated_content = self.defaults_generator.add_comments(
-                defaults_path, specs
-            )
+            updated_content = self.defaults_generator.add_comments(defaults_path, specs)
 
             if updated_content and not self.dry_run:
                 # Create backup
@@ -122,10 +115,10 @@ class RoleProcessor:
                     defaults_path.rename(backup_path)
 
                     # Write updated content
-                    defaults_path.write_text(updated_content, encoding='utf-8')
+                    defaults_path.write_text(updated_content, encoding="utf-8")
                 else:
                     # Backup exists, just write new content
-                    defaults_path.write_text(updated_content, encoding='utf-8')
+                    defaults_path.write_text(updated_content, encoding="utf-8")
 
             results.operations.append((defaults_path, "Comments added", "✅"))
 
@@ -134,10 +127,8 @@ class RoleProcessor:
 
     def _find_defaults_file(self, role_path: Path) -> Path | None:
         """Find defaults file (supports both .yml and .yaml)."""
-        for ext in ['yml', 'yaml']:
-            defaults_path = role_path / 'defaults' / f'main.{ext}'
+        for ext in ["yml", "yaml"]:
+            defaults_path = role_path / "defaults" / f"main.{ext}"
             if defaults_path.exists():
                 return defaults_path
         return None
-
-
