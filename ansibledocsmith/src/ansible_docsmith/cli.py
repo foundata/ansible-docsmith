@@ -3,6 +3,7 @@
 Ansible-DocSmith CLI - Generate Ansible role documentation from argument_specs.yml
 """
 
+import difflib
 from pathlib import Path
 
 import typer
@@ -159,7 +160,7 @@ def _display_results(results, dry_run: bool):
     """Display processing results in a rich table."""
 
     if not results.operations and not results.errors and not results.warnings:
-        console.print("[yellow]No operations performed[/yellow]")
+        console.print("[yellow]No operations performed yet[/yellow]")
         return
 
     table = Table(title="Processing Results" + (" (DRY RUN)" if dry_run else ""))
@@ -175,6 +176,12 @@ def _display_results(results, dry_run: bool):
     if table.rows:
         console.print(table)
 
+    # Display detailed diffs for dry-run mode
+    if dry_run and results.file_diffs:
+        console.print("\n[bold]Modifications that would take place without the --dry-mode option ([yellow]nothing was changed yet[/yellow]):[/bold]")
+        for file_path, old_content, new_content in results.file_diffs:
+            _display_file_diff(file_path, old_content, new_content)
+
     # Display warnings
     if results.warnings:
         console.print("\n[yellow]Warnings:[/yellow]")
@@ -186,6 +193,40 @@ def _display_results(results, dry_run: bool):
         console.print("\n[red]Errors:[/red]")
         for error in results.errors:
             console.print(f"  • {error}", style="red")
+
+
+def _display_file_diff(file_path: Path, old_content: str, new_content: str):
+    """Display a unified diff for a file."""
+    console.print(f"\n[bold cyan]--- {file_path}[/bold cyan]")
+
+    # Generate unified diff
+    old_lines = old_content.splitlines(keepends=True)
+    new_lines = new_content.splitlines(keepends=True)
+
+    diff = difflib.unified_diff(
+        old_lines,
+        new_lines,
+        fromfile=f"a/{file_path.name}",
+        tofile=f"b/{file_path.name}",
+        lineterm="",
+    )
+
+    diff_lines = list(diff)
+    if not diff_lines:
+        console.print("[dim]No changes detected[/dim]")
+        return
+
+    # Skip the first two lines (file headers) as we show our own
+    for line in diff_lines[2:]:
+        line = line.rstrip()
+        if line.startswith("+") and not line.startswith("+++"):
+            console.print(f"[green]{line}[/green]")
+        elif line.startswith("-") and not line.startswith("---"):
+            console.print(f"[red]{line}[/red]")
+        elif line.startswith("@@"):
+            console.print(f"[bold blue]{line}[/bold blue]")
+        else:
+            console.print(line)
 
 
 def _display_validation_results(role_data):

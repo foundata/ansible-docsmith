@@ -116,6 +116,46 @@ class TestDocumentationGenerator:
         result = generator._format_default_filter(42)
         assert result == "`42`"
 
+    def test_multiline_description_handling(self, sample_role_with_specs):
+        """Test handling of multiline descriptions in documentation generation."""
+        generator = DocumentationGenerator()
+
+        # Test with a multiline description that includes newlines
+        multiline_description = """First paragraph of description.
+
+Second paragraph with more details.
+
+- List item 1
+- List item 2"""
+
+        specs = {
+            "main": {
+                "short_description": "Test role",
+                "description": "A test role",
+                "author": ["Test Author"],
+                "options": {
+                    "multiline_var": {
+                        "type": "str",
+                        "required": True,
+                        "default": None,
+                        "description": multiline_description,
+                        "choices": [],
+                        "suboptions": {},
+                    }
+                },
+            }
+        }
+
+        result = generator.generate_role_documentation(
+            specs, "test-role", sample_role_with_specs
+        )
+
+        # Should contain all parts of the multiline description
+        assert "First paragraph of description." in result
+        assert "Second paragraph with more details." in result
+        assert "- List item 1" in result
+        assert "- List item 2" in result
+
 
 class TestDefaultsCommentGenerator:
     """Test the DefaultsCommentGenerator class."""

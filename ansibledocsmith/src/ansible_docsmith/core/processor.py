@@ -15,6 +15,7 @@ class ProcessingResults:
     operations: list[tuple[Path, str, str]]  # (file, action, status)
     errors: list[str]
     warnings: list[str]
+    file_diffs: list[tuple[Path, str, str]]  # (file, old_content, new_content)
 
 
 class RoleProcessor:
@@ -46,7 +47,9 @@ class RoleProcessor:
     ) -> ProcessingResults:
         """Process the entire role for documentation generation."""
 
-        results = ProcessingResults(operations=[], errors=[], warnings=[])
+        results = ProcessingResults(
+            operations=[], errors=[], warnings=[], file_diffs=[]
+        )
 
         try:
             # Validate and parse role
@@ -82,7 +85,19 @@ class RoleProcessor:
                 specs, role_name, role_path
             )
 
-            if not self.dry_run:
+            # Read original content for diff comparison
+            original_content = ""
+            if readme_path.exists():
+                original_content = readme_path.read_text(encoding="utf-8")
+
+            # Get the new content that would be written
+            if self.dry_run:
+                # For dry-run, we need to simulate what update_readme would produce
+                new_content = self.readme_updater._get_updated_content(
+                    readme_path, doc_content
+                )
+                results.file_diffs.append((readme_path, original_content, new_content))
+            else:
                 # Update README
                 self.readme_updater.update_readme(readme_path, doc_content)
 
@@ -108,16 +123,19 @@ class RoleProcessor:
         try:
             updated_content = self.defaults_generator.add_comments(defaults_path, specs)
 
-            if updated_content and not self.dry_run:
-                # Create backup
-                backup_path = defaults_path.with_suffix(f"{defaults_path.suffix}.bak")
-                if not backup_path.exists():  # Don't overwrite existing backups
-                    defaults_path.rename(backup_path)
+            if updated_content:
+                # Read original content for diff comparison
+                original_content = ""
+                if defaults_path.exists():
+                    original_content = defaults_path.read_text(encoding="utf-8")
 
-                    # Write updated content
-                    defaults_path.write_text(updated_content, encoding="utf-8")
+                # Store diff information for dry-run display
+                if self.dry_run:
+                    results.file_diffs.append(
+                        (defaults_path, original_content, updated_content)
+                    )
                 else:
-                    # Backup exists, just write new content
+                    # Write updated content directly (no backup)
                     defaults_path.write_text(updated_content, encoding="utf-8")
 
             results.operations.append((defaults_path, "Comments added", "✅"))

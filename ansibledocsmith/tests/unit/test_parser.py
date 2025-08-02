@@ -177,3 +177,36 @@ argument_specs:
         assert "suboptions" in options["complex_var"]
         assert "sub_var" in options["complex_var"]["suboptions"]
         assert options["complex_var"]["suboptions"]["sub_var"]["default"] == "test"
+
+    def test_normalize_description_multiline_block_scalar(self, sample_role_path):
+        """Test description normalization with YAML block scalar style (|)."""
+        parser = ArgumentSpecParser()
+
+        spec_file = sample_role_path / "meta" / "argument_specs.yml"
+        spec_content = """---
+argument_specs:
+  main:
+    options:
+      multiline_var:
+        type: str
+        description: |
+          This is a multiline description.
+          It preserves line breaks.
+
+          - Item 1
+          - Item 2
+"""
+        spec_file.write_text(spec_content)
+
+        result = parser.parse_file(spec_file)
+
+        options = result["main"]["options"]
+        description = options["multiline_var"]["description"]
+
+        # Should preserve the multiline structure
+        assert "This is a multiline description." in description
+        assert "It preserves line breaks." in description
+        assert "- Item 1" in description
+        assert "- Item 2" in description
+        # Should contain newlines
+        assert "\n" in description

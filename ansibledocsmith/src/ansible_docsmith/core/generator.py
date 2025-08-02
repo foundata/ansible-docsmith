@@ -338,20 +338,21 @@ class ReadmeUpdater:
         """Update content between markers in README.md."""
 
         try:
-            if readme_path.exists():
-                content = readme_path.read_text(encoding="utf-8")
-                updated_content = self._replace_between_markers(content, new_content)
-            else:
-                # Create new README with template
-                updated_content = self._create_new_readme(
-                    new_content, readme_path.parent.name
-                )
-
+            updated_content = self._get_updated_content(readme_path, new_content)
             readme_path.write_text(updated_content, encoding="utf-8")
             return True
 
         except Exception as e:
             raise FileOperationError(f"Failed to update README: {e}")
+
+    def _get_updated_content(self, readme_path: Path, new_content: str) -> str:
+        """Get the updated content without writing to file."""
+        if readme_path.exists():
+            content = readme_path.read_text(encoding="utf-8")
+            return self._replace_between_markers(content, new_content)
+        else:
+            # Create new README with template
+            return self._create_new_readme(new_content, readme_path.parent.name)
 
     def _replace_between_markers(self, content: str, new_content: str) -> str:
         """Replace content between markers."""
