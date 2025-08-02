@@ -1,15 +1,19 @@
+# Please note: This file is just a dummy for testing. It might make no sense
+# at all. If you are searching for an acme.sh role, look at the "run" role of
+# the https://github.com/foundata/ansible-collection-acmesh collection.
+
 ---
-# Default configuration for acme-shell role
 
 acmesh_domain: "example.com"
 acmesh_alt_names: []
+
+# This comment will be overwritten.
 acmesh_email: "admin@example.com"
+
 acmesh_staging: false
 acmesh_challenge_type: "http-01"
 acmesh_webroot_path: "/var/www/html"
-
 acmesh_config:
   force_renewal: false
   key_size: 2048
-
 acmesh_hooks: {}
