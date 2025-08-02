@@ -1,0 +1,4 @@
+---
+install_path: "/opt/myapp"
+install_version: "latest"
+install_force: false

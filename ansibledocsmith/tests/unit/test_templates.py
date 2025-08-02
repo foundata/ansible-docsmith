@@ -51,7 +51,8 @@ class TestTemplateManager:
 
         context = {
             "role_name": "test-role",
-            "main_spec": {"author": ["Test Author"]},
+            "primary_spec": {"author": ["Test Author"]},
+            "main_spec": {"author": ["Test Author"]},  # Backward compatibility
             "options": {
                 "test_var": {
                     "type": "str",
@@ -86,7 +87,8 @@ class TestTemplateManager:
 
         context = {
             "role_name": "empty-role",
-            "main_spec": {"author": []},
+            "primary_spec": {"author": []},
+            "main_spec": {"author": []},  # Backward compatibility
             "options": {},
             "has_options": False,
         }

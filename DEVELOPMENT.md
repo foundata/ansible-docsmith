@@ -66,7 +66,7 @@ This file provides information for maintainers and contributors to `ansible-docs
    uv run ansible-docsmith --version
 
    # Test with example role fixture (always use --dry-run to protect fixtures)
-   uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
+   uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    ```
 
 
@@ -181,21 +181,21 @@ Always use `--dry-run` when testing with fixture files to prevent modifications!
 
 ```bash
 # Test with example role fixture (read-only)
-uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 
 # Test validation (read-only)
-uv run ansible-docsmith validate tests/fixtures/example-role
+uv run ansible-docsmith validate tests/fixtures/example-role-simple
 
 # Test with different options (read-only)
-uv run ansible-docsmith generate tests/fixtures/example-role --no-defaults --dry-run
-uv run ansible-docsmith generate tests/fixtures/example-role --no-readme --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-simple --no-defaults --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-simple --no-readme --dry-run
 ```
 
 If you need to test actual file creation/modification, create a temporary copy:
 
 ```bash
 # Create a temporary copy for testing
-cp -r tests/fixtures/example-role /tmp/test-role
+cp -r tests/fixtures/example-role-simple /tmp/test-role
 uv run ansible-docsmith generate /tmp/test-role
 uv run ansible-docsmith generate /tmp/my-test-role
 ```
@@ -258,7 +258,7 @@ uv run pytest
 
 # 4. Test CLI functionality (always use --dry-run with fixtures!)
 uv run ansible-docsmith --help
-uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 ```
 
 

@@ -1,0 +1,4 @@
+---
+config_file: "/etc/myapp/config.yml"
+config_backup: true
+config_template: "default"

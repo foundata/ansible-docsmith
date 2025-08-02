@@ -31,8 +31,8 @@ def sample_role_path(temp_dir):
 
 @pytest.fixture
 def sample_role_fixture_path():
-    """Get path to the example role fixture."""
-    return Path(__file__).parent / "fixtures" / "example-role"
+    """Get path to the simple example role fixture."""
+    return Path(__file__).parent / "fixtures" / "example-role-simple"
 
 
 @pytest.fixture
