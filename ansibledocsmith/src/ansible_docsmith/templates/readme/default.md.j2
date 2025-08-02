@@ -1,0 +1,76 @@
+## Role Variables
+
+{% if has_options %}
+The following variables can be configured for this role:
+
+| Variable | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+{% for var_name, var_spec in options.items() %}
+| `{{ var_name | ansible_escape }}` | {{ var_spec.type }} | {{ '✅' if var_spec.required else '❌' }} | {{ var_spec.default | format_default }} | {{ var_spec.description | format_table_description }} |
+{% endfor %}
+
+### Variable Details
+
+{% for var_name, var_spec in options.items() %}
+#### {{ var_name }}
+
+{{ var_spec.description | format_description }}
+
+- **Type**: `{{ var_spec.type }}`
+- **Required**: {{ 'Yes' if var_spec.required else 'No' }}
+{% if var_spec.default is not none %}
+- **Default**: `{{ var_spec.default | ansible_escape }}`
+{% endif %}
+{% if var_spec.choices %}
+- **Choices**: {{ var_spec.choices | map('string') | map('code_escape') | join(', ') }}
+{% endif %}
+{% if var_spec.elements %}
+- **List Elements**: `{{ var_spec.elements }}`
+{% endif %}
+{% if var_spec.aliases %}
+- **Aliases**: {{ var_spec.aliases | map('string') | map('code_escape') | join(', ') }}
+{% endif %}
+
+{% if var_spec.suboptions %}
+**Suboptions**:
+
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+{% for sub_name, sub_spec in var_spec.suboptions.items() %}
+| `{{ sub_name }}` | {{ sub_spec.type }} | {{ '✅' if sub_spec.required else '❌' }} | {{ sub_spec.default | format_default }} | {{ sub_spec.description }} |
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No variables are defined for this role.
+{% endif %}
+
+## Example Playbook
+
+```yaml
+---
+- hosts: servers
+  become: yes
+  vars:
+{% for var_name, var_spec in options.items() %}
+{% if var_spec.default is not none %}
+    {{ var_name }}: {{ var_spec.default }}
+{% else %}
+    # {{ var_name }}: # {{ var_spec.description }}
+{% endif %}
+{% endfor %}
+
+  roles:
+    - {{ role_name }}
+```
+
+## Author Information
+
+{% if main_spec.author %}
+{% for author in main_spec.author %}
+- {{ author }}
+{% endfor %}
+{% else %}
+This role was created by [Author Name].
+{% endif %}

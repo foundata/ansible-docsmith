@@ -3,34 +3,32 @@
 import re
 from pathlib import Path
 from typing import Any
-from jinja2 import Environment, BaseLoader, select_autoescape
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from .exceptions import TemplateError, FileOperationError
+from ..templates import TemplateManager
 
 
 class DocumentationGenerator:
     """Generate Markdown documentation from argument specs."""
 
-    def __init__(self):
-        # Built-in template for README generation
-        self.template_content = self._get_builtin_template()
+    def __init__(self, template_dir: Path | None = None, template_name: str = "default"):
+        """Initialize the documentation generator.
 
-        # Setup Jinja2 environment
-        self.jinja_env = Environment(
-            loader=BaseLoader(),
-            autoescape=select_autoescape(['html', 'xml']),
-            trim_blocks=True,
-            lstrip_blocks=True
-        )
+        Args:
+            template_dir: Custom template directory. If None, uses built-in templates.
+            template_name: Name of the template to use (default: "default")
+        """
+        self.template_manager = TemplateManager(template_dir)
+        self.template_name = template_name
 
-        # Add custom filters
-        self.jinja_env.filters['ansible_escape'] = self._ansible_escape_filter
-        self.jinja_env.filters['code_escape'] = self._code_escape_filter
-        self.jinja_env.filters['format_default'] = self._format_default_filter
-        self.jinja_env.filters['format_description'] = self._format_description_filter
-        self.jinja_env.filters['format_table_description'] = self._format_table_description_filter
+        # Add custom filters to the Jinja environment
+        self.template_manager.add_filter('ansible_escape', self._ansible_escape_filter)
+        self.template_manager.add_filter('code_escape', self._code_escape_filter)
+        self.template_manager.add_filter('format_default', self._format_default_filter)
+        self.template_manager.add_filter('format_description', self._format_description_filter)
+        self.template_manager.add_filter('format_table_description', self._format_table_description_filter)
 
     def generate_role_documentation(
         self,
@@ -41,8 +39,6 @@ class DocumentationGenerator:
         """Generate complete role documentation."""
 
         try:
-            template = self.jinja_env.from_string(self.template_content)
-
             # Prepare context data
             main_spec = specs.get('main', {})
             context = {
@@ -55,101 +51,16 @@ class DocumentationGenerator:
                 'has_options': bool(main_spec.get('options', {}))
             }
 
-            return template.render(**context)
+            # Render template using template manager
+            return self.template_manager.render_template(
+                self.template_name,
+                "readme",
+                **context
+            )
 
         except Exception as e:
             raise TemplateError(f"Failed to generate documentation: {e}")
 
-    def _get_builtin_template(self) -> str:
-        """Return the built-in template for role documentation."""
-        return '''
-## Role Variables
-
-{% if has_options %}
-The following variables can be configured for this role:
-
-| Variable | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-{% for var_name, var_spec in options.items() %}
-| `{{ var_name | ansible_escape }}` | {{ var_spec.type }} | {{ '✅' if var_spec.required else '❌' }} | {{ var_spec.default | format_default }} | {{ var_spec.description | format_table_description }} |
-{% endfor %}
-
-### Variable Details
-
-{% for var_name, var_spec in options.items() %}
-#### {{ var_name }}
-
-{{ var_spec.description | format_description }}
-
-- **Type**: `{{ var_spec.type }}`
-- **Required**: {{ 'Yes' if var_spec.required else 'No' }}
-{% if var_spec.default is not none %}
-- **Default**: `{{ var_spec.default | ansible_escape }}`
-{% endif %}
-{% if var_spec.choices %}
-- **Choices**: {{ var_spec.choices | map('string') | map('code_escape') | join(', ') }}
-{% endif %}
-{% if var_spec.elements %}
-- **List Elements**: `{{ var_spec.elements }}`
-{% endif %}
-{% if var_spec.aliases %}
-- **Aliases**: {{ var_spec.aliases | map('string') | map('code_escape') | join(', ') }}
-{% endif %}
-
-{% if var_spec.suboptions %}
-**Suboptions**:
-
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-{% for sub_name, sub_spec in var_spec.suboptions.items() %}
-| `{{ sub_name }}` | {{ sub_spec.type }} | {{ '✅' if sub_spec.required else '❌' }} | {{ sub_spec.default | format_default }} | {{ sub_spec.description }} |
-{% endfor %}
-{% endif %}
-
-{% endfor %}
-{% else %}
-No variables are defined for this role.
-{% endif %}
-
-## Example Playbook
-
-```yaml
----
-- hosts: servers
-  become: yes
-  vars:
-{% for var_name, var_spec in options.items() %}
-{% if var_spec.default is not none %}
-    {{ var_name }}: {{ var_spec.default }}
-{% else %}
-    # {{ var_name }}: # {{ var_spec.description }}
-{% endif %}
-{% endfor %}
-
-  roles:
-    - {{ role_name }}
-```
-
-## Dependencies
-
-{% if main_spec.requirements %}
-{% for req in main_spec.requirements %}
-- {{ req }}
-{% endfor %}
-{% else %}
-None
-{% endif %}
-
-## Author Information
-
-{% if main_spec.author %}
-{% for author in main_spec.author %}
-- {{ author }}
-{% endfor %}
-{% else %}
-This role was created by [Author Name].
-{% endif %}
-'''.strip()
 
     def _ansible_escape_filter(self, value: Any) -> str:
         """Escape Ansible variable syntax for Markdown."""
@@ -229,33 +140,33 @@ class DefaultsCommentGenerator:
 
             # Clean the file first - remove all existing variable comments
             cleaned_content = self._remove_existing_variable_comments(original_content, options)
-            
+
             # Process the cleaned file line by line to insert new comments
             lines = cleaned_content.splitlines()
             result_lines = []
-            
+
             for line in lines:
                 # Check if this line defines a variable
                 variable_match = self._get_variable_from_line(line)
-                
+
                 if variable_match and variable_match in options:
                     var_spec = options[variable_match]
                     description = var_spec.get('description', '')
-                    
+
                     if description:
                         # Generate block comment
                         comment_lines = self._format_block_comment(description)
-                        
+
                         # Add blank line before comment (if previous line isn't blank)
                         if result_lines and result_lines[-1].strip():
                             result_lines.append('')
-                        
+
                         # Add comment lines
                         result_lines.extend(comment_lines)
-                    
+
                     # Clean any inline comments from the variable line
                     line = self._remove_inline_comment(line)
-                
+
                 # Add the original line
                 result_lines.append(line)
 
@@ -276,22 +187,22 @@ class DefaultsCommentGenerator:
         """Format description as block comment with proper line wrapping."""
         # Normalize description to handle both string and list formats
         text = self._normalize_description(description)
-        
+
         # Split into paragraphs
         paragraphs = text.split('\n\n') if '\n\n' in text else text.split('\n')
-        
+
         comment_lines = []
-        
+
         for i, paragraph in enumerate(paragraphs):
             if i > 0:  # Add blank comment line between paragraphs
                 comment_lines.append('#')
-            
+
             # Wrap paragraph to 80 chars (minus "# " prefix)
             wrapped_lines = self._wrap_text(paragraph.strip(), max_width=78)
-            
+
             for wrapped_line in wrapped_lines:
                 comment_lines.append(f'# {wrapped_line}' if wrapped_line else '#')
-        
+
         return comment_lines
 
     def _normalize_description(self, description: Any) -> str:
@@ -305,17 +216,17 @@ class DefaultsCommentGenerator:
         """Wrap text to specified width, preserving word boundaries."""
         if not text:
             return ['']
-        
+
         words = text.split()
         lines = []
         current_line = []
         current_length = 0
-        
+
         for word in words:
             # Check if adding this word would exceed the limit
             word_length = len(word)
             space_length = 1 if current_line else 0
-            
+
             if current_length + space_length + word_length <= max_width:
                 current_line.append(word)
                 current_length += space_length + word_length
@@ -325,19 +236,21 @@ class DefaultsCommentGenerator:
                     lines.append(' '.join(current_line))
                 current_line = [word]
                 current_length = word_length
-        
+
         # Add the last line
         if current_line:
             lines.append(' '.join(current_line))
-        
+
         return lines if lines else ['']
 
     def _has_block_comment_above(self, result_lines: list[str]) -> bool:
         """Check if there's already a variable-specific block comment above."""
-        # We should only skip if the immediately preceding lines contain 
+        # We should only skip if the immediately preceding lines contain
         # a block comment that was just added for this variable
         # For now, we'll be more permissive and always add comments
         # since detecting "our" comments vs existing general comments is complex
+        # Parameter result_lines is reserved for future implementation
+        _ = result_lines  # Suppress unused parameter warning
         return False
 
     def _remove_inline_comment(self, line: str) -> str:
@@ -347,7 +260,7 @@ class DefaultsCommentGenerator:
             # Simple approach: find # that's not inside quotes
             in_quotes = False
             quote_char = None
-            
+
             for i, char in enumerate(line):
                 if char in ['"', "'"] and (i == 0 or line[i-1] != '\\'):
                     if not in_quotes:
@@ -359,7 +272,7 @@ class DefaultsCommentGenerator:
                 elif char == '#' and not in_quotes:
                     # Found unquoted comment, remove it and trailing whitespace
                     return line[:i].rstrip()
-            
+
         return line
 
     def _remove_existing_variable_comments(self, content: str, options: dict) -> str:
@@ -367,26 +280,26 @@ class DefaultsCommentGenerator:
         lines = content.splitlines()
         result_lines = []
         i = 0
-        
+
         while i < len(lines):
             line = lines[i]
-            
+
             # Check if this is a comment line
             if line.strip().startswith('#'):
                 # Look ahead to see if there's a variable definition soon
                 j = i + 1
                 found_variable = False
-                
+
                 # Skip other comment lines and blank lines
                 while j < len(lines) and (lines[j].strip().startswith('#') or not lines[j].strip()):
                     j += 1
-                
+
                 # Check if the next non-comment line is a variable we're managing
                 if j < len(lines):
                     var_match = self._get_variable_from_line(lines[j])
                     if var_match and var_match in options:
                         found_variable = True
-                
+
                 # If this comment precedes a variable we manage, skip it
                 if found_variable:
                     # Skip all comment lines until we hit the variable
@@ -395,10 +308,10 @@ class DefaultsCommentGenerator:
                             result_lines.append(lines[i])
                         i += 1
                     continue
-            
+
             result_lines.append(line)
             i += 1
-        
+
         return '\n'.join(result_lines)
 
 
@@ -407,7 +320,7 @@ class ReadmeUpdater:
 
     def __init__(self,
                  start_marker: str = "<!-- BEGIN ANSIBLE DOCSMITH -->",
-                 end_marker: str = "<!-- END ANSIBLE DOCSMITH -->"): 
+                 end_marker: str = "<!-- END ANSIBLE DOCSMITH -->"):
         self.start_marker = start_marker
         self.end_marker = end_marker
 

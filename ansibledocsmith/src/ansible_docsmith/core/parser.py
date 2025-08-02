@@ -54,7 +54,6 @@ class ArgumentSpecParser:
                 'author': self._normalize_author(spec.get('author', [])),
                 'version_added': spec.get('version_added', ''),
                 'seealso': spec.get('seealso', []),
-                'requirements': spec.get('requirements', []),
                 'todo': spec.get('todo', []),
                 'options': self._normalize_options(spec.get('options', {}))
             }
