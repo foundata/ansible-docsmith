@@ -27,9 +27,6 @@ The following variables can be configured for this role:
 {% if var_spec.elements %}
 - **List Elements**: `{{ var_spec.elements }}`
 {% endif %}
-{% if var_spec.aliases %}
-- **Aliases**: {{ var_spec.aliases | map('string') | map('code_escape') | join(', ') }}
-{% endif %}
 
 {% if var_spec.options %}
 **Nested options**:

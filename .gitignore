@@ -390,3 +390,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/git,vim,linux,macos,windows,jetbrains+all,visualstudiocode,python
+
+### Repository-specific files
+
+# uv
+uv.lock
