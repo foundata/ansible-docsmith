@@ -31,12 +31,12 @@ The following variables can be configured for this role:
 - **Aliases**: {{ var_spec.aliases | map('string') | map('code_escape') | join(', ') }}
 {% endif %}
 
-{% if var_spec.suboptions %}
-**Suboptions**:
+{% if var_spec.options %}
+**Nested options**:
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-{% for sub_name, sub_spec in var_spec.suboptions.items() %}
+{% for sub_name, sub_spec in var_spec.options.items() %}
 | `{{ sub_name }}` | {{ sub_spec.type }} | {{ '✅' if sub_spec.required else '❌' }} | {{ sub_spec.default | format_default }} | {{ sub_spec.description }} |
 {% endfor %}
 {% endif %}

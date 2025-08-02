@@ -152,7 +152,7 @@ argument_specs:
 
         assert result == ["John Doe", "Jane Smith"]
 
-    def test_normalize_options_with_suboptions(self, sample_role_path):
+    def test_normalize_options_with_nested_options(self, sample_role_path):
         """Test options normalization with nested options."""
         parser = ArgumentSpecParser()
 
@@ -174,9 +174,9 @@ argument_specs:
 
         options = result["main"]["options"]
         assert "complex_var" in options
-        assert "suboptions" in options["complex_var"]
-        assert "sub_var" in options["complex_var"]["suboptions"]
-        assert options["complex_var"]["suboptions"]["sub_var"]["default"] == "test"
+        assert "options" in options["complex_var"]
+        assert "sub_var" in options["complex_var"]["options"]
+        assert options["complex_var"]["options"]["sub_var"]["default"] == "test"
 
     def test_normalize_description_multiline_block_scalar(self, sample_role_path):
         """Test description normalization with YAML block scalar style (|)."""

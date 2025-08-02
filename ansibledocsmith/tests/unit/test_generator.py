@@ -27,7 +27,7 @@ class TestDocumentationGenerator:
                         "default": None,
                         "description": "A test variable",
                         "choices": [],
-                        "suboptions": {},
+                        "options": {},
                     }
                 },
             }
@@ -140,7 +140,7 @@ Second paragraph with more details.
                         "default": None,
                         "description": multiline_description,
                         "choices": [],
-                        "suboptions": {},
+                        "options": {},
                     }
                 },
             }

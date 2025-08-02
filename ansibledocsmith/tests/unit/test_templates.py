@@ -59,7 +59,7 @@ class TestTemplateManager:
                     "default": None,
                     "description": "A test variable",
                     "choices": [],
-                    "suboptions": {},
+                    "options": {},
                 }
             },
             "has_options": True,
