@@ -243,17 +243,19 @@ def _display_validation_results(role_data):
     console.print(f"[green]Role name:[/green] {role_name}")
     console.print(f"[green]Entry points:[/green] {', '.join(specs.keys())}")
 
-    # Show options count for main entry point
-    main_spec = specs.get("main", {})
-    options_count = len(main_spec.get("options", {}))
-    console.print(f"[green]Variables defined:[/green] {options_count}")
+    # Show variables for all entry points
+    total_variables = sum(len(spec.get("options", {})) for spec in specs.values())
+    console.print(f"[green]Variables defined:[/green] {total_variables}")
 
-    if options_count > 0:
-        console.print("\n[blue]Variables:[/blue]")
-        for var_name, var_spec in main_spec.get("options", {}).items():
-            required = "required" if var_spec.get("required") else "optional"
-            var_type = var_spec.get("type", "str")
-            console.print(f"  • {var_name} ({var_type}, {required})")
+    if total_variables > 0:
+        for entry_point, spec in specs.items():
+            options = spec.get("options", {})
+            if options:
+                console.print(f"\n[blue]Variables in '{entry_point}' entry point:[/blue]")
+                for var_name, var_spec in options.items():
+                    required = "required" if var_spec.get("required") else "optional"
+                    var_type = var_spec.get("type", "str")
+                    console.print(f"  • {var_name} ({var_type}, {required})")
 
 
 if __name__ == "__main__":

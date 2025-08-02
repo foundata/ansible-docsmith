@@ -110,43 +110,54 @@ class RoleProcessor:
     def _process_defaults(
         self, role_path: Path, specs: dict, results: ProcessingResults
     ):
-        """Add inline comments to defaults/main.yml."""
+        """Add inline comments to defaults files for all entry points."""
 
-        defaults_path = self._find_defaults_file(role_path)
+        # Find defaults files for all entry points
+        defaults_files = self._find_defaults_files(role_path, specs)
 
-        if not defaults_path:
+        if not defaults_files:
             results.warnings.append(
-                "No defaults/main.yml found - skipping comment injection"
+                "No defaults files found for any entry points - skipping comment injection"
             )
             return
 
-        try:
-            updated_content = self.defaults_generator.add_comments(defaults_path, specs)
+        for entry_point, defaults_path in defaults_files.items():
+            try:
+                # Create a spec dict containing only this entry point
+                entry_point_specs = {entry_point: specs[entry_point]}
+                updated_content = self.defaults_generator.add_comments(
+                    defaults_path, entry_point_specs
+                )
 
-            if updated_content:
-                # Read original content for diff comparison
-                original_content = ""
+                if updated_content:
+                    # Read original content for diff comparison
+                    original_content = ""
+                    if defaults_path.exists():
+                        original_content = defaults_path.read_text(encoding="utf-8")
+
+                    # Store diff information for dry-run display
+                    if self.dry_run:
+                        results.file_diffs.append(
+                            (defaults_path, original_content, updated_content)
+                        )
+                    else:
+                        # Write updated content directly (no backup)
+                        defaults_path.write_text(updated_content, encoding="utf-8")
+
+                results.operations.append((defaults_path, "Comments added", "✅"))
+
+            except Exception as e:
+                results.errors.append(f"Defaults update failed for {entry_point}: {e}")
+
+    def _find_defaults_files(self, role_path: Path, specs: dict) -> dict[str, Path]:
+        """Find defaults files for all entry points."""
+        defaults_files = {}
+
+        for entry_point in specs.keys():
+            for ext in ["yml", "yaml"]:
+                defaults_path = role_path / "defaults" / f"{entry_point}.{ext}"
                 if defaults_path.exists():
-                    original_content = defaults_path.read_text(encoding="utf-8")
+                    defaults_files[entry_point] = defaults_path
+                    break
 
-                # Store diff information for dry-run display
-                if self.dry_run:
-                    results.file_diffs.append(
-                        (defaults_path, original_content, updated_content)
-                    )
-                else:
-                    # Write updated content directly (no backup)
-                    defaults_path.write_text(updated_content, encoding="utf-8")
-
-            results.operations.append((defaults_path, "Comments added", "✅"))
-
-        except Exception as e:
-            results.errors.append(f"Defaults update failed: {e}")
-
-    def _find_defaults_file(self, role_path: Path) -> Path | None:
-        """Find defaults file (supports both .yml and .yaml)."""
-        for ext in ["yml", "yaml"]:
-            defaults_path = role_path / "defaults" / f"main.{ext}"
-            if defaults_path.exists():
-                return defaults_path
-        return None
+        return defaults_files

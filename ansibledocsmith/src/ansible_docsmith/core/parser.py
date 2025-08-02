@@ -123,13 +123,9 @@ class ArgumentSpecParser:
         # Parse and validate specs
         specs = self.parse_file(spec_file)
 
-        # Additional validation
+        # Ensure at least one entry point exists
         if not specs:
             raise ValidationError("No entry points defined in argument_specs.yml")
-
-        # Check for main entry point
-        if "main" not in specs:
-            raise ValidationError("Missing 'main' entry point in argument_specs.yml")
 
         return {
             "specs": specs,

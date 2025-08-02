@@ -82,32 +82,38 @@ class TestRoleProcessor:
         assert len(result.warnings) >= 1
         assert any("defaults" in warning.lower() for warning in result.warnings)
 
-    def test_find_defaults_file_yml(self, sample_role_path):
-        """Test finding defaults/main.yml file."""
+    def test_find_defaults_files_main_yml(self, sample_role_path):
+        """Test finding defaults files for main entry point."""
         processor = RoleProcessor()
 
         defaults_file = sample_role_path / "defaults" / "main.yml"
         defaults_file.write_text("---\ntest_var: test_value")
 
-        result = processor._find_defaults_file(sample_role_path)
+        specs = {"main": {"options": {}}}
+        result = processor._find_defaults_files(sample_role_path, specs)
 
-        assert result == defaults_file
+        assert result == {"main": defaults_file}
 
-    def test_find_defaults_file_yaml(self, sample_role_path):
-        """Test finding defaults/main.yaml file."""
+    def test_find_defaults_files_multiple_entry_points(self, sample_role_path):
+        """Test finding defaults files for multiple entry points."""
         processor = RoleProcessor()
 
-        defaults_file = sample_role_path / "defaults" / "main.yaml"
-        defaults_file.write_text("---\ntest_var: test_value")
+        main_file = sample_role_path / "defaults" / "main.yml"
+        main_file.write_text("---\ntest_var: test_value")
 
-        result = processor._find_defaults_file(sample_role_path)
+        other_file = sample_role_path / "defaults" / "other.yaml"
+        other_file.write_text("---\nother_var: other_value")
 
-        assert result == defaults_file
+        specs = {"main": {"options": {}}, "other": {"options": {}}}
+        result = processor._find_defaults_files(sample_role_path, specs)
 
-    def test_find_defaults_file_none(self, sample_role_path):
-        """Test when no defaults file exists."""
+        assert result == {"main": main_file, "other": other_file}
+
+    def test_find_defaults_files_none(self, sample_role_path):
+        """Test when no defaults files exist."""
         processor = RoleProcessor()
 
-        result = processor._find_defaults_file(sample_role_path)
+        specs = {"main": {"options": {}}}
+        result = processor._find_defaults_files(sample_role_path, specs)
 
-        assert result is None
+        assert result == {}

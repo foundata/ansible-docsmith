@@ -43,16 +43,20 @@ class DocumentationGenerator:
         """Generate complete role documentation."""
 
         try:
-            # Prepare context data
-            main_spec = specs.get("main", {})
+            # For multiple entry points, focus on the first one for primary documentation
+            # but make all entry points available to templates
+            primary_entry_point = next(iter(specs.keys()))
+            primary_spec = specs[primary_entry_point]
+
             context = {
                 "role_name": role_name,
                 "role_path": role_path,
                 "specs": specs,
-                "main_spec": main_spec,
+                "primary_entry_point": primary_entry_point,
+                "primary_spec": primary_spec,
                 "entry_points": list(specs.keys()),
-                "options": main_spec.get("options", {}),
-                "has_options": bool(main_spec.get("options", {})),
+                "options": primary_spec.get("options", {}),
+                "has_options": bool(primary_spec.get("options", {})),
             }
 
             # Render template using template manager
@@ -135,9 +139,10 @@ class DefaultsCommentGenerator:
             if not data:
                 return None
 
-            # Get main spec options
-            main_spec = specs.get("main", {})
-            options = main_spec.get("options", {})
+            # Get the first (and typically only) entry point's options
+            entry_point_name = next(iter(specs.keys()))
+            entry_point_spec = specs[entry_point_name]
+            options = entry_point_spec.get("options", {})
 
             # Clean the file first - remove all existing variable comments
             cleaned_content = self._remove_existing_variable_comments(

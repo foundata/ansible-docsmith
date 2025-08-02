@@ -101,8 +101,8 @@ argument_specs:
         with pytest.raises(ValidationError, match="No argument_specs.yml found"):
             parser.validate_structure(sample_role_path)
 
-    def test_validate_structure_missing_main_entry(self, sample_role_path):
-        """Test validation with missing main entry point."""
+    def test_validate_structure_non_main_entry(self, sample_role_path):
+        """Test validation with non-main entry point (should now work)."""
         parser = ArgumentSpecParser()
 
         spec_file = sample_role_path / "meta" / "argument_specs.yml"
@@ -113,8 +113,10 @@ argument_specs:
 """
         spec_file.write_text(spec_content)
 
-        with pytest.raises(ValidationError, match="Missing 'main' entry point"):
-            parser.validate_structure(sample_role_path)
+        # Should work without requiring "main" entry point
+        result = parser.validate_structure(sample_role_path)
+        assert "other" in result["specs"]
+        assert result["role_name"] == "test-role"
 
     def test_normalize_description_list(self):
         """Test description normalization from list."""
