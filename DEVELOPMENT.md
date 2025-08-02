@@ -12,6 +12,7 @@ This file provides information for maintainers and contributors to `ansible-docs
   - [Code formatting and linting](#code-linting)
 - [Testing](#testing)
   - [Running tests](#running-tests)
+   - [Manual testing examples](#manual-testing)
   - [Test structure](#test-structure)
   - [Writing tests](#writing-tests)
 - [Recommended development Workflow](#development-workflow)
@@ -64,7 +65,7 @@ This file provides information for maintainers and contributors to `ansible-docs
    # Show version
    uv run ansible-docsmith --version
 
-   # Test with example role fixture
+   # Test with example role fixture (always use --dry-run to protect fixtures)
    uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
    ```
 
@@ -170,21 +171,33 @@ Test your changes with real-world scenarios:
 1. **Create test roles** with various `argument_specs.yml` configurations.
 2. **Test edge cases** like missing files, invalid YAML, and so on.
 3. **Verify generated output** matches expected format.
-4. **Test both `README.md` file and `defaults/main.yml` comment generation**.
+4. **Test both `README.md` file and `defaults/main.yml` entry point comment generation**.
 5. **Test validation functionality**.
 
-Example manual test commands:
+
+#### Manual testing examples<a id="manual-testing"></a>
+
+Always use `--dry-run` when testing with fixture files to prevent modifications!
 
 ```bash
-# Test with example role fixture
+# Test with example role fixture (read-only)
 uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
 
-# Test validation
+# Test validation (read-only)
 uv run ansible-docsmith validate tests/fixtures/example-role
 
-# Test with different options
-uv run ansible-docsmith generate tests/fixtures/example-role --no-defaults
-uv run ansible-docsmith generate tests/fixtures/example-role --no-readme
+# Test with different options (read-only)
+uv run ansible-docsmith generate tests/fixtures/example-role --no-defaults --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role --no-readme --dry-run
+```
+
+If you need to test actual file creation/modification, create a temporary copy:
+
+```bash
+# Create a temporary copy for testing
+cp -r tests/fixtures/example-role /tmp/test-role
+uv run ansible-docsmith generate /tmp/test-role
+uv run ansible-docsmith generate /tmp/my-test-role
 ```
 
 
@@ -192,7 +205,7 @@ uv run ansible-docsmith generate tests/fixtures/example-role --no-readme
 
 - **Unit Tests**: Located in `tests/unit/` - Test individual components in isolation.
 - **Integration Tests**: Located in `tests/integration/` - Test end-to-end functionality.
-- **Fixtures**: Located in `tests/fixtures/` - Sample data for testing.
+- **Fixtures**: Located in `tests/fixtures/` - Sample data for testing. Files in `tests/fixtures/` should NEVER be modified by tests or manual testing!
 - **Test Configuration**: `tests/conftest.py` - Shared fixtures and configuration.
 
 
@@ -243,7 +256,7 @@ uv run ruff check --fix .
 # 3. Run all tests
 uv run pytest
 
-# 4. Test CLI functionality
+# 4. Test CLI functionality (always use --dry-run with fixtures!)
 uv run ansible-docsmith --help
 uv run ansible-docsmith generate tests/fixtures/example-role --dry-run
 ```
