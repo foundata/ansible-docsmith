@@ -1,4 +1,9 @@
+# Please note: This file is just a dummy for testing. It might make no sense
+# at all. If you are searching for an acme.sh role, look at the "run" role of
+# the https://github.com/foundata/ansible-collection-acmesh collection.
+
 ---
+
 argument_specs:
   main:
     short_description: ACME Shell certificate management tool
@@ -10,6 +15,22 @@ argument_specs:
       - "Andreas Haerter <ah@foundata.com>"
     version_added: "1.0.0"
     options:
+
+      acmesh_state:
+        type: "str"
+        required: true
+        description: |
+          Determines whether the managed resources should be "present" or
+          "absent". Defaults to "present". Possible values:
+
+          - "present": Ensures that required components, such as software packages,
+            are installed and configured.
+          - "absent": Reverts changes as much as possible, such as removing packages,
+            deleting created users, stopping services, restoring modified settings, …
+        choices:
+          - "present"
+          - "absent"
+
       acmesh_domain:
         type: str
         required: true
@@ -20,8 +41,8 @@ argument_specs:
         elements: str
         required: false
         default: []
+        # Demo: multiple paragraphs, long lines
         description:
-          # Demo: multiple paragraphs, long lines
           - "Alternative domain names (SAN) for the certificate."
           - "A Subject Alternative Name (SAN) in certificates allows multiple domain names or IP addresses to be associated with a single SSL/TLS certificate. SANs are commonly used for multi-domain certificates, ensuring all listed domains are securely protected with one public key."
 
