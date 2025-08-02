@@ -1,0 +1,15 @@
+---
+# Default configuration for acme-shell role
+
+acmesh_domain: "example.com"
+acmesh_alt_names: []
+acmesh_email: "admin@example.com"
+acmesh_staging: false
+acmesh_challenge_type: "http-01"
+acmesh_webroot_path: "/var/www/html"
+
+acmesh_config:
+  force_renewal: false
+  key_size: 2048
+
+acmesh_hooks: {}

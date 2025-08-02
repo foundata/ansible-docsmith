@@ -1,0 +1,93 @@
+---
+argument_specs:
+  main:
+    short_description: ACME Shell certificate management tool
+    description:
+      - "This role manages SSL certificates using acme-shell tool"
+      - "It can obtain, renew, and manage certificates from Let's Encrypt"
+    author:
+      - "foundata GmbH"
+      - "Andreas Haerter <ah@foundata.com>"
+    version_added: "1.0.0"
+    options:
+      acmesh_domain:
+        type: str
+        required: true
+        description: "Primary domain name for the certificate"
+
+      acmesh_alt_names:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description:
+          # Demo: multiple paragraphs, long lines
+          - "Alternative domain names (SAN) for the certificate."
+          - "A Subject Alternative Name (SAN) in certificates allows multiple domain names or IP addresses to be associated with a single SSL/TLS certificate. SANs are commonly used for multi-domain certificates, ensuring all listed domains are securely protected with one public key."
+
+      acmesh_email:
+        type: str
+        required: true
+        description: "Email address for ACME account registration"
+
+      acmesh_staging:
+        type: bool
+        required: false
+        default: false
+        description: "Use Let's Encrypt staging environment for testing"
+
+      acmesh_challenge_type:
+        type: str
+        required: false
+        default: "http-01"
+        choices:
+          - "http-01"
+          - "dns-01"
+        description: "ACME challenge type to use for domain validation"
+
+      acmesh_webroot_path:
+        type: path
+        required: false
+        default: "/var/www/html"
+        description: "Path to webroot directory for HTTP-01 challenge"
+
+      acmesh_dns_provider:
+        type: str
+        required: false
+        description: "DNS provider for DNS-01 challenge"
+        choices:
+          - "cloudflare"
+          - "route53"
+          - "digitalocean"
+
+      acmesh_config:
+        type: dict
+        required: false
+        default: {}
+        description: "Additional configuration options"
+        suboptions:
+          force_renewal:
+            type: bool
+            default: false
+            description: "Force certificate renewal even if not expired"
+          key_size:
+            type: int
+            default: 2048
+            choices: [2048, 4096]
+            description: "RSA key size in bits"
+
+      acmesh_hooks:
+        type: dict
+        required: false
+        default: {}
+        description: "Custom hooks for certificate lifecycle events"
+        suboptions:
+          pre_issue:
+            type: str
+            description: "Command to run before certificate issuance"
+          post_issue:
+            type: str
+            description: "Command to run after certificate issuance"
+          deploy:
+            type: str
+            description: "Command to run for certificate deployment"
