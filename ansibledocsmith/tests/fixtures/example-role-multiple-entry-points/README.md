@@ -1,18 +1,21 @@
 # example-role-multiple-entry-points
 
-Example role demonstrating multiple entry points for testing ansible-docsmith.
+This is a dummy file to show that existing content outside the `ANSIBLE DOCSMITH` markers will not be touched Example role demonstrating multiple entry points for testing `ansible-docsmith`.
 
 This role has two entry points:
-- `install`: For installing the application
-- `configure`: For configuring an existing installation
+
+- `install`: For installing the application.
+- `configure`: For configuring an existing installation.
 
 <!-- BEGIN ANSIBLE DOCSMITH -->
-This content will be replaced by ansible-docsmith
+This line will be replaced as it is between the markers! Any content between them maintained by `ansible-docsmith`.
 <!-- END ANSIBLE DOCSMITH -->
+
 
 ## License
 
-GPL-3.0-or-later
+`GPL-3.0-or-later`.
+
 
 ## Author Information
 
