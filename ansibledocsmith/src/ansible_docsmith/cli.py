@@ -19,7 +19,7 @@ from .utils.logging import setup_logging
 app = typer.Typer(
     name="ansible-docsmith",
     help="Generate and maintain Ansible role documentation from argument_specs.yml",
-    add_completion=False,
+    add_completion=True,
 )
 console = Console()
 
