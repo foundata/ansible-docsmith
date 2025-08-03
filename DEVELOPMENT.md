@@ -271,11 +271,17 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 
 1. Do proper [Testing](#testing). Continue only if everything is fine.
 2. Determine the next version number. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-3. Update the [`CHANGELOG.md`](./CHANGELOG.md). Insert a section for the new release. Do not forget the comparison link at the end of the file.
+3. Update several files to match the new release version:
+   - [`CHANGELOG.md`](./CHANGELOG.md): Insert a section for the new release. Do not forget the comparison link at the end of the file.
+   - [`ansibledocsmith/pyproject.toml`](./ansibledocsmith/pyproject.toml): the `version` variable.
+   - [`ansibledocsmith/src/ansible_docsmith/__init__.py`](./ansibledocsmith/src/ansible_docsmith/__init__.py): the `__version__` variable.
 4. If everything is fine: commit the changes, tag the release and push:
    ```bash
    version="<FIXME version>"
-   git add "./CHANGELOG.md"
+   git add \
+     "./CHANGELOG.md" \
+     "./ansibledocsmith/pyproject.toml" \
+     "./ansibledocsmith/src/ansible_docsmith/__init__.py"
    git commit -m "Release preparations: v${version}"
 
    git tag "v${version}" "$(git rev-parse --verify HEAD)" -m "version ${version}"
