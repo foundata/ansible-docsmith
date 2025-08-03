@@ -82,9 +82,7 @@ class TestRoleProcessor:
 
         # Should have an error about validation failing (because of consistency)
         assert len(result.errors) >= 1
-        assert any(
-            "validation failed" in error.lower() for error in result.errors
-        )
+        assert any("validation failed" in error.lower() for error in result.errors)
 
     def test_find_defaults_files_main_yml(self, sample_role_path):
         """Test finding defaults files for main entry point."""
@@ -151,7 +149,9 @@ class TestRoleProcessor:
         assert len(errors) == 0
 
     def test_validate_defaults_consistency_errors(self):
-        """Test consistency validation with mismatch fixture that should produce errors."""
+        """
+        Test consistency validation with mismatch fixture that should produce errors.
+        """
         processor = RoleProcessor()
 
         from pathlib import Path
@@ -294,7 +294,10 @@ var3:
         assert "may be intentional" in notice_messages
 
     def test_validate_role_with_unknown_key_warnings(self):
-        """Test that validate_role includes warnings for unknown keys in mismatch fixture."""
+        """
+        Test that validate_role includes warnings for unknown keys in mismatch
+        fixture.
+        """
         processor = RoleProcessor()
 
         from pathlib import Path

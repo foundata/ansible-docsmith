@@ -118,7 +118,10 @@ class TestEndToEnd:
         assert "README=False, Defaults=True" in result.stdout
 
     def test_validate_role_without_defaults_fails(self, sample_role_with_specs):
-        """Test that validation fails when defaults are missing for variables with defaults in specs."""
+        """
+        Test that validation fails when defaults are missing for variables with
+        defaults in specs.
+        """
         runner = CliRunner()
 
         result = runner.invoke(

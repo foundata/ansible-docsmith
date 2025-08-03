@@ -31,7 +31,10 @@ class RoleProcessor:
         self.readme_updater = ReadmeUpdater()
 
     def validate_role(self, role_path: Path) -> dict:
-        """Validate role structure and return metadata with further check results (like consistency, unknown keys)."""
+        """
+        Validate role structure and return metadata with further check results
+        (like consistency, unknown keys).
+        """
         try:
             # Basic structure validation
             role_data = self.parser.validate_structure(role_path)
@@ -189,7 +192,7 @@ class RoleProcessor:
     def _extract_variables_from_defaults(self, defaults_path: Path) -> set[str]:
         """Extract variable names from a defaults YAML file."""
         try:
-            with open(defaults_path, "r") as file:
+            with open(defaults_path) as file:
                 data = self.parser.yaml.load(file)
                 if data and isinstance(data, dict):
                     return set(data.keys())
@@ -254,9 +257,12 @@ class RoleProcessor:
         return warnings
 
     def _parse_original_specs(self, spec_file: Path) -> dict:
-        """Parse the original specs file without normalization to check for default keys."""
+        """
+        Parse the original specs file without normalization to check for
+        default keys.
+        """
         try:
-            with open(spec_file, "r") as file:
+            with open(spec_file) as file:
                 data = self.parser.yaml.load(file)
                 return data.get("argument_specs", {})
         except Exception:
@@ -292,7 +298,8 @@ class RoleProcessor:
                     )
 
             # ERROR: Variables with defaults in specs but missing from defaults file
-            # Check which variables actually have meaningful defaults (not parser-added None)
+            # Check which variables actually have meaningful defaults (not
+            # parser-added None)
             spec_with_defaults = set()
             if spec_file:
                 original_specs = self._parse_original_specs(spec_file)
@@ -303,7 +310,8 @@ class RoleProcessor:
                     if isinstance(var_spec, dict) and "default" in var_spec:
                         spec_with_defaults.add(name)
             else:
-                # Fallback: assume variables with non-None defaults have meaningful defaults
+                # Fallback: assume variables with non-None defaults have meaningful
+                # defaults
                 for name, var_spec in spec.get("options", {}).items():
                     if (
                         isinstance(var_spec, dict)
