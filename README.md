@@ -31,7 +31,9 @@ DocSmith works with roles in both [stand‑alone form](https://docs.ansible.com/
 
 ## Installation<a id="installation"></a>
 
-DocSmith is available on [PyPI](https://pypi.org/project/ansible-docsmith/) and can be installed with the package manager of your choice.
+[![PyPI version](https://badge.fury.io/py/ansible-docsmith.svg)](https://badge.fury.io/py/ansible-docsmith)
+
+DocSmith needs Python ≥ v3.11. It is available on [PyPI](https://pypi.org/project/ansible-docsmith/) and can be installed with the package manager of your choice.
 
 **Using [`uv`](https://docs.astral.sh/uv/getting-started/installation/) (recommended):**
 
@@ -51,8 +53,8 @@ pipx install ansible-docsmith
 
 ### Preparations<a id="usage-preparations"></a>
 
-1. If not already existing, simply create an `argument_specs.yml` for [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). The more complete your specification, the better the argument validation and documentation.
-2. Add simple markers in your role's `README.md` where DocSmith shall maintain the human-readable documentation:
+1. If not already existing, simply **create an `argument_specs.yml`** for [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). The more complete your specification, the better the argument validation and documentation.
+2. **Add simple markers in your role's `README.md`** where DocSmith shall maintain the human-readable documentation:
    ```
    <!-- BEGIN ANSIBLE DOCSMITH -->
    <!-- END ANSIBLE DOCSMITH -->
