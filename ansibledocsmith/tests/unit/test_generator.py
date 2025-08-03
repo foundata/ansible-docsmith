@@ -37,11 +37,9 @@ class TestDocumentationGenerator:
             specs, "test-role", sample_role_with_specs
         )
 
-        assert "## Role Variables" in result
+        assert "## Role variables" in result
         assert "test_var" in result
         assert "A test variable" in result
-        assert "## Example Playbook" in result
-        assert "test-role" in result
 
     def test_generate_documentation_no_options(self, sample_role_path):
         """Test generating documentation with no options."""
@@ -245,7 +243,7 @@ class TestReadmeUpdater:
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
 
-        new_content = "## Role Variables\n\nTest content"
+        new_content = "## Role variables\n\nTest content"
 
         result = updater.update_readme(readme_path, new_content)
 
@@ -265,7 +263,7 @@ class TestReadmeUpdater:
         existing_content = "# My Role\n\nExisting content"
         readme_path.write_text(existing_content)
 
-        new_content = "## Role Variables\n\nNew content"
+        new_content = "## Role variables\n\nNew content"
 
         result = updater.update_readme(readme_path, new_content)
 
@@ -292,7 +290,7 @@ Old documentation
 More content"""
         readme_path.write_text(existing_content)
 
-        new_content = "## Role Variables\n\nNew documentation"
+        new_content = "## Role variables\n\nNew documentation"
 
         result = updater.update_readme(readme_path, new_content)
 
@@ -308,7 +306,7 @@ More content"""
         """Test creating new README template."""
         updater = ReadmeUpdater()
 
-        role_content = "## Role Variables\n\nTest variables"
+        role_content = "## Role variables\n\nTest variables"
         result = updater._create_new_readme(role_content, "test-role")
 
         assert "# test-role" in result

@@ -57,10 +57,10 @@ class TestEndToEnd:
         assert result.exit_code == 0
         assert "✅ Documentation generation complete!" in result.stdout
 
-        # Check that README was created
+        # Check that README was created / updated
         assert readme_path.exists()
         readme_content = readme_path.read_text()
-        assert "## Role Variables" in readme_content
+        assert "## Role variables" in readme_content
         assert "acmesh_domain" in readme_content
         assert "Primary domain name" in readme_content
 

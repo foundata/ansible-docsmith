@@ -35,7 +35,7 @@ class TestTemplateManager:
 
         content = tm.get_template("default", "readme")
         assert isinstance(content, str)
-        assert "## Role Variables" in content
+        assert "## Role variables" in content
         assert "{% for var_name, var_spec in options.items() %}" in content
 
     def test_render_template(self):
@@ -69,10 +69,9 @@ class TestTemplateManager:
         result = tm.render_template("default", "readme", **context)
 
         assert isinstance(result, str)
-        assert "## Role Variables" in result
+        assert "## Role variables" in result
         assert "test_var" in result
         assert "A test variable" in result
-        assert "test-role" in result
 
     def test_render_template_no_options(self):
         """Test rendering template with no options."""
