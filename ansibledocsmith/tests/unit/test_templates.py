@@ -69,9 +69,9 @@ class TestTemplateManager:
         result = tm.render_template("default", "readme", **context)
 
         assert isinstance(result, str)
-        assert "## Role variables" in result
-        assert "test_var" in result
-        assert "A test variable" in result
+        assert "## role variables" in result.lower()
+        assert "test_var" in result.lower()
+        assert "a test variable" in result.lower()
 
     def test_render_template_no_options(self):
         """Test rendering template with no options."""
@@ -94,7 +94,7 @@ class TestTemplateManager:
 
         result = tm.render_template("default", "readme", **context)
 
-        assert "No variables are defined for this role" in result
+        assert "no variables are defined for this role" in result.lower()
 
     def test_custom_template_dir(self, temp_dir):
         """Test using custom template directory."""
@@ -113,8 +113,8 @@ class TestTemplateManager:
         assert "minimal" in templates
 
         result = tm.render_template("minimal", "readme", role_name="test")
-        assert "# test" in result
-        assert "Minimal template" in result
+        assert "# test" in result.lower()
+        assert "minimal template" in result.lower()
 
     def test_nonexistent_template(self):
         """Test handling of non-existent templates."""

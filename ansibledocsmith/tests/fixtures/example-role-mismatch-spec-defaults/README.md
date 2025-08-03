@@ -1,15 +1,21 @@
 # DocSmith for Ansible example-role README (for testing)
 
-This role is simple and contains no critical errors. However, it includes a few minor flaws that should be revealed during validation, such as:
+This role intentionally contains several flaws that should be detected during validation, resulting in errors. It is used to test the validation functionality, which ensures consistency between the `defaults/` files and the `argument_specs.yml` file. The validation checks include:
 
-* **Inconsistencies between the `defaults/main.yml` entry-point file and `argument_specs.yml`:** One variable exists only in `argument_specs.yml` (without a default value), which triggers a notice during validation.
-* **At least one unknown key,** which results in a warning.
+1. **ERROR:** Variables present in `defaults/` but missing from `argument_specs.yml`.
+2. **ERROR:** Variables with `default:` values defined in `argument_specs.yml` but missing from the entry-point files in `defaults/`.
+3. **WARNING:** Unknown keys in `argument_specs.yml`.
+4. **NOTICE:** Potential mismatches, where variables are listed in `argument_specs.yml` but not in `defaults/`, for user awareness.
+
+Warnings and notices are typically displayed only if no errors are found, as errors are treated as exceptions that stop further validation.
+
 
 This README file is also a dummy file to show that existing content outside the `ANSIBLE DOCSMITH` markers will not be touched.
 
 <!-- BEGIN ANSIBLE DOCSMITH -->
 This line will be replaced as it is between the markers! Any content between them maintained by `ansible-docsmith`.
 <!-- END ANSIBLE DOCSMITH -->
+
 
 ## License
 

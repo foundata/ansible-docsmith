@@ -27,12 +27,12 @@ class TestEndToEnd:
         assert "DRY RUN MODE" in result.stdout
         assert "✅ Documentation generation complete!" in result.stdout
 
-    def test_validate_command(self, sample_role_with_specs):
+    def test_validate_command(self, sample_role_with_specs_and_defaults):
         """Test validate command."""
         runner = CliRunner()
 
         result = runner.invoke(
-            app, ["validate", str(sample_role_with_specs), "--verbose"]
+            app, ["validate", str(sample_role_with_specs_and_defaults), "--verbose"]
         )
 
         assert result.exit_code == 0
@@ -83,12 +83,18 @@ class TestEndToEnd:
         output = result.stdout + (result.stderr or "")
         assert "argument_specs.yml" in output or "Validation failed" in output
 
-    def test_generate_readme_only(self, sample_role_with_specs):
+    def test_generate_readme_only(self, sample_role_with_specs_and_defaults):
         """Test generate command with README only."""
         runner = CliRunner()
 
         result = runner.invoke(
-            app, ["generate", str(sample_role_with_specs), "--no-defaults", "--dry-run"]
+            app,
+            [
+                "generate",
+                str(sample_role_with_specs_and_defaults),
+                "--no-defaults",
+                "--dry-run",
+            ],
         )
 
         assert result.exit_code == 0
@@ -110,3 +116,17 @@ class TestEndToEnd:
 
         assert result.exit_code == 0
         assert "README=False, Defaults=True" in result.stdout
+
+    def test_validate_role_without_defaults_fails(self, sample_role_with_specs):
+        """Test that validation fails when defaults are missing for variables with defaults in specs."""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            app, ["validate", str(sample_role_with_specs), "--verbose"]
+        )
+
+        assert result.exit_code == 1
+        output = result.stdout + (result.stderr or "")
+        assert (
+            "Consistency validation failed" in output or "Validation failed" in output
+        )

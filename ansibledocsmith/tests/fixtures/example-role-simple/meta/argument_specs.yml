@@ -6,6 +6,7 @@
 
 argument_specs:
   main:
+    unknown_key: true # This triggers a warning during validation if no serious errors are found (leading to exceptions / fatal errors)
     short_description: ACME Shell certificate management tool
     description:
       - "This role manages SSL certificates using acme-shell tool"
@@ -72,6 +73,9 @@ argument_specs:
         default: "/var/www/html"
         description: "Path to webroot directory for HTTP-01 challenge"
 
+      # This variable is defined here but not listed in defaults/main.yml.
+      # Since it has no default value in the specification, this may be intentional
+      # and should only trigger a notice during validation.
       acmesh_dns_provider:
         type: str
         required: false

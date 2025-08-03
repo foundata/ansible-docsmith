@@ -1,0 +1,77 @@
+# Please note: This file is just a dummy for testing. It might make no sense
+# at all.
+
+---
+
+argument_specs:
+
+  main:
+    unknown_key: true # This triggers a warning during validation if no serious errors are found (leading to exceptions / fatal errors)
+    options:
+      main_state:
+        type: "str"
+        required: true
+        description: |
+          Determines whether the managed resources should be "present" or "absent".
+
+          Foo. Bar. Baz.
+        default: "present"
+        choices:
+          - "present"
+          - "absent"
+
+  install:
+    short_description: Install mode for the application
+    description:
+      - "Installs and configures the application"
+      - "Sets up the initial environment and dependencies"
+    author: Test Author
+    version_added: "1.0.0"
+    options:
+      install_path:
+        type: path
+        required: true
+        description: Path where the application should be installed
+      install_version:
+        type: str
+        required: false
+        default: "latest"
+        choices:
+          - "latest"
+          - "stable"
+          - "beta"
+        description: Version of the application to install
+      install_force:
+        type: bool
+        required: false
+        default: false
+        description: >
+          Force installation even if already installed.
+          Foo.
+          Bar.
+          Baz.
+
+  configure:
+    short_description: Configure mode for the application
+    description: Configures an existing installation
+    author: Test Author
+    version_added: "1.1.0"
+    options:
+      config_file:
+        type: path
+        required: true
+        description: Path to the configuration file
+      config_backup:
+        type: bool
+        required: false
+        default: true
+        description: Whether to backup the existing configuration
+      config_template:
+        type: str
+        required: false
+        default: "default"
+        choices:
+          - "default"
+          - "minimal"
+          - "advanced"
+        description: Configuration template to use

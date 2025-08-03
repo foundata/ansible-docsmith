@@ -142,7 +142,7 @@ def validate(
         # Display validation results
         _display_validation_results(role_data)
 
-        console.print("[green]✅ Validation passed![/green]")
+        console.print("\n[green]✅ Validation passed![/green]")
 
     except ValidationError as e:
         logger.error(f"Validation failed: {e}")
@@ -258,6 +258,18 @@ def _display_validation_results(role_data):
                     required = "required" if var_spec.get("required") else "optional"
                     var_type = var_spec.get("type", "str")
                     console.print(f"  • {var_name} ({var_type}, {required})")
+
+    # Show warnings
+    if role_data.get("warnings"):
+        console.print("\n[yellow]Warnings:[/yellow]")
+        for warning in role_data["warnings"]:
+            console.print(f"  [yellow]⚠[/yellow] {warning}")
+
+    # Show notices
+    if role_data.get("notices"):
+        console.print("\n[blue]Notices:[/blue]")
+        for notice in role_data["notices"]:
+            console.print(f"  [blue]ℹ[/blue] {notice}")
 
 
 if __name__ == "__main__":

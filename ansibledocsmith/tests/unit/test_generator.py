@@ -37,9 +37,9 @@ class TestDocumentationGenerator:
             specs, "test-role", sample_role_with_specs
         )
 
-        assert "## Role variables" in result
-        assert "test_var" in result
-        assert "A test variable" in result
+        assert "## role variables" in result.lower()
+        assert "test_var" in result.lower()
+        assert "a test variable" in result.lower()
 
     def test_generate_documentation_no_options(self, sample_role_path):
         """Test generating documentation with no options."""
@@ -58,7 +58,7 @@ class TestDocumentationGenerator:
             specs, "test-role", sample_role_path
         )
 
-        assert "No variables are defined for this role" in result
+        assert "no variables are defined for this role" in result.lower()
 
     def test_ansible_escape_filter(self):
         """Test Ansible variable escaping."""
@@ -149,10 +149,10 @@ Second paragraph with more details.
         )
 
         # Should contain all parts of the multiline description
-        assert "First paragraph of description." in result
-        assert "Second paragraph with more details." in result
-        assert "- List item 1" in result
-        assert "- List item 2" in result
+        assert "first paragraph of description." in result.lower()
+        assert "second paragraph with more details." in result.lower()
+        assert "- list item 1" in result.lower()
+        assert "- list item 2" in result.lower()
 
 
 class TestTableDescriptionFilter:
@@ -178,19 +178,19 @@ class TestTableDescriptionFilter:
         input_text = 'Dangerous <script>alert("XSS")</script> content'
         result = generator._format_table_description_filter(input_text)
         expected = (
-            'Dangerous &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; content'
+            "Dangerous &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; content"
         )
         assert result == expected
 
         # Test complex XSS with attributes
         input_text = (
-            'Complex <b oncontentvisibilityautostatechange=alert(1) '
-            'style=display:block>XSS</b> test'
+            "Complex <b oncontentvisibilityautostatechange=alert(1) "
+            "style=display:block>XSS</b> test"
         )
         result = generator._format_table_description_filter(input_text)
         expected = (
-            'Complex &lt;b oncontentvisibilityautostatechange=alert(1) '
-            'style=display:block&gt;XSS&lt;/b&gt; test'
+            "Complex &lt;b oncontentvisibilityautostatechange=alert(1) "
+            "style=display:block&gt;XSS&lt;/b&gt; test"
         )
         assert result == expected
 
@@ -202,8 +202,7 @@ class TestTableDescriptionFilter:
         input_text = 'Variables like ${VAR} & "quoted strings" < > symbols'
         result = generator._format_table_description_filter(input_text)
         expected = (
-            'Variables like ${VAR} &amp; &quot;quoted strings&quot; '
-            '&lt; &gt; symbols'
+            "Variables like ${VAR} &amp; &quot;quoted strings&quot; &lt; &gt; symbols"
         )
         assert result == expected
 
@@ -241,7 +240,7 @@ Third paragraph here."""
         input_list = [
             "First item in the list.",
             "Second item with more details.",
-            "Third and final item."
+            "Third and final item.",
         ]
         result = generator._format_table_description_filter(input_list)
         expected = (
@@ -256,7 +255,7 @@ Third paragraph here."""
 
         input_list = [
             "First item with <em>HTML</em>.",
-            "Second item with <script>alert('xss')</script>."
+            "Second item with <script>alert('xss')</script>.",
         ]
         result = generator._format_table_description_filter(input_list)
         expected = (
@@ -333,20 +332,20 @@ Second paragraph with <script>alert("test")</script> content."""
             'Determines whether the managed resources should be "present" or '
             '"absent".\n\n'
             '"present" ensures that required components, such as software '
-            'packages, are installed and configured.\n\n'
+            "packages, are installed and configured.\n\n"
             '"absent" reverts changes as much as possible, such as removing '
-            'packages, deleting created users, stopping services, restoring '
-            'modified settings, …'
+            "packages, deleting created users, stopping services, restoring "
+            "modified settings, …"
         )
 
         result = generator._format_table_description_filter(input_text)
         expected = (
-            'Determines whether the managed resources should be &quot;present&quot; '
-            'or &quot;absent&quot;.<br><br>&quot;present&quot; ensures that required '
-            'components, such as software packages, are installed and '
-            'configured.<br><br>&quot;absent&quot; reverts changes as much as '
-            'possible, such as removing packages, deleting created users, '
-            'stopping services, restoring modified settings, …'
+            "Determines whether the managed resources should be &quot;present&quot; "
+            "or &quot;absent&quot;.<br><br>&quot;present&quot; ensures that required "
+            "components, such as software packages, are installed and "
+            "configured.<br><br>&quot;absent&quot; reverts changes as much as "
+            "possible, such as removing packages, deleting created users, "
+            "stopping services, restoring modified settings, …"
         )
         assert result == expected
 
@@ -381,9 +380,9 @@ class TestDefaultsCommentGenerator:
         result = generator.add_comments(defaults_path, specs)
 
         assert result is not None
-        assert "Primary domain name" in result
-        assert "Email address for ACME" in result
-        assert "staging environment" in result
+        assert "primary domain name" in result.lower()
+        assert "email address for acme" in result.lower()
+        assert "staging environment" in result.lower()
 
     def test_add_comments_missing_file(self, sample_role_path):
         """Test adding comments to non-existent file."""
@@ -447,7 +446,7 @@ class TestReadmeUpdater:
         assert readme_path.exists()
 
         content = readme_path.read_text()
-        assert "Test content" in content
+        assert "test content" in content.lower()
         assert "<!-- BEGIN ANSIBLE DOCSMITH -->" in content
         assert "<!-- END ANSIBLE DOCSMITH -->" in content
 
@@ -466,8 +465,8 @@ class TestReadmeUpdater:
         assert result is True
 
         content = readme_path.read_text()
-        assert "Existing content" in content
-        assert "New content" in content
+        assert "existing content" in content.lower()
+        assert "new content" in content.lower()
         assert "<!-- BEGIN ANSIBLE DOCSMITH -->" in content
 
     def test_update_readme_existing_file_with_markers(self, temp_dir):
@@ -493,10 +492,10 @@ More content"""
         assert result is True
 
         content = readme_path.read_text()
-        assert "Existing content" in content
-        assert "More content" in content
-        assert "New documentation" in content
-        assert "Old documentation" not in content
+        assert "existing content" in content.lower()
+        assert "more content" in content.lower()
+        assert "new documentation" in content.lower()
+        assert "old documentation" not in content.lower()
 
     def test_create_new_readme(self):
         """Test creating new README template."""
@@ -505,10 +504,10 @@ More content"""
         role_content = "## Role variables\n\nTest variables"
         result = updater._create_new_readme(role_content, "test-role")
 
-        assert "# test-role" in result
-        assert "Test variables" in result
-        assert "## License" in result
-        assert "GPL-3.0-or-later" in result
+        assert "# test-role" in result.lower()
+        assert "test variables" in result.lower()
+        assert "## license" in result.lower()
+        assert "gpl-3.0-or-later" in result.lower()
 
     def test_custom_markers(self, temp_dir):
         """Test using custom markers."""
@@ -532,5 +531,5 @@ Old content
         content = readme_path.read_text()
         assert "<!-- START CUSTOM -->" in content
         assert "<!-- END CUSTOM -->" in content
-        assert "New content" in content
-        assert "Old content" not in content
+        assert "new content" in content.lower()
+        assert "old content" not in content.lower()

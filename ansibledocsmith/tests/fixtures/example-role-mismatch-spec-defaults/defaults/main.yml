@@ -1,0 +1,8 @@
+# Please note: This file is just a dummy for testing. It might make no sense
+# at all.
+
+---
+
+# 1. main_state intentionally not listed here to trigger an validation error.
+# 2. The main_missing_in_spec variable is to trigger an validation error.
+main_missing_in_spec: false

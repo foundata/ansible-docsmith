@@ -121,7 +121,7 @@ class DocumentationGenerator:
             # Convert to string and strip, handling any YAML object types
             try:
                 text = str(description)
-                text = text.strip() if hasattr(text, 'strip') else text
+                text = text.strip() if hasattr(text, "strip") else text
             except Exception:
                 return ""
 
@@ -133,25 +133,25 @@ class DocumentationGenerator:
         # 2. Replace single line breaks with spaces
 
         # First, normalize line endings
-        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
 
         # Split on double newlines to identify paragraphs
-        paragraphs = text.split('\n\n')
+        paragraphs = text.split("\n\n")
 
         # Process each paragraph: replace single newlines with spaces
         processed_paragraphs = []
         for paragraph in paragraphs:
             if paragraph.strip():
                 # Replace single newlines within paragraph with spaces
-                processed_paragraph = paragraph.replace('\n', ' ')
+                processed_paragraph = paragraph.replace("\n", " ")
                 # Clean up multiple spaces
-                processed_paragraph = ' '.join(processed_paragraph.split())
+                processed_paragraph = " ".join(processed_paragraph.split())
                 # HTML encode the content for safe display in tables
                 processed_paragraph = html.escape(processed_paragraph)
                 processed_paragraphs.append(processed_paragraph)
 
         # Join paragraphs with <br><br> for proper table display
-        return '<br><br>'.join(processed_paragraphs)
+        return "<br><br>".join(processed_paragraphs)
 
 
 class DefaultsCommentGenerator:
@@ -324,7 +324,7 @@ class DefaultsCommentGenerator:
         # Convert to string and strip, handling any YAML object types
         try:
             result = str(description)
-            return result.strip() if hasattr(result, 'strip') else result
+            return result.strip() if hasattr(result, "strip") else result
         except Exception:
             return ""
 

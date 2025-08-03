@@ -8,7 +8,7 @@ acmesh_state: "present"
 acmesh_domain: "example.com"
 acmesh_alt_names: []
 
-# This comment will be overwritten.
+# This comment will be removed / overwritten.
 acmesh_email: "admin@example.com"
 
 acmesh_staging: false

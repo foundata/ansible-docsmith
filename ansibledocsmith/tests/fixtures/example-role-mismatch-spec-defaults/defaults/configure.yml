@@ -1,0 +1,8 @@
+# Please note: This file is just a dummy for testing. It might make no sense
+# at all.
+
+---
+
+config_file: "/etc/myapp/config.yml"
+config_backup: true
+config_template: "default"

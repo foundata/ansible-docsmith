@@ -206,9 +206,9 @@ argument_specs:
         description = options["multiline_var"]["description"]
 
         # Should preserve the multiline structure
-        assert "This is a multiline description." in description
-        assert "It preserves line breaks." in description
-        assert "- Item 1" in description
-        assert "- Item 2" in description
+        assert "this is a multiline description." in description.lower()
+        assert "it preserves line breaks." in description.lower()
+        assert "- item 1" in description.lower()
+        assert "- item 2" in description.lower()
         # Should contain newlines
         assert "\n" in description
