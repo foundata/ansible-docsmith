@@ -1,5 +1,6 @@
 """Documentation generators for Markdown and YAML comments."""
 
+import html
 import re
 from pathlib import Path
 from typing import Any
@@ -106,13 +107,51 @@ class DocumentationGenerator:
         return str(description).strip() if description else ""
 
     def _format_table_description_filter(self, description: Any) -> str:
-        """Format description for table display, joining paragraphs with space."""
+        """Format description for table display, handling multiline strings properly."""
+        if description is None:
+            return ""
+
+        # Normalize description to string format
         if isinstance(description, list):
-            # Join list items with space for table display (single line)
-            return " ".join(
+            # Join list items with double newlines for paragraph separation
+            text = "\n\n".join(
                 str(item).strip() for item in description if str(item).strip()
             )
-        return str(description).strip() if description else ""
+        else:
+            # Convert to string and strip, handling any YAML object types
+            try:
+                text = str(description)
+                text = text.strip() if hasattr(text, 'strip') else text
+            except Exception:
+                return ""
+
+        if not text:
+            return ""
+
+        # Process multiline descriptions for table display:
+        # 1. Replace double line breaks (paragraph separators) with <br><br>
+        # 2. Replace single line breaks with spaces
+
+        # First, normalize line endings
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+
+        # Split on double newlines to identify paragraphs
+        paragraphs = text.split('\n\n')
+
+        # Process each paragraph: replace single newlines with spaces
+        processed_paragraphs = []
+        for paragraph in paragraphs:
+            if paragraph.strip():
+                # Replace single newlines within paragraph with spaces
+                processed_paragraph = paragraph.replace('\n', ' ')
+                # Clean up multiple spaces
+                processed_paragraph = ' '.join(processed_paragraph.split())
+                # HTML encode the content for safe display in tables
+                processed_paragraph = html.escape(processed_paragraph)
+                processed_paragraphs.append(processed_paragraph)
+
+        # Join paragraphs with <br><br> for proper table display
+        return '<br><br>'.join(processed_paragraphs)
 
 
 class DefaultsCommentGenerator:
@@ -225,7 +264,7 @@ class DefaultsCommentGenerator:
         return comment_lines
 
     def _format_variable_details(self, var_spec: dict[str, Any]) -> list[str]:
-        """Format variable details (type, required, default, choices) as comment lines."""
+        """Format variable details (type, required, default, choices) as comments."""
         details = []
 
         # Type
@@ -263,7 +302,7 @@ class DefaultsCommentGenerator:
             return default
         elif isinstance(default, bool):
             return str(default).lower()
-        elif isinstance(default, (list, dict)):
+        elif isinstance(default, list | dict):
             if not default:  # Empty list or dict
                 return "{}" if isinstance(default, dict) else "[]"
             else:
