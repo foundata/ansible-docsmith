@@ -2,6 +2,7 @@
 
 import pytest
 
+from ansible_docsmith import README_END_MARKER, README_START_MARKER
 from ansible_docsmith.core.exceptions import ValidationError
 from ansible_docsmith.core.processor import RoleProcessor
 
@@ -339,8 +340,8 @@ var3:
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing required markers" in errors[0]
-        assert "BEGIN ANSIBLE DOCSMITH" in errors[0]
-        assert "END ANSIBLE DOCSMITH" in errors[0]
+        assert README_START_MARKER in errors[0]
+        assert README_END_MARKER in errors[0]
 
     def test_validate_readme_markers_missing_start(self, temp_dir):
         """Test validation when README has end marker but no start marker."""
@@ -349,17 +350,17 @@ var3:
         role_path = temp_dir / "test-role"
         role_path.mkdir()
         readme_path = role_path / "README.md"
-        readme_path.write_text("""# My Role
+        readme_path.write_text(f"""# My Role
 
 Some content.
 
-<!-- END ANSIBLE DOCSMITH -->
+{README_END_MARKER}
 """)
 
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing start marker" in errors[0]
-        assert "BEGIN ANSIBLE DOCSMITH" in errors[0]
+        assert README_START_MARKER in errors[0]
 
     def test_validate_readme_markers_missing_end(self, temp_dir):
         """Test validation when README has start marker but no end marker."""
@@ -368,16 +369,16 @@ Some content.
         role_path = temp_dir / "test-role"
         role_path.mkdir()
         readme_path = role_path / "README.md"
-        readme_path.write_text("""# My Role
+        readme_path.write_text(f"""# My Role
 
-<!-- BEGIN ANSIBLE DOCSMITH -->
+{README_START_MARKER}
 Some content.
 """)
 
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing end marker" in errors[0]
-        assert "END ANSIBLE DOCSMITH" in errors[0]
+        assert README_END_MARKER in errors[0]
 
     def test_validate_readme_markers_both_present(self, temp_dir):
         """Test validation when README has both markers (should pass)."""
@@ -386,13 +387,13 @@ Some content.
         role_path = temp_dir / "test-role"
         role_path.mkdir()
         readme_path = role_path / "README.md"
-        readme_path.write_text("""# My Role
+        readme_path.write_text(f"""# My Role
 
 Some content.
 
-<!-- BEGIN ANSIBLE DOCSMITH -->
+{README_START_MARKER}
 Generated content here.
-<!-- END ANSIBLE DOCSMITH -->
+{README_END_MARKER}
 
 More content.
 """)

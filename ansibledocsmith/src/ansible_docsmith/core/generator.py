@@ -8,6 +8,7 @@ from typing import Any
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
+from ..constants import README_END_MARKER, README_START_MARKER
 from ..templates import TemplateManager
 from .exceptions import FileOperationError, TemplateError
 
@@ -443,8 +444,8 @@ class ReadmeUpdater:
 
     def __init__(
         self,
-        start_marker: str = "<!-- BEGIN ANSIBLE DOCSMITH -->",
-        end_marker: str = "<!-- END ANSIBLE DOCSMITH -->",
+        start_marker: str = README_START_MARKER,
+        end_marker: str = README_END_MARKER,
     ):
         self.start_marker = start_marker
         self.end_marker = end_marker

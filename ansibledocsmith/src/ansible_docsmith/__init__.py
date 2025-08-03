@@ -3,6 +3,7 @@
 __version__ = "0.1.0"
 __author__ = "foundata GmbH"
 
+from .constants import README_END_MARKER, README_START_MARKER
 from .core.exceptions import (
     AnsibleDocSmithError,
     FileOperationError,
@@ -18,6 +19,8 @@ from .core.processor import RoleProcessor
 __all__ = [
     "__version__",
     "__author__",
+    "README_START_MARKER",
+    "README_END_MARKER",
     "RoleProcessor",
     "ArgumentSpecParser",
     "DocumentationGenerator",

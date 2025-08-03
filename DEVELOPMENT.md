@@ -83,6 +83,7 @@ ansible-docsmith/
     ├── src/ansible_docsmith/   # Main package
     │   ├── __init__.py
     │   ├── cli.py              # CLI interface
+    │   ├── constants.py        # Global constants
     │   ├── core/               # Core functionality
     │   │   ├── __init__.py
     │   │   ├── exceptions.py   # Custom exceptions

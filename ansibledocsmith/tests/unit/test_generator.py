@@ -1,5 +1,6 @@
 """Tests for documentation generators."""
 
+from ansible_docsmith import README_END_MARKER, README_START_MARKER
 from ansible_docsmith.core.generator import (
     DefaultsCommentGenerator,
     DocumentationGenerator,
@@ -447,8 +448,8 @@ class TestReadmeUpdater:
 
         content = readme_path.read_text()
         assert "test content" in content.lower()
-        assert "<!-- BEGIN ANSIBLE DOCSMITH -->" in content
-        assert "<!-- END ANSIBLE DOCSMITH -->" in content
+        assert README_START_MARKER in content
+        assert README_END_MARKER in content
 
     def test_update_readme_existing_file_no_markers(self, temp_dir):
         """Test updating existing README without markers."""
@@ -467,20 +468,20 @@ class TestReadmeUpdater:
         content = readme_path.read_text()
         assert "existing content" in content.lower()
         assert "new content" in content.lower()
-        assert "<!-- BEGIN ANSIBLE DOCSMITH -->" in content
+        assert README_START_MARKER in content
 
     def test_update_readme_existing_file_with_markers(self, temp_dir):
         """Test updating existing README with markers."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
 
-        existing_content = """# My Role
+        existing_content = f"""# My Role
 
 Existing content
 
-<!-- BEGIN ANSIBLE DOCSMITH -->
+{README_START_MARKER}
 Old documentation
-<!-- END ANSIBLE DOCSMITH -->
+{README_END_MARKER}
 
 More content"""
         readme_path.write_text(existing_content)
