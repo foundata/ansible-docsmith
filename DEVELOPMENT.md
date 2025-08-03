@@ -74,19 +74,35 @@ This file provides information for maintainers and contributors to `ansible-docs
 
 ```
 ansible-docsmith/
-├── ansibledocsmith/
-│   ├── src/ansible_docsmith/     # Main package
-│   │   ├── core/                 # Core functionality
-│   │   │   ├── generator.py      # Documentation generators
-│   │   │   ├── parser.py         # YAML parsing
-│   │   │   └── processor.py      # Main processing logic
-│   │   ├── templates/            # Jinja2 templates
-│   │   │   └── readme/
-│   │   ├── utils/                # Utility functions
-│   │   └── cli.py                # CLI interface
-│   ├── tests/                    # Test suite
-│   └── pyproject.toml            # Project configuration
-└── DEVELOPMENT.md                # This file
+├── [...]
+├── DEVELOPMENT.md              # This file
+├── [...]
+└── ansibledocsmith/            # Python package directory
+    ├── pyproject.toml          # Project configuration
+    ├── uv.lock                 # Dependency lock file
+    ├── src/ansible_docsmith/   # Main package
+    │   ├── __init__.py
+    │   ├── cli.py              # CLI interface
+    │   ├── core/               # Core functionality
+    │   │   ├── __init__.py
+    │   │   ├── exceptions.py   # Custom exceptions
+    │   │   ├── generator.py    # Documentation generators
+    │   │   ├── parser.py       # YAML parsing
+    │   │   └── processor.py    # Main processing logic
+    │   ├── templates/          # Jinja2 templates & manager
+    │   │   ├── __init__.py     # Template manager
+    │   │   └── readme/
+    │   │       ├── __init__.py
+    │   │       └── default.md.j2
+    │   └── utils/              # Utility functions
+    │       ├── __init__.py
+    │       └── logging.py
+    └── tests/                  # Test suite
+        ├── __init__.py
+        ├── conftest.py         # Test configuration
+        ├── fixtures/           # Test data (example roles)
+        ├── integration/        # End-to-end tests
+        └── unit/               # Unit tests
 ```
 
 
@@ -182,7 +198,7 @@ Always use `--dry-run` when testing with fixture files to prevent modifications!
 ```bash
 # Test with example role fixture (read-only)
 uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
-uv run ansible-docsmith validate tests/fixtures/example-role-multiple-entry-points --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-multiple-entry-points --dry-run
 
 # Test validation (read-only)
 uv run ansible-docsmith validate tests/fixtures/example-role-simple
