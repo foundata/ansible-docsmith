@@ -163,8 +163,8 @@ class DefaultsCommentGenerator:
                     description = var_spec.get("description", "")
 
                     if description:
-                        # Generate block comment
-                        comment_lines = self._format_block_comment(description)
+                        # Generate block comment with full variable details
+                        comment_lines = self._format_block_comment(var_spec)
 
                         # Add blank line before comment (if previous line isn't blank)
                         if result_lines and result_lines[-1].strip():
@@ -192,8 +192,9 @@ class DefaultsCommentGenerator:
         match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*:", line.strip())
         return match.group(1) if match else None
 
-    def _format_block_comment(self, description: Any) -> list[str]:
-        """Format description as block comment with proper line wrapping."""
+    def _format_block_comment(self, var_spec: dict[str, Any]) -> list[str]:
+        """Format variable spec as detailed block comment with proper line wrapping."""
+        description = var_spec.get("description", "")
         # Normalize description to handle both string and list formats
         text = self._normalize_description(description)
 
@@ -202,6 +203,7 @@ class DefaultsCommentGenerator:
 
         comment_lines = []
 
+        # Add description paragraphs
         for i, paragraph in enumerate(paragraphs):
             if i > 0:  # Add blank comment line between paragraphs
                 comment_lines.append("#")
@@ -212,16 +214,80 @@ class DefaultsCommentGenerator:
             for wrapped_line in wrapped_lines:
                 comment_lines.append(f"# {wrapped_line}" if wrapped_line else "#")
 
+        # Add separator line before variable details
+        if comment_lines and text.strip():
+            comment_lines.append("#")
+
+        # Add variable details
+        details = self._format_variable_details(var_spec)
+        comment_lines.extend(details)
+
         return comment_lines
+
+    def _format_variable_details(self, var_spec: dict[str, Any]) -> list[str]:
+        """Format variable details (type, required, default, choices) as comment lines."""
+        details = []
+
+        # Type
+        var_type = var_spec.get("type", "str")
+        details.append(f"# - Type: {var_type}")
+
+        # Required
+        required = var_spec.get("required", False)
+        details.append(f"# - Required: {'Yes' if required else 'No'}")
+
+        # Default value
+        default = var_spec.get("default")
+        if default is not None:
+            formatted_default = self._format_default_value(default)
+            details.append(f"# - Default: {formatted_default}")
+
+        # Choices
+        choices = var_spec.get("choices")
+        if choices:
+            formatted_choices = ", ".join(str(choice) for choice in choices)
+            details.append(f"# - Choices: {formatted_choices}")
+
+        # List elements
+        elements = var_spec.get("elements")
+        if elements:
+            details.append(f"# - List elements: {elements}")
+
+        return details
+
+    def _format_default_value(self, default: Any) -> str:
+        """Format default value for display in comments."""
+        if default is None:
+            return "N/A"
+        elif isinstance(default, str):
+            return default
+        elif isinstance(default, bool):
+            return str(default).lower()
+        elif isinstance(default, (list, dict)):
+            if not default:  # Empty list or dict
+                return "{}" if isinstance(default, dict) else "[]"
+            else:
+                return str(default)
+        else:
+            return str(default)
 
     def _normalize_description(self, description: Any) -> str:
         """Normalize description to string format, handling both strings and lists."""
+        if description is None:
+            return ""
+
         if isinstance(description, list):
             # Join list items with double newlines for paragraph separation
             return "\n\n".join(
                 str(item).strip() for item in description if str(item).strip()
             )
-        return str(description).strip() if description else ""
+
+        # Convert to string and strip, handling any YAML object types
+        try:
+            result = str(description)
+            return result.strip() if hasattr(result, 'strip') else result
+        except Exception:
+            return ""
 
     def _wrap_text(self, text: str, max_width: int = 78) -> list[str]:
         """Wrap text to specified width, preserving word boundaries."""
