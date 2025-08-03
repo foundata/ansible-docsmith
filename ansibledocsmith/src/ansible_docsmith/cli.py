@@ -59,7 +59,7 @@ def generate(
     update_defaults: bool = typer.Option(
         True,
         "--defaults/--no-defaults",
-        help="Add inline comments to defaults/main.yml",
+        help="Add inline comments to entry-point variable files like defaults/main.yml",
     ),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview changes without writing files"

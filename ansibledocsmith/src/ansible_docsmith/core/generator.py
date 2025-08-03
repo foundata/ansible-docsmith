@@ -115,7 +115,7 @@ class DocumentationGenerator:
 
 
 class DefaultsCommentGenerator:
-    """Add block comments above variables in defaults/main.yml from argument specs."""
+    """Add block comments above variables in entry-point files (like defaults/main.yml) from argument specs."""
 
     def __init__(self):
         self.yaml = YAML()

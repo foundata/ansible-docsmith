@@ -41,9 +41,9 @@ FIXME will be added after packaging tests are done / pypi release is prepared.
 1. **Reads** your role's `meta/argument_specs.yml` file.
 2. **Parses** role structure and variable definitions.
 3. **Adds or updates variable documentation**
-   * Generate a new readme `README.md` (if not existing) or update the variable description between special markers (preserves custom content)
-   * Add or update inline comments in `defaults/main.yml`
-4. **Validates** everything is correct and complete
+   * Generates a new readme `README.md` (if not existing) or updates the variable description between special markers (preserves custom content).
+   * Adds or updates inline comment blocks in variable files of your role's entry-points (e.g. `defaults/main.yml`).
+4. **Validates** that everything is correct and complete.
 
 
 ### Quick Start
@@ -51,13 +51,14 @@ FIXME will be added after packaging tests are done / pypi release is prepared.
 #### Generate Documentation
 
 ```bash
-# Generate README.md and update defaults/main.yml comments
-ansible-docsmith generate /path/to/your/ansible/role
-
 # Preview changes without writing files
 ansible-docsmith generate /path/to/role --dry-run
 
-# Generate only README, skip commenting variables in defaults/main.yml
+# Generate up update README.md; Update inline comments in entry-point variable files (like defaults/main.yml)
+ansible-docsmith generate /path/to/role
+
+
+# Generate only README, skip commenting variables in entry-point variable files (like defaults/main.yml)
 ansible-docsmith generate /path/to/role --no-defaults
 
 # Verbose output for debugging
@@ -68,7 +69,7 @@ ansible-docsmith generate /path/to/role --verbose
 
 ```bash
 # Validate argument_specs.yml structure
-ansible-docsmith validate /path/to/your/ansible/role
+ansible-docsmith validate /path/to/role
 ```
 
 
