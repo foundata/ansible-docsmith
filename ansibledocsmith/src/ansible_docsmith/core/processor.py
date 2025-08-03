@@ -117,7 +117,8 @@ class RoleProcessor:
 
         if not defaults_files:
             results.warnings.append(
-                "No defaults files found for any entry points - skipping comment injection"
+                "No defaults files found for any entry points - "
+                "skipping comment injection"
             )
             return
 

@@ -43,7 +43,8 @@ class DocumentationGenerator:
         """Generate complete role documentation."""
 
         try:
-            # For multiple entry points, focus on the first one for primary documentation
+            # For multiple entry points, focus on the first one for primary
+            # documentation
             # but make all entry points available to templates
             primary_entry_point = next(iter(specs.keys()))
             primary_spec = specs[primary_entry_point]
@@ -115,7 +116,7 @@ class DocumentationGenerator:
 
 
 class DefaultsCommentGenerator:
-    """Add block comments above variables in entry-point files (like defaults/main.yml) from argument specs."""
+    """Add block comments above variables in entry-point files from argument specs."""
 
     def __init__(self):
         self.yaml = YAML()

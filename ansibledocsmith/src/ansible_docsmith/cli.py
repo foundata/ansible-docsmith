@@ -251,7 +251,9 @@ def _display_validation_results(role_data):
         for entry_point, spec in specs.items():
             options = spec.get("options", {})
             if options:
-                console.print(f"\n[blue]Variables in '{entry_point}' entry point:[/blue]")
+                console.print(
+                    f"\n[blue]Variables in '{entry_point}' entry point:[/blue]"
+                )
                 for var_name, var_spec in options.items():
                     required = "required" if var_spec.get("required") else "optional"
                     var_type = var_spec.get("type", "str")
