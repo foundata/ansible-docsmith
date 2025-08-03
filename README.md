@@ -1,75 +1,110 @@
-# DocSmith for Ansible: role documentation automation (helper using `argument_specs.yml` as single source of truth)
-
-**⚠⚠⚠ WARNING: NOT FOR PRODUCTION USE YET, HIGHLY EXPERIMENTAL ⚠⚠⚠**
+# DocSmith for Ansible: automating role documentation (using `argument_specs.yml`)
 
 **This project is *not* associated with [Red Hat](https://www.redhat.com/) nor the [Ansible project](https://ansible.com/).** Please [report any bugs or suggestions to us](./CONTRIBUTING.md), do NOT use the official Red Hat or Ansible support channels.
 
 ---
 
-DocSmith helps to maintain Ansible role variable documentation by automatically generating the needed parts of a role's `README.md` and `defaults/main.yml` inline comments.
+DocSmith is a documentation generator for Ansible roles. It reads a role's [`meta/argument_specs.yml`](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#specification-format) and produces up‑to‑date variable descriptions for the `README.md` as well as inline comment blocks for `defaults/main.yml` (or other role entry-point files).
 
-It uses your [`meta/argument_specs.yml`](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#specification-format) definitions as single source of truth. No more documentation drift, no more manual updates. Just write your variable specs once and let DocSmith handle the rest.
-
-The `argument_specs.yml` is used by [Ansible's built-in role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). By using it in combination with DocSmith, you get effortless validation of passed role variables and nice documentation for free.
-
-DocSmith is compatible with roles in Ansible collections as well as stand-alone ones.
+DocSmith works with roles in both [stand‑alone form](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html) and within [collections](https://docs.ansible.com/ansible/latest/collections_guide/index.html).
 
 
-**Features:**
+## Table of contents<a id="toc"></a>
 
-- **Single source of truth**: Uses `argument_specs.yml` as the canonical source for all documentation.
-- **Rich documentation**:
-  - Generates beautiful tables and descriptions for your role's `README.md` (as new file or ad an partial update between markers).
-  - Adds the descriptions as comment blocks above the variable default in `defaults/main.yml`.
-- **Zero configuration**: Works out-of-the-box with sensible defaults.
-- **Validation**: Ensures your argument specs are valid and complete.
-- **CI/CD ready**: Perfect for automation pipelines and pre-commit hooks.
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Preparations](#usage-preparations)
+  - [Generate or update documentation](#usage-generate)
+  - [Validate `argument_specs.yml`](#usage-validate)
+- [Licensing, copyright](#licensing-copyright)
+- [Author information](#author-information)
 
 
+### Features<a id="features"></a>
+
+
+- **Efficient and simple:** Uses the `argument_specs.yml` from [Ansible's built‑in role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation) as the single source of truth, generating human‑readable documentation in multiple places while maintaining just one file.
+- **Built-in validation:** Verifies that argument specs are complete and correct.
+- **Automation‑friendly:** Works seamlessly in CI/CD pipelines and pre‑commit hooks.
 
 
 ## Installation<a id="installation"></a>
 
-FIXME will be added after packaging tests are done / pypi release is prepared.
+DocSmith is available on [PyPI](https://pypi.org/project/ansible-docsmith/) and can be installed with the package manager of your choice.
 
+**Using [`uv`](https://docs.astral.sh/uv/getting-started/installation/) (recommended):**
+
+```bash
+uv tool install ansible-docsmith
+```
+
+**Using `pip` or `pipx`:**
+
+```bash
+pip install ansible-docsmith
+pipx install ansible-docsmith
+```
 
 
 ## Usage<a id="usage"></a>
 
-**How DocSmith works:**
+### Preparations<a id="usage-preparations"></a>
 
-1. **Reads** your role's `meta/argument_specs.yml` file.
-2. **Parses** role structure and variable definitions.
-3. **Adds or updates variable documentation**
-   * Generates a new readme `README.md` (if not existing) or updates the variable description between special markers (preserves custom content).
-   * Adds or updates inline comment blocks in variable files of your role's entry-points (e.g. `defaults/main.yml`).
-4. **Validates** that everything is correct and complete.
+1. If not already existing, simply create an `argument_specs.yml` for [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). The more complete your specification, the better the argument validation and documentation.
+2. Add simple markers in your role's `README.md` where DocSmith shall maintain the human-readable documentation:
+   ```
+   <!-- BEGIN ANSIBLE DOCSMITH -->
+   <!-- END ANSIBLE DOCSMITH -->
+   ```
+   All content between these markes will be removed and updated on each `ansible-docsmith generate` run.
+
+That's it. The entry-point variable files below the `/defaults` directory of your role do *not* need additional preparations. The tool will automatically (re)place formatted inline comment blocks above variables defined there.
 
 
-### Quick Start
+### Generate or update documentation<a id="usage-generate"></a>
 
-#### Generate Documentation
+Basic usage:
 
 ```bash
-# Preview changes without writing files
+# Safely preview changes without writing to files. No modifications are made.
 ansible-docsmith generate /path/to/role --dry-run
 
-# Generate up update README.md; Update inline comments in entry-point variable files (like defaults/main.yml)
+# Generate / update README.md and comments in entry-point files (like defaults/main.yml)
 ansible-docsmith generate /path/to/role
 
+# Show help
+ansible-docsmith --help
+ansible-docsmith generate --help
+```
 
-# Generate only README, skip commenting variables in entry-point variable files (like defaults/main.yml)
+Advanced parameters:
+
+```bash
+# Generate / update only the README.md, skip comments for variables in
+# entry-point files (like defaults/main.yml)
 ansible-docsmith generate /path/to/role --no-defaults
+
+# Generate / update only the comments in entry-point files (like defaults/main.yml),
+# skip README.md
+ansible-docsmith generate /path/to/role --no-readme
 
 # Verbose output for debugging
 ansible-docsmith generate /path/to/role --verbose
 ```
 
-#### Validate `argument_specs.yml`
+### Validate `argument_specs.yml`<a id="usage-validate"></a>
 
 ```bash
 # Validate argument_specs.yml structure
 ansible-docsmith validate /path/to/role
+
+# Show help
+ansible-docsmith --help
+ansible-docsmith validate --help
+
+# Verbose output for debugging
+ansible-docsmith validate /path/to/role --verbose
 ```
 
 
