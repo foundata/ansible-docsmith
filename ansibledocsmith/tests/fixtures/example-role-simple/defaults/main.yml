@@ -4,6 +4,7 @@
 
 ---
 
+acmesh_state: "present"
 acmesh_domain: "example.com"
 acmesh_alt_names: []
 

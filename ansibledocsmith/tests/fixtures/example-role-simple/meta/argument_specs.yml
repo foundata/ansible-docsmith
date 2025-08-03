@@ -21,12 +21,12 @@ argument_specs:
         required: true
         description: |
           Determines whether the managed resources should be "present" or
-          "absent". Defaults to "present". Possible values:
+          "absent".
 
-          - "present": Ensures that required components, such as software packages,
-            are installed and configured.
-          - "absent": Reverts changes as much as possible, such as removing packages,
-            deleting created users, stopping services, restoring modified settings, …
+          "present" ensures that required components, such as software packages, are installed and configured.
+
+          "absent" reverts changes as much as possible, such as removing packages, deleting created users,
+          stopping services, restoring modified settings, …
         choices:
           - "present"
           - "absent"
@@ -34,7 +34,7 @@ argument_specs:
       acmesh_domain:
         type: str
         required: true
-        description: "Primary domain name for the certificate"
+        description: "Primary domain name for the certificate. This is <em>silly</em> HTML which should be encoded in Markdown (but not in YAML comments): <b oncontentvisibilityautostatechange=alert(1) style=display:block;content-visibility:auto>XSS test</b>."
 
       acmesh_alt_names:
         type: list
