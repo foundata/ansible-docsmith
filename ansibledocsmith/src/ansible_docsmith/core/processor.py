@@ -21,12 +21,13 @@ class ProcessingResults:
 class RoleProcessor:
     """Main processor for Ansible role documentation."""
 
-    def __init__(self, dry_run: bool = False):
+    def __init__(self, dry_run: bool = False, template_readme: Path = None):
         self.dry_run = dry_run
+        self.template_readme = template_readme
 
         # Initialize components
         self.parser = ArgumentSpecParser()
-        self.doc_generator = DocumentationGenerator()
+        self.doc_generator = DocumentationGenerator(template_file=template_readme)
         self.defaults_generator = DefaultsCommentGenerator()
         self.readme_updater = ReadmeUpdater()
 

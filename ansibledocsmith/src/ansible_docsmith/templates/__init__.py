@@ -1,25 +1,94 @@
 """Template management for ansible-docsmith."""
 
+import shutil
+import tempfile
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader, TemplateSyntaxError, select_autoescape
 
 
 class TemplateManager:
     """Manage templates for documentation generation."""
 
-    def __init__(self, template_dir: Path | None = None):
+    def __init__(
+        self, template_dir: Path | None = None, template_file: Path | None = None
+    ):
         """Initialize template manager.
 
         Args:
             template_dir: Custom template directory. If None, uses built-in templates.
+            template_file: Single template file. If provided, creates temporary
+                directory structure.
         """
-        self.template_dir = template_dir or self._get_builtin_template_dir()
+        self._temp_dir = None
+
+        if template_file:
+            self.template_dir = self._setup_single_template_file(template_file)
+        else:
+            self.template_dir = template_dir or self._get_builtin_template_dir()
+
         self.env = self._setup_jinja_env()
 
     def _get_builtin_template_dir(self) -> Path:
         """Get the built-in template directory."""
         return Path(__file__).parent
+
+    def _setup_single_template_file(self, template_file: Path) -> Path:
+        """Set up temporary directory structure for single template file.
+
+        Args:
+            template_file: Path to the single template file
+
+        Returns:
+            Path to temporary directory containing the template structure
+
+        Raises:
+            ValueError: If template file has invalid syntax
+        """
+        # Validate template syntax first
+        self._validate_template_syntax(template_file)
+
+        # Create temporary directory
+        self._temp_dir = Path(tempfile.mkdtemp(prefix="ansible_docsmith_template_"))
+
+        # Create readme subdirectory
+        readme_dir = self._temp_dir / "readme"
+        readme_dir.mkdir()
+
+        # Copy template file to readme/default.md.j2
+        template_dest = readme_dir / "default.md.j2"
+        shutil.copy2(template_file, template_dest)
+
+        return self._temp_dir
+
+    def _validate_template_syntax(self, template_file: Path):
+        """Validate Jinja2 template syntax.
+
+        Args:
+            template_file: Path to template file to validate
+
+        Raises:
+            ValueError: If template has invalid syntax
+        """
+        try:
+            content = template_file.read_text(encoding="utf-8")
+            # Create a temporary environment to parse the template
+            temp_env = Environment()
+            temp_env.parse(content)
+        except TemplateSyntaxError as e:
+            raise ValueError(f"Invalid template syntax in {template_file}: {e}")
+        except Exception as e:
+            raise ValueError(f"Error reading template file {template_file}: {e}")
+
+    def cleanup(self):
+        """Clean up temporary directories if they exist."""
+        if self._temp_dir and self._temp_dir.exists():
+            shutil.rmtree(self._temp_dir)
+            self._temp_dir = None
+
+    def __del__(self):
+        """Clean up temporary directories on deletion."""
+        self.cleanup()
 
     def _setup_jinja_env(self) -> Environment:
         """Setup Jinja2 environment with proper loader."""

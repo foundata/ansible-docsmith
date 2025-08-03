@@ -132,3 +132,52 @@ class TestTemplateManager:
         templates = tm.list_templates("readme")
 
         assert templates == []
+
+    def test_single_template_file(self, temp_dir):
+        """Test using single template file."""
+        # Create a test template file
+        template_file = temp_dir / "custom.md.j2"
+        template_file.write_text("# {{ role_name }}\n\nCustom template content")
+
+        manager = TemplateManager(template_file=template_file)
+
+        # Should be able to render using the default name
+        result = manager.render_template("default", role_name="test-role")
+        assert "# test-role" in result
+        assert "Custom template content" in result
+
+        # Clean up
+        manager.cleanup()
+
+    def test_single_template_file_invalid_syntax(self, temp_dir):
+        """Test single template file with invalid Jinja2 syntax."""
+        # Create a template file with invalid syntax
+        template_file = temp_dir / "invalid.md.j2"
+        template_file.write_text("# {{ role_name \n\nMissing closing brace")
+
+        # Should raise ValueError for invalid syntax
+        with pytest.raises(ValueError, match="Invalid template syntax"):
+            TemplateManager(template_file=template_file)
+
+    def test_single_template_file_cleanup(self, temp_dir):
+        """Test that temporary directories are cleaned up."""
+        template_file = temp_dir / "test.md.j2"
+        template_file.write_text("Test template")
+
+        manager = TemplateManager(template_file=template_file)
+        temp_dir_path = manager._temp_dir
+
+        # Temporary directory should exist
+        assert temp_dir_path.exists()
+
+        # After cleanup, should be gone
+        manager.cleanup()
+        assert not temp_dir_path.exists()
+
+    def test_template_file_not_exists(self, temp_dir):
+        """Test handling of non-existent template file."""
+        non_existent = temp_dir / "missing.md.j2"
+
+        # Should raise ValueError for missing file
+        with pytest.raises(ValueError, match="Error reading template file"):
+            TemplateManager(template_file=non_existent)

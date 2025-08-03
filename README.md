@@ -16,7 +16,8 @@ DocSmith works with roles in both [stand‑alone form](https://docs.ansible.com/
 - [Usage](#usage)
   - [Preparations](#usage-preparations)
   - [Generate or update documentation](#usage-generate)
-  - [Validate `argument_specs.yml`](#usage-validate)
+  - [Validate `argument_specs.yml` and `/defaults`](#usage-validate)
+  - [Custom templates](#usage-custom-templates)
 - [Licensing, copyright](#licensing-copyright)
 - [Author information](#author-information)
 
@@ -25,7 +26,7 @@ DocSmith works with roles in both [stand‑alone form](https://docs.ansible.com/
 
 
 - **Efficient and simple:** Uses the `argument_specs.yml` from [Ansible's built‑in role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation) as the single source of truth, generating human‑readable documentation in multiple places while maintaining just one file.
-- **Built-in validation:** Verifies that argument specs are complete and correct.
+- **Built-in validation:** Verifies that argument specs are complete, correct, and in sync with entry-point `defaults/`.
 - **Automation‑friendly:** Works seamlessly in CI/CD pipelines and pre‑commit hooks.
 
 
@@ -84,7 +85,7 @@ Advanced parameters:
 
 ```bash
 # Generate / update only the README.md, skip comments for variables in
-# entry-point files (like defaults/main.yml)
+# entry-point files (like defaults/main.yml).
 ansible-docsmith generate /path/to/role --no-defaults
 
 # Generate / update only the comments in entry-point files (like defaults/main.yml),
@@ -95,10 +96,19 @@ ansible-docsmith generate /path/to/role --no-readme
 ansible-docsmith generate /path/to/role --verbose
 ```
 
-### Validate `argument_specs.yml`<a id="usage-validate"></a>
+
+### Validate `argument_specs.yml` and `/defaults`<a id="usage-validate"></a>
 
 ```bash
-# Validate argument_specs.yml structure
+# Validate argument_specs.yml structure as well as role entry-point files in /defaults/.
+# These validation checks include:
+#
+# - ERROR:   Variables present in "defaults/" but missing from "argument_specs.yml.
+# - ERROR:   Variables with "default:" values defined in "argument_specs.yml" but
+#            missing from the entry-point files in "defaults/".
+# - WARNING: Unknown keys in "argument_specs.yml".
+# - NOTICE:  Potential mismatches, where variables are listed in "argument_specs.yml"
+#            but not in "defaults/", for user awareness.
 ansible-docsmith validate /path/to/role
 
 # Show help
@@ -108,6 +118,50 @@ ansible-docsmith validate --help
 # Verbose output for debugging
 ansible-docsmith validate /path/to/role --verbose
 ```
+
+
+### Custom templates<a id="usage-custom-templates"></a>
+
+You can customize the generated Markdown output by providing your own [Jinja2 template](https://jinja.palletsprojects.com/en/stable/templates/). The rendered content will be inserted between the `<!-- BEGIN ANSIBLE DOCSMITH -->` and `<!-- END ANSIBLE DOCSMITH -->` markers in the role’s `README.md` file.
+
+```bash
+# Use a custom template for README generation
+ansible-docsmith generate /path/to/role --template-readme /path/to/custom-template.md.j2
+
+# Combined with other options
+ansible-docsmith generate /path/to/role --template-readme ./templates/my-readme.md.j2 --dry-run
+```
+
+Template files must use the `.j2` extension (for example, `simple-readme.md.j2`) and follow Jinja2 syntax. Below is a basic example:
+
+```jinja2
+# {{ role_name | title }} Ansible Role
+
+{% if has_options %}
+## Role variables
+
+{% for var_name, var_spec in options.items() %}
+- **{{ var_name }}** ({{ var_spec.type }}): {{ var_spec.description }}
+{% endfor %}
+{% else %}
+The role has no configurable variables.
+{% endif %}
+```
+
+**Check out the [`readme/default.md.j2`](./ansibledocsmith/src/ansible_docsmith/templates/readme/default.md.j2)** template that DocSmith uses as an advanced example with conditional sections. Copying this file is often the easiest way to get started.
+
+**Most important available template variables:**
+- `role_name`: Name of the Ansible role.
+- `has_options`: Boolean indicating if variables are defined.
+- `options`: Dictionary of all role variables with their specifications.
+- `entry_points`: List of all Ansible role entry-point names.
+
+**Most important available Jinja2 filters:**
+- `ansible_escape`: Escapes characters for Ansible/YAML contexts.
+- `code_escape`: Escapes content for code blocks.
+- `format_default`: Formats default values appropriately.
+- `format_description`: Formats multi-line descriptions.
+- `format_table_description`: Formats descriptions for table cells.
 
 
 ## Licensing, copyright<a id="licensing-copyright"></a>

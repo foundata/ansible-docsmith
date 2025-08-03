@@ -67,10 +67,23 @@ def generate(
     verbose: bool = typer.Option(
         False, "-v", "--verbose", help="Enable verbose logging"
     ),
+    template_readme: Path | None = typer.Option(
+        None,
+        "--template-readme",
+        help="Path to custom README template file (.md.j2)",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+    ),
 ):
     """Generate comprehensive documentation for an Ansible role."""
 
     logger = setup_logging(verbose)
+
+    # Validate template file extension if provided
+    if template_readme and not template_readme.name.endswith('.j2'):
+        console.print("[red]Error: Template file must have .j2 extension[/red]")
+        raise typer.Exit(1)
 
     console.print(f"[bold green]Processing role:[/bold green] {role_path}")
     console.print(
@@ -78,12 +91,19 @@ def generate(
         f"Defaults={update_defaults}, Dry-run={dry_run}"
     )
 
+    if template_readme:
+        console.print(f"[blue]Using custom template:[/blue] {template_readme}")
+
     if dry_run:
         console.print("[yellow]DRY RUN MODE - No files will be modified[/yellow]")
 
     try:
         # Initialize processor
-        processor = RoleProcessor(dry_run=dry_run)
+        try:
+            processor = RoleProcessor(dry_run=dry_run, template_readme=template_readme)
+        except ValueError as e:
+            logger.error(f"Template error: {e}")
+            raise typer.Exit(1)
 
         # Process the role
         results = processor.process_role(

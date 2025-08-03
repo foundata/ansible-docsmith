@@ -16,15 +16,19 @@ class DocumentationGenerator:
     """Generate Markdown documentation from argument specs."""
 
     def __init__(
-        self, template_dir: Path | None = None, template_name: str = "default"
+        self,
+        template_dir: Path | None = None,
+        template_name: str = "default",
+        template_file: Path | None = None,
     ):
         """Initialize the documentation generator.
 
         Args:
             template_dir: Custom template directory. If None, uses built-in templates.
             template_name: Name of the template to use (default: "default")
+            template_file: Single template file. If provided, uses this file directly.
         """
-        self.template_manager = TemplateManager(template_dir)
+        self.template_manager = TemplateManager(template_dir, template_file)
         self.template_name = template_name
 
         # Add custom filters to the Jinja environment

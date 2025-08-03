@@ -133,3 +133,81 @@ class TestEndToEnd:
         assert (
             "Consistency validation failed" in output or "Validation failed" in output
         )
+
+    def test_generate_with_custom_template(
+        self, sample_role_with_specs_and_defaults, temp_dir
+    ):
+        """Test generate command with custom README template."""
+        runner = CliRunner()
+
+        # Create a custom template file
+        custom_template = temp_dir / "custom_readme.md.j2"
+        custom_template.write_text("""# Custom {{ role_name }} Role
+
+This is a custom template for {{ role_name }}.
+
+{% if has_options %}
+## Variables
+{% for var_name, var_spec in options.items() %}
+- **{{ var_name }}**: {{ var_spec.description }}
+{% endfor %}
+{% endif %}
+""")
+
+        result = runner.invoke(
+            app, [
+                "generate",
+                str(sample_role_with_specs_and_defaults),
+                f"--template-readme={custom_template}",
+                "--dry-run"
+            ]
+        )
+
+        assert result.exit_code == 0
+        assert "Using custom template" in result.stdout
+        assert "Documentation generation complete!" in result.stdout
+
+    def test_generate_with_invalid_template_extension(
+        self, sample_role_with_specs_and_defaults, temp_dir
+    ):
+        """Test generate command with invalid template file extension."""
+        runner = CliRunner()
+
+        # Create a file with wrong extension
+        invalid_template = temp_dir / "template.txt"
+        invalid_template.write_text("Some content")
+
+        result = runner.invoke(
+            app, [
+                "generate",
+                str(sample_role_with_specs_and_defaults),
+                f"--template-readme={invalid_template}",
+                "--dry-run"
+            ]
+        )
+
+        assert result.exit_code == 1
+        assert "must have .j2 extension" in result.stdout
+
+    def test_generate_with_invalid_template_syntax(
+        self, sample_role_with_specs_and_defaults, temp_dir
+    ):
+        """Test generate command with template file containing invalid Jinja2 syntax."""
+        runner = CliRunner()
+
+        # Create a template with invalid syntax
+        invalid_template = temp_dir / "invalid.md.j2"
+        invalid_template.write_text("# {{ role_name \n\nMissing closing brace")
+
+        result = runner.invoke(
+            app, [
+                "generate",
+                str(sample_role_with_specs_and_defaults),
+                f"--template-readme={invalid_template}",
+                "--dry-run"
+            ]
+        )
+
+        assert result.exit_code == 1
+        output = result.stdout + (result.stderr or "")
+        assert "Template error" in output
