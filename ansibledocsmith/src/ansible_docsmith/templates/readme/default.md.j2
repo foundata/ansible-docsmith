@@ -1,4 +1,4 @@
-## Role Variables
+## Role variables<a id="variables"></a>
 
 {% if has_options %}
 The following variables can be configured for this role:
@@ -9,10 +9,10 @@ The following variables can be configured for this role:
 | `{{ var_name | ansible_escape }}` | {{ var_spec.type }} | {{ '✅' if var_spec.required else '❌' }} | {{ var_spec.default | format_default }} | {{ var_spec.description | format_table_description }} |
 {% endfor %}
 
-### Variable Details
+### Variable details<a id="variable-details"></a>
 
 {% for var_name, var_spec in options.items() %}
-#### {{ var_name }}
+#### `{{ var_name }}`<a id="variable-{{ var_name }}"></a>
 
 {{ var_spec.description | format_description }}
 
@@ -41,33 +41,4 @@ The following variables can be configured for this role:
 {% endfor %}
 {% else %}
 No variables are defined for this role.
-{% endif %}
-
-## Example Playbook
-
-```yaml
----
-- hosts: servers
-  become: yes
-  vars:
-{% for var_name, var_spec in options.items() %}
-{% if var_spec.default is not none %}
-    {{ var_name }}: {{ var_spec.default }}
-{% else %}
-    # {{ var_name }}: # {{ var_spec.description }}
-{% endif %}
-{% endfor %}
-
-  roles:
-    - {{ role_name }}
-```
-
-## Author Information
-
-{% if primary_spec.author %}
-{% for author in primary_spec.author %}
-- {{ author }}
-{% endfor %}
-{% else %}
-This role was created by [Author Name].
 {% endif %}
