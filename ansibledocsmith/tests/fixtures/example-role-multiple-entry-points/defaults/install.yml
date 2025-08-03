@@ -1,4 +1,8 @@
+# Please note: This file is just a dummy for testing. It might make no sense
+# at all.
+
 ---
+
 install_path: "/opt/myapp"
 install_version: "latest"
 install_force: false

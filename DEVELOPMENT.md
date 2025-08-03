@@ -182,22 +182,27 @@ Always use `--dry-run` when testing with fixture files to prevent modifications!
 ```bash
 # Test with example role fixture (read-only)
 uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
+uv run ansible-docsmith validate tests/fixtures/example-role-multiple-entry-points --dry-run
 
 # Test validation (read-only)
 uv run ansible-docsmith validate tests/fixtures/example-role-simple
+uv run ansible-docsmith validate tests/fixtures/example-role-multiple-entry-points
 
 # Test with different options (read-only)
 uv run ansible-docsmith generate tests/fixtures/example-role-simple --no-defaults --dry-run
 uv run ansible-docsmith generate tests/fixtures/example-role-simple --no-readme --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-multiple-entry-points --no-defaults --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-multiple-entry-points --no-readme --dry-run
 ```
 
 If you need to test actual file creation/modification, create a temporary copy:
 
 ```bash
-# Create a temporary copy for testing
-cp -r tests/fixtures/example-role-simple /tmp/test-role
-uv run ansible-docsmith generate /tmp/test-role
-uv run ansible-docsmith generate /tmp/my-test-role
+# Create temporary copies for testing
+cp -r tests/fixtures/example-role-* /tmp
+
+uv run ansible-docsmith generate /tmp/example-role-simple
+uv run ansible-docsmith generate /tmp/example-role-multiple-entry-points
 ```
 
 
