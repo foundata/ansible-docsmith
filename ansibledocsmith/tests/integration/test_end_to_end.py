@@ -214,3 +214,51 @@ This is a custom template for {{ role_name }}.
         assert result.exit_code == 1
         output = result.stdout + (result.stderr or "")
         assert "Template error" in output
+
+    def test_validate_role_with_readme_missing_markers(self, temp_dir):
+        """Test validation fails when README exists but lacks required markers."""
+        runner = CliRunner()
+
+        # Create a minimal valid role structure
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create meta directory and argument_specs.yml
+        meta_dir = role_path / "meta"
+        meta_dir.mkdir()
+        specs_file = meta_dir / "argument_specs.yml"
+        specs_file.write_text("""---
+argument_specs:
+  main:
+    short_description: Test role
+    options:
+      test_var:
+        type: str
+        description: A test variable
+        default: test_value
+""")
+
+        # Create defaults directory and main.yml
+        defaults_dir = role_path / "defaults"
+        defaults_dir.mkdir()
+        defaults_file = defaults_dir / "main.yml"
+        defaults_file.write_text("test_var: test_value\n")
+
+        # Create README without markers
+        readme_file = role_path / "README.md"
+        readme_file.write_text("""# Test Role
+
+This is a test role without the required markers.
+
+## Variables
+
+Some variables here.
+""")
+
+        result = runner.invoke(app, ["validate", str(role_path)])
+
+        assert result.exit_code == 1
+        output = result.stdout + (result.stderr or "")
+        assert "missing required markers" in output
+        assert "ANSIBLE DOCSMITH" in output
+        assert "Validation failed" in output

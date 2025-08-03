@@ -1,4 +1,6 @@
-# example-role-multiple-entry-points
+# DocSmith for Ansible `example-role-multiple-entry-points` README (for testing)
+
+**This is a mock Ansible role intended for testing purposes only and is not a fully functional role.**
 
 This role provides multiple entry points and maintains complete consistency between all `defaults/` entry-point files and the `argument_specs.yml` file:
 

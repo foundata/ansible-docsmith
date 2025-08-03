@@ -1,4 +1,6 @@
-# DocSmith for Ansible example-role README (for testing)
+# DocSmith for Ansible `example-role-mismatch-spec-defaults` README (for testing)
+
+**This is a mock Ansible role intended for testing purposes only and is not a fully functional role.**
 
 This role intentionally contains several flaws that should be detected during validation, resulting in errors. It is used to test the validation functionality, which ensures consistency between the `defaults/` files and the `argument_specs.yml` file. The validation checks include:
 

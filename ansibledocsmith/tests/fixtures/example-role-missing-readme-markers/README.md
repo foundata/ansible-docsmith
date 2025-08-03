@@ -1,17 +1,15 @@
-# DocSmith for Ansible `example-role-simple` README (for testing)
+# DocSmith for Ansible `example-role-missing-readme-markers` README (for testing)
 
 **This is a mock Ansible role intended for testing purposes only and is not a fully functional role.**
 
-This role is simple and contains no critical errors. However, it includes a few minor flaws that should be revealed during validation, such as:
+This role intentionally contains a major flaws that should be detected during validation, resulting in errors. It is used to test the validation functionality, which ensures that an existing `README.md` (if any) contains the needed markers.
 
-* **Inconsistencies between the `defaults/main.yml` entry-point file and `argument_specs.yml`:** One variable exists only in `argument_specs.yml` (without a default value), which triggers a notice during validation.
-* **At least one unknown key,** which results in a warning.
+Warnings and notices are typically displayed only if no errors are found, as errors are treated as exceptions that stop further validation.
 
-This README file is also a dummy file to show that existing content outside the `ANSIBLE DOCSMITH` markers will not be touched.
-
-<!-- BEGIN ANSIBLE DOCSMITH -->
+<!-- BEGIN THIS IS JUST A COMMENT, NOT A VALID MARKER -->
 This line will be replaced as it is between the markers! Any content between them maintained is by `ansible-docsmith`.
-<!-- END ANSIBLE DOCSMITH -->
+<!-- END THIS IS JUST A COMMENT, NOT A VALID MARKER -->
+
 
 ## License
 

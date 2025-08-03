@@ -55,6 +55,10 @@ class RoleProcessor:
             warnings = self._validate_unknown_keys(role_data["spec_file"])
             role_data["warnings"].extend(warnings)
 
+            # Add README marker validation
+            readme_errors = self._validate_readme_markers(role_path)
+            role_data["errors"].extend(readme_errors)
+
             # Fail validation if errors found
             if role_data.get("errors"):
                 error_msg = "Validation failed:\n" + "\n".join(role_data["errors"])
@@ -340,3 +344,36 @@ class RoleProcessor:
                     )
 
         return errors, warnings, notices
+
+    def _validate_readme_markers(self, role_path: Path) -> list[str]:
+        """Validate that existing README.md contains required markers."""
+        errors = []
+        readme_path = role_path / "README.md"
+
+        if not readme_path.exists():
+            # No README exists - that's fine, generate will create one
+            return errors
+
+        try:
+            content = readme_path.read_text(encoding="utf-8")
+            start_marker = self.readme_updater.start_marker
+            end_marker = self.readme_updater.end_marker
+
+            has_start = start_marker in content
+            has_end = end_marker in content
+
+            if not has_start and not has_end:
+                errors.append(
+                    f"README.md exists but is missing required markers. "
+                    f"Add '{start_marker}' and '{end_marker}' to allow "
+                    f"ansible-docsmith to manage documentation sections."
+                )
+            elif not has_start:
+                errors.append(f"README.md is missing start marker: '{start_marker}'")
+            elif not has_end:
+                errors.append(f"README.md is missing end marker: '{end_marker}'")
+
+        except Exception as e:
+            errors.append(f"Error reading README.md: {e}")
+
+        return errors

@@ -314,3 +314,88 @@ var3:
         warning_messages = "\n".join(warnings)
         assert "unknown_key" in warning_messages.lower()
         assert "might be an error in your role" in warning_messages.lower()
+
+    def test_validate_readme_markers_no_readme(self, temp_dir):
+        """Test validation when no README.md exists (should pass)."""
+        processor = RoleProcessor()
+
+        # Create a basic role structure without README
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        errors = processor._validate_readme_markers(role_path)
+        assert errors == []
+
+    def test_validate_readme_markers_missing_both(self, temp_dir):
+        """Test validation when README exists but has no markers."""
+        processor = RoleProcessor()
+
+        # Create role with README missing markers
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text("# My Role\n\nSome content without markers.")
+
+        errors = processor._validate_readme_markers(role_path)
+        assert len(errors) == 1
+        assert "missing required markers" in errors[0]
+        assert "BEGIN ANSIBLE DOCSMITH" in errors[0]
+        assert "END ANSIBLE DOCSMITH" in errors[0]
+
+    def test_validate_readme_markers_missing_start(self, temp_dir):
+        """Test validation when README has end marker but no start marker."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text("""# My Role
+
+Some content.
+
+<!-- END ANSIBLE DOCSMITH -->
+""")
+
+        errors = processor._validate_readme_markers(role_path)
+        assert len(errors) == 1
+        assert "missing start marker" in errors[0]
+        assert "BEGIN ANSIBLE DOCSMITH" in errors[0]
+
+    def test_validate_readme_markers_missing_end(self, temp_dir):
+        """Test validation when README has start marker but no end marker."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text("""# My Role
+
+<!-- BEGIN ANSIBLE DOCSMITH -->
+Some content.
+""")
+
+        errors = processor._validate_readme_markers(role_path)
+        assert len(errors) == 1
+        assert "missing end marker" in errors[0]
+        assert "END ANSIBLE DOCSMITH" in errors[0]
+
+    def test_validate_readme_markers_both_present(self, temp_dir):
+        """Test validation when README has both markers (should pass)."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text("""# My Role
+
+Some content.
+
+<!-- BEGIN ANSIBLE DOCSMITH -->
+Generated content here.
+<!-- END ANSIBLE DOCSMITH -->
+
+More content.
+""")
+
+        errors = processor._validate_readme_markers(role_path)
+        assert errors == []
