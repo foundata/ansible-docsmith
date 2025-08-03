@@ -13,7 +13,7 @@ Warnings and notices are typically displayed only if no errors are found, as err
 This README file is also a dummy file to show that existing content outside the `ANSIBLE DOCSMITH` markers will not be touched.
 
 <!-- BEGIN ANSIBLE DOCSMITH -->
-This line will be replaced as it is between the markers! Any content between them maintained by `ansible-docsmith`.
+This line will be replaced as it is between the markers! Any content between them is maintained by `ansible-docsmith`.
 <!-- END ANSIBLE DOCSMITH -->
 
 

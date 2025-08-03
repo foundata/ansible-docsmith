@@ -8,7 +8,7 @@ This role is simple and contains no critical errors. However, it includes a few 
 This README file is also a dummy file to show that existing content outside the `ANSIBLE DOCSMITH` markers will not be touched.
 
 <!-- BEGIN ANSIBLE DOCSMITH -->
-This line will be replaced as it is between the markers! Any content between them maintained by `ansible-docsmith`.
+This line will be replaced as it is between the markers! Any content between them maintained is by `ansible-docsmith`.
 <!-- END ANSIBLE DOCSMITH -->
 
 ## License

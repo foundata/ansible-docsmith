@@ -163,6 +163,35 @@ The role has no configurable variables.
 - `format_description`: Formats multi-line descriptions.
 - `format_table_description`: Formats descriptions for table cells.
 
+If you are creative, you may even maintain non-obvious parts of your `README.md` between the markers:
+
+````jinja2
+## Example Playbook
+
+```yaml
+[...]
+- ansible.builtin.include_role:
+    name: "{{ role_name }}"
+  vars:
+{% for var_name, var_spec in options.items() %}
+{% if var_spec.default is not none %}
+    {{ var_name }}: {{ var_spec.default }}
+{% else %}
+    # {{ var_name }}: # {{ var_spec.description }}
+{% endif %}
+{% endfor %}
+```
+
+## Author Information
+
+{% if primary_spec.author %}
+{% for author in primary_spec.author %}
+
+- {{ author }}
+{% endfor %}
+{% endif %}
+````
+
 
 ## Licensing, copyright<a id="licensing-copyright"></a>
 

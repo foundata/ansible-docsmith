@@ -485,19 +485,36 @@ class ReadmeUpdater:
 
     def _create_new_readme(self, role_content: str, role_name: str) -> str:
         """Create a new README with basic template."""
-        return f"""# {role_name}
+        return f"""# Ansible role: `{role_name}`
 
-TODO: Add role description here.
+FIXME Add role description here.
 
 {self.start_marker}
 {role_content}
 {self.end_marker}
 
-## License
 
-GPL-3.0-or-later
+## Dependencies<a id="dependencies"></a>
 
-## Author Information
+See `dependencies` in [`meta/main.yml`](./meta/main.yml).
 
-This role was created by [Your Name].
+
+## Compatibility<a id="compatibility"></a>
+
+See `min_ansible_version` in [`meta/main.yml`](./meta/main.yml).
+
+
+## Licensing, copyright<a id="licensing-copyright"></a>
+
+Copyright (c) [FIXME YYYY Your Name]
+
+[FIXME Adapt license:
+This project is licensed under the GNU General Public License v3.0 or later
+(SPDX-License-Identifier: `GPL-3.0-or-later`)].
+
+
+## Author information
+
+This project was created and is maintained by [FIXME Your Name].
+
 """

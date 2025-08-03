@@ -155,12 +155,13 @@ This is a custom template for {{ role_name }}.
 """)
 
         result = runner.invoke(
-            app, [
+            app,
+            [
                 "generate",
                 str(sample_role_with_specs_and_defaults),
                 f"--template-readme={custom_template}",
-                "--dry-run"
-            ]
+                "--dry-run",
+            ],
         )
 
         assert result.exit_code == 0
@@ -178,12 +179,13 @@ This is a custom template for {{ role_name }}.
         invalid_template.write_text("Some content")
 
         result = runner.invoke(
-            app, [
+            app,
+            [
                 "generate",
                 str(sample_role_with_specs_and_defaults),
                 f"--template-readme={invalid_template}",
-                "--dry-run"
-            ]
+                "--dry-run",
+            ],
         )
 
         assert result.exit_code == 1
@@ -200,12 +202,13 @@ This is a custom template for {{ role_name }}.
         invalid_template.write_text("# {{ role_name \n\nMissing closing brace")
 
         result = runner.invoke(
-            app, [
+            app,
+            [
                 "generate",
                 str(sample_role_with_specs_and_defaults),
                 f"--template-readme={invalid_template}",
-                "--dry-run"
-            ]
+                "--dry-run",
+            ],
         )
 
         assert result.exit_code == 1

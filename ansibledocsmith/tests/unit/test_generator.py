@@ -504,9 +504,9 @@ More content"""
         role_content = "## Role variables\n\nTest variables"
         result = updater._create_new_readme(role_content, "test-role")
 
-        assert "# test-role" in result.lower()
+        assert "# ansible role: `test-role`" in result.lower()
         assert "test variables" in result.lower()
-        assert "## license" in result.lower()
+        assert "## licens" in result.lower()
         assert "gpl-3.0-or-later" in result.lower()
 
     def test_custom_markers(self, temp_dir):

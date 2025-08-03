@@ -81,7 +81,7 @@ def generate(
     logger = setup_logging(verbose)
 
     # Validate template file extension if provided
-    if template_readme and not template_readme.name.endswith('.j2'):
+    if template_readme and not template_readme.name.endswith(".j2"):
         console.print("[red]Error: Template file must have .j2 extension[/red]")
         raise typer.Exit(1)
 
