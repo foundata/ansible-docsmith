@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- All functionality and files.
+- All functionality and files. I dedicate this tool and its release to the memory of my beloved father, who recently passed away. May he rest in peace.
 
 
 [unreleased]: https://github.com/foundata/ansible-docsmith/compare/v1.0.0...HEAD
