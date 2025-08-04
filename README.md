@@ -60,7 +60,7 @@ pipx install ansible-docsmith
    <!-- BEGIN ANSIBLE DOCSMITH -->
    <!-- END ANSIBLE DOCSMITH -->
    ```
-   All content between these markes will be removed and updated on each `ansible-docsmith generate` run.
+   All content between these markers will be removed and updated on each `ansible-docsmith generate` run.
 
 That's it. The entry-point variable files below the `/defaults` directory of your role do *not* need additional preparations. The tool will automatically (re)place formatted inline comment blocks above variables defined there.
 
@@ -103,7 +103,7 @@ ansible-docsmith generate /path/to/role --verbose
 # Validate argument_specs.yml structure as well as role entry-point files in /defaults/.
 # These validation checks include:
 #
-# - ERROR:   Variables present in "defaults/" but missing from "argument_specs.yml.
+# - ERROR:   Variables present in "defaults/" but missing from "argument_specs.yml".
 # - ERROR:   Variables with "default:" values defined in "argument_specs.yml" but
 #            missing from the entry-point files in "defaults/".
 # - WARNING: Unknown keys in "argument_specs.yml".

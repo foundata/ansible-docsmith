@@ -216,8 +216,8 @@ def _display_results(results, dry_run: bool):
     # Display detailed diffs for dry-run mode
     if dry_run and results.file_diffs:
         console.print(
-            "\n[bold]Modifications that would take place without the "
-            "--dry-mode option ([yellow]nothing was changed yet[/yellow]):[/bold]"
+            "\n[bold]Modifications that would be made without --dry-run "
+            "([yellow]nothing was changed yet[/yellow]):[/bold]"
         )
         for file_path, old_content, new_content in results.file_diffs:
             _display_file_diff(file_path, old_content, new_content)

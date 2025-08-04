@@ -4,5 +4,8 @@
 README_START_MARKER = "<!-- BEGIN ANSIBLE DOCSMITH -->"
 README_END_MARKER = "<!-- END ANSIBLE DOCSMITH -->"
 
-# CLI branding (75 chars max)
-CLI_HEADER = "Welcome to DocSmith for Ansible v{version} (developed by [link=https://foundata.com]foundata[/link])"
+# CLI branding (please keep rendered length under 75 chars)
+CLI_HEADER = (
+    "Welcome to [link=https://github.com/foundata/ansible-docsmith]DocSmith[/link] "
+    "for Ansible v{version} (developed by [link=https://foundata.com]foundata[/link])"
+)

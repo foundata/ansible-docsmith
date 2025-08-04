@@ -297,13 +297,13 @@ class RoleProcessor:
                 undefined_vars = defaults_vars - spec_vars
                 if undefined_vars:
                     errors.append(
-                        f"Entry point '{entry_point}': Variables in "
-                        f"defaults/{entry_point}.yml but not in argument_specs.yml: "
+                        f"Entry point '{entry_point}': Variables present in defaults/"
+                        f"{entry_point}.yml but missing from argument_specs.yml: "
                         f"{sorted(undefined_vars)}"
                     )
 
             # ERROR: Variables with defaults in specs but missing from defaults file
-            # Check which variables actually have meaningful defaults (not
+            # Check which variables have explicit defaults (not
             # parser-added None)
             spec_with_defaults = set()
             if spec_file:
@@ -315,7 +315,7 @@ class RoleProcessor:
                     if isinstance(var_spec, dict) and "default" in var_spec:
                         spec_with_defaults.add(name)
             else:
-                # Fallback: assume variables with non-None defaults have meaningful
+                # Fallback: treat variables with non-None defaults as having explicit
                 # defaults
                 for name, var_spec in spec.get("options", {}).items():
                     if (
