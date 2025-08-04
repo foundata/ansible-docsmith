@@ -1,6 +1,6 @@
 """DocSmith for Ansible: automating role documentation (using argument_specs.yml)"""
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "foundata GmbH"
 
 from .constants import CLI_HEADER, README_END_MARKER, README_START_MARKER

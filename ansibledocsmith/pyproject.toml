@@ -2,7 +2,7 @@
 
 [project]
 name = "ansible-docsmith"
-version = "0.1.0"
+version = "1.0.0"
 description = "DocSmith for Ansible: automating role documentation (using argument_specs.yml)"
 keywords = ["ansible", "documentation", "yaml", "cli", "automation"]
 license = "GPL-3.0-or-later"
@@ -25,7 +25,7 @@ dependencies = [
 
 # https://pypi.org/classifiers/
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 
   # Indication for whom the project is for
