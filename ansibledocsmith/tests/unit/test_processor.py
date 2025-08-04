@@ -171,7 +171,7 @@ class TestRoleProcessor:
         error_messages = "\n".join(errors)
         assert "main_missing_in_spec" in error_messages
         assert "main_state" in error_messages
-        assert "defaults/main.yml but not in argument_specs.yml" in error_messages
+        assert "defaults/main.yml but missing from argument_specs.yml" in error_messages
         assert (
             "have defaults in argument_specs.yml but are missing from" in error_messages
         )
