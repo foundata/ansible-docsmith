@@ -12,6 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 from . import __version__
+from .constants import CLI_HEADER
 from .core.exceptions import ProcessingError, ValidationError
 from .core.processor import RoleProcessor
 from .utils.logging import setup_logging
@@ -22,6 +23,13 @@ app = typer.Typer(
     add_completion=True,
 )
 console = Console()
+
+
+def _display_header():
+    """Display the branding header."""
+    header = CLI_HEADER.format(version=__version__)
+    console.print(header, style="bold", highlight=False)
+    console.print()  # Blank line
 
 
 def version_callback(value: bool):
@@ -79,6 +87,7 @@ def generate(
     """Generate comprehensive documentation for an Ansible role."""
 
     logger = setup_logging(verbose)
+    _display_header()
 
     # Validate template file extension if provided
     if template_readme and not template_readme.name.endswith(".j2"):
@@ -117,12 +126,15 @@ def generate(
 
         if results.errors:
             console.print("\n[red]❌ Processing completed with errors[/red]")
+            console.print()  # Trailing newline
             raise typer.Exit(1)
         else:
             console.print("\n[green]✅ Documentation generation complete![/green]")
+            console.print()  # Trailing newline
 
     except (ValidationError, ProcessingError) as e:
         logger.error(f"Processing error: {e}")
+        console.print()  # Trailing newline
         raise typer.Exit(1)
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
@@ -130,6 +142,7 @@ def generate(
             import traceback
 
             traceback.print_exc()
+        console.print()  # Trailing newline
         raise typer.Exit(1)
 
 
@@ -149,6 +162,7 @@ def validate(
     """Validate argument_specs.yml structure and content."""
 
     logger = setup_logging(verbose)
+    _display_header()
 
     console.print(f"[green]Validating:[/green] {role_path}")
 
@@ -163,9 +177,11 @@ def validate(
         _display_validation_results(role_data)
 
         console.print("\n[green]✅ Validation passed![/green]")
+        console.print()  # Trailing newline
 
     except ValidationError as e:
         logger.error(f"Validation failed: {e}")
+        console.print()  # Trailing newline
         raise typer.Exit(1)
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
@@ -173,6 +189,7 @@ def validate(
             import traceback
 
             traceback.print_exc()
+        console.print()  # Trailing newline
         raise typer.Exit(1)
 
 
