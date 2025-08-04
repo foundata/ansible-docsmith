@@ -20,7 +20,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "rich>=14.1.0",
     "ruamel-yaml>=0.18.14",
-    "typer[all]>=0.16.0",
+    "typer>=0.16.0",
 ]
 
 # https://pypi.org/classifiers/
