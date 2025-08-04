@@ -54,7 +54,7 @@ pipx install ansible-docsmith
 
 ### Preparations<a id="usage-preparations"></a>
 
-1. If not already existing, simply **create an `argument_specs.yml`** for [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). The more complete your specification, the better the argument validation and documentation.
+1. If not already existing, simply **create an `argument_specs.yml`** for [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). Try to add `description:` to your variables. The more complete your specification, the better the argument validation and documentation.
 2. **Add simple markers in your role's `README.md`** where DocSmith shall maintain the human-readable documentation:
    ```
    <!-- BEGIN ANSIBLE DOCSMITH -->
