@@ -21,15 +21,21 @@ class ProcessingResults:
 class RoleProcessor:
     """Main processor for Ansible role documentation."""
 
-    def __init__(self, dry_run: bool = False, template_readme: Path = None):
+    def __init__(
+        self,
+        dry_run: bool = False,
+        template_readme: Path = None,
+        toc_bullet_style: str | None = None,
+    ):
         self.dry_run = dry_run
         self.template_readme = template_readme
+        self.toc_bullet_style = toc_bullet_style
 
         # Initialize components
         self.parser = ArgumentSpecParser()
         self.doc_generator = DocumentationGenerator(template_file=template_readme)
         self.defaults_generator = DefaultsCommentGenerator()
-        self.readme_updater = ReadmeUpdater()
+        self.readme_updater = ReadmeUpdater(toc_bullet_style=toc_bullet_style)
 
     def validate_role(self, role_path: Path) -> dict:
         """
@@ -58,6 +64,11 @@ class RoleProcessor:
             # Add README marker validation
             readme_errors = self._validate_readme_markers(role_path)
             role_data["errors"].extend(readme_errors)
+
+            # Add TOC marker validation
+            toc_errors, toc_notices = self._validate_readme_toc_markers(role_path)
+            role_data["errors"].extend(toc_errors)
+            role_data["notices"].extend(toc_notices)
 
             # Fail validation if errors found
             if role_data.get("errors"):
@@ -377,3 +388,46 @@ class RoleProcessor:
             errors.append(f"Error reading README.md: {e}")
 
         return errors
+
+    def _validate_readme_toc_markers(
+        self, role_path: Path
+    ) -> tuple[list[str], list[str]]:
+        """Validate TOC markers in README.md.
+
+        Returns:
+            Tuple of (errors, notices)
+        """
+        errors = []
+        notices = []
+        readme_path = role_path / "README.md"
+
+        if not readme_path.exists():
+            return errors, notices
+
+        try:
+            content = readme_path.read_text(encoding="utf-8")
+            toc_start_marker = self.readme_updater.toc_start_marker
+            toc_end_marker = self.readme_updater.toc_end_marker
+
+            has_toc_start = toc_start_marker in content
+            has_toc_end = toc_end_marker in content
+
+            if not has_toc_start and not has_toc_end:
+                notices.append(
+                    f"README.md does not contain TOC markers. "
+                    f"Add '{toc_start_marker}' and '{toc_end_marker}' to enable automatic "
+                    f"Table of Contents generation."
+                )
+            elif has_toc_start and not has_toc_end:
+                errors.append(
+                    f"README.md is missing TOC end marker: '{toc_end_marker}'"
+                )
+            elif not has_toc_start and has_toc_end:
+                errors.append(
+                    f"README.md is missing TOC start marker: '{toc_start_marker}'"
+                )
+
+        except Exception as e:
+            errors.append(f"Error reading README.md for TOC validation: {e}")
+
+        return errors, notices

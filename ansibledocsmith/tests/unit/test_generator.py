@@ -10,6 +10,7 @@ from ansible_docsmith.core.generator import (
     DefaultsCommentGenerator,
     DocumentationGenerator,
     ReadmeUpdater,
+    TocGenerator,
 )
 
 
@@ -520,9 +521,7 @@ More content"""
 
     def test_custom_markers(self, temp_dir):
         """Test using custom markers."""
-        updater = ReadmeUpdater(
-            start_marker="START CUSTOM", end_marker="END CUSTOM"
-        )
+        updater = ReadmeUpdater(start_marker="START CUSTOM", end_marker="END CUSTOM")
 
         readme_path = temp_dir / "README.md"
         existing_content = """# My Role
@@ -542,3 +541,219 @@ Old content
         assert "<!-- END CUSTOM -->" in content
         assert "new content" in content.lower()
         assert "old content" not in content.lower()
+
+    def test_update_readme_with_toc_markers(self, temp_dir):
+        """Test updating README with TOC markers."""
+        from ansible_docsmith import MARKER_README_TOC_END, MARKER_README_TOC_START
+
+        updater = ReadmeUpdater()
+        readme_path = temp_dir / "README.md"
+
+        # Create README with both main and TOC markers
+        existing_content = f"""# My Role
+
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
+Old main content
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
+
+## Table of Contents
+
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}
+Old TOC content
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}
+
+## Section One
+
+Some content here.
+"""
+        readme_path.write_text(existing_content)
+
+        new_main_content = "New main content"
+        result = updater.update_readme(readme_path, new_main_content)
+
+        assert result is True
+
+        content = readme_path.read_text()
+        assert "New main content" in content
+        assert "Old main content" not in content
+        # TOC should be regenerated based on headings
+        assert "* [My Role](#my-role)" in content
+        assert "* [Section One](#section-one)" in content
+
+
+class TestTocGenerator:
+    """Test the TocGenerator class."""
+
+    def test_generate_toc_basic(self):
+        """Test basic TOC generation."""
+        generator = TocGenerator(bullet_style="*")
+
+        content = """# Main Title
+
+## Section One<a id="section-one"></a>
+
+Some content here.
+
+### Subsection A<a id="subsection-a"></a>
+
+More content.
+
+## Section Two<a id="section-two"></a>
+
+Final content.
+"""
+
+        toc = generator.generate_toc(content)
+        expected_lines = [
+            "* [Main Title](#main-title)",
+            "  * [Section One](#section-one)",
+            "    * [Subsection A](#subsection-a)",
+            "  * [Section Two](#section-two)",
+        ]
+
+        assert toc == "\n".join(expected_lines)
+
+    def test_generate_toc_with_dash_bullets(self):
+        """Test TOC generation with dash bullets."""
+        generator = TocGenerator(bullet_style="-")
+
+        content = """# Main Title
+
+## Section One
+
+More content.
+"""
+
+        toc = generator.generate_toc(content)
+        expected_lines = [
+            "- [Main Title](#main-title)",
+            "  - [Section One](#section-one)",
+        ]
+
+        assert toc == "\n".join(expected_lines)
+
+    def test_extract_headings(self):
+        """Test heading extraction."""
+        generator = TocGenerator()
+
+        content = """# Title One<a id="custom-id"></a>
+
+## Title Two
+
+### Title Three<a id="another-id"></a>
+
+Some text that is not a heading.
+
+#### Title Four
+"""
+
+        headings = generator._extract_headings(content)
+
+        expected = [
+            {"text": "Title One", "level": 1, "anchor": "custom-id"},
+            {"text": "Title Two", "level": 2, "anchor": "title-two"},
+            {"text": "Title Three", "level": 3, "anchor": "another-id"},
+            {"text": "Title Four", "level": 4, "anchor": "title-four"},
+        ]
+
+        assert headings == expected
+
+    def test_create_anchor_link(self):
+        """Test anchor link creation."""
+        generator = TocGenerator()
+
+        test_cases = [
+            ("Simple Title", "simple-title"),
+            ("Title with Spaces", "title-with-spaces"),
+            ("Title-with-Dashes", "title-with-dashes"),
+            ("Title (with) Special! Characters?", "title-with-special-characters"),
+            ("  Whitespace   Around  ", "whitespace-around"),
+            ("Multiple---Dashes", "multiple-dashes"),
+        ]
+
+        for input_text, expected in test_cases:
+            assert generator._create_anchor_link(input_text) == expected
+
+    def test_detect_bullet_style(self):
+        """Test bullet style detection."""
+        generator = TocGenerator()
+
+        # Content with more asterisk bullets
+        content_asterisk = """
+Some text
+* [Link one](#one)
+* [Link two](#two)
+- [Link three](#three)
+"""
+        assert generator._detect_bullet_style(content_asterisk) == "*"
+
+        # Content with more dash bullets
+        content_dash = """
+Some text
+- [Link one](#one)
+- [Link two](#two)
+- [Link three](#three)
+* [Link four](#four)
+"""
+        assert generator._detect_bullet_style(content_dash) == "-"
+
+        # Content with no bullets defaults to asterisk
+        content_none = """
+Just some regular text
+with no bullet lists.
+"""
+        assert generator._detect_bullet_style(content_none) == "*"
+
+    def test_generate_toc_auto_detect_bullets(self):
+        """Test TOC generation with auto-detected bullet style."""
+        generator = TocGenerator()  # No bullet style specified
+
+        content = """# Main Title
+
+Some content with existing lists:
+- [Existing link](#existing)
+- [Another link](#another)
+
+## Section One
+
+More content.
+"""
+
+        toc = generator.generate_toc(content)
+        # Should detect dash style from existing content
+        assert toc.startswith("- [Main Title]")
+
+    def test_generate_toc_empty_content(self):
+        """Test TOC generation with no headings."""
+        generator = TocGenerator()
+
+        content = """
+Just some regular text
+with no headings at all.
+"""
+
+        toc = generator.generate_toc(content)
+        assert toc == ""
+
+    def test_generate_toc_complex_headings(self):
+        """Test TOC generation with complex heading text."""
+        generator = TocGenerator(bullet_style="*")
+
+        content = """# Role: `example-role`
+
+## Variable `config_setting`<a id="variable-config_setting"></a>
+
+### Nested Options
+
+#### Sub-option: `enabled`
+"""
+
+        toc = generator.generate_toc(content)
+        expected_lines = [
+            "* [Role: `example-role`](#role-example-role)",
+            "  * [Variable `config_setting`](#variable-config_setting)",
+            "    * [Nested Options](#nested-options)",
+            "      * [Sub-option: `enabled`](#sub-option-enabled)",
+        ]
+
+        assert toc == "\n".join(expected_lines)

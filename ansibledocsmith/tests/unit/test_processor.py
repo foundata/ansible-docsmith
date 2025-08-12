@@ -7,6 +7,8 @@ from ansible_docsmith import (
     MARKER_COMMENT_MARKDOWN_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
+    MARKER_README_TOC_END,
+    MARKER_README_TOC_START,
 )
 from ansible_docsmith.core.exceptions import ValidationError
 from ansible_docsmith.core.processor import RoleProcessor
@@ -409,3 +411,95 @@ More content.
 
         errors = processor._validate_readme_markers(role_path)
         assert errors == []
+
+    def test_validate_readme_toc_markers_both_missing(self, temp_dir):
+        """Test TOC validation when README exists but has no TOC markers."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text("# My Role\n\nSome content without TOC markers.")
+
+        errors, notices = processor._validate_readme_toc_markers(role_path)
+        assert len(errors) == 0
+        assert len(notices) == 1
+        assert "does not contain TOC markers" in notices[0]
+        expected_toc_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_toc_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_toc_start in notices[0]
+        assert expected_toc_end in notices[0]
+
+    def test_validate_readme_toc_markers_missing_start(self, temp_dir):
+        """Test TOC validation when README has end marker but no start marker."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text(f"""# My Role
+
+Some content.
+
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}
+""")
+
+        errors, notices = processor._validate_readme_toc_markers(role_path)
+        assert len(errors) == 1
+        assert len(notices) == 0
+        assert "missing TOC start marker" in errors[0]
+        expected_toc_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_toc_start in errors[0]
+
+    def test_validate_readme_toc_markers_missing_end(self, temp_dir):
+        """Test TOC validation when README has start marker but no end marker."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text(f"""# My Role
+
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}
+Some content.
+""")
+
+        errors, notices = processor._validate_readme_toc_markers(role_path)
+        assert len(errors) == 1
+        assert len(notices) == 0
+        assert "missing TOC end marker" in errors[0]
+        expected_toc_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_toc_end in errors[0]
+
+    def test_validate_readme_toc_markers_both_present(self, temp_dir):
+        """Test TOC validation when README has both TOC markers (should pass)."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.md"
+        readme_path.write_text(f"""# My Role
+
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}
+Generated TOC here.
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}
+
+## Section One
+
+More content.
+""")
+
+        errors, notices = processor._validate_readme_toc_markers(role_path)
+        assert errors == []
+        assert notices == []
+
+    def test_validate_readme_toc_markers_no_readme(self, temp_dir):
+        """Test TOC validation when no README exists."""
+        processor = RoleProcessor()
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        errors, notices = processor._validate_readme_toc_markers(role_path)
+        assert errors == []
+        assert notices == []

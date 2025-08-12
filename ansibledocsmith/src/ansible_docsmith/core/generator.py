@@ -13,6 +13,8 @@ from ..constants import (
     MARKER_COMMENT_MARKDOWN_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
+    MARKER_README_TOC_END,
+    MARKER_README_TOC_START,
 )
 from ..templates import TemplateManager
 from .exceptions import FileOperationError, TemplateError
@@ -162,6 +164,118 @@ class DocumentationGenerator:
 
         # Join paragraphs with <br><br> for proper table display
         return "<br><br>".join(processed_paragraphs)
+
+
+class TocGenerator:
+    """Generate Table of Contents from markdown content."""
+
+    def __init__(self, bullet_style: str | None = None):
+        """Initialize TOC generator.
+
+        Args:
+            bullet_style: Bullet style to use ("*" or "-"). If None, auto-detect.
+        """
+        self.bullet_style = bullet_style
+
+    def generate_toc(self, content: str) -> str:
+        """Generate Table of Contents from markdown content.
+
+        Args:
+            content: Markdown content to analyze
+
+        Returns:
+            Generated TOC as markdown string
+        """
+        headings = self._extract_headings(content)
+        if not headings:
+            return ""
+
+        # Auto-detect bullet style if not specified
+        bullet_style = self.bullet_style or self._detect_bullet_style(content)
+
+        return self._generate_toc_lines(headings, bullet_style)
+
+    def _extract_headings(self, content: str) -> list[dict[str, Any]]:
+        """Extract headings from markdown content.
+
+        Returns:
+            List of heading dictionaries with 'text', 'level', and 'anchor' keys
+        """
+        headings = []
+        heading_pattern = r'^(#{1,6})\s+(.+?)(?:<a\s+id="([^"]+)"></a>)?$'
+
+        for line in content.split("\n"):
+            match = re.match(heading_pattern, line.strip(), re.MULTILINE)
+            if match:
+                level = len(match.group(1))
+                text = match.group(2).strip()
+                anchor = match.group(3) or self._create_anchor_link(text)
+
+                headings.append({"text": text, "level": level, "anchor": anchor})
+
+        return headings
+
+    def _detect_bullet_style(self, content: str) -> str:
+        """Auto-detect bullet style from existing content.
+
+        Args:
+            content: Markdown content to analyze
+
+        Returns:
+            Detected bullet style ("*" or "-"), defaults to "*"
+        """
+        # Look for existing list patterns
+        dash_pattern = r"^\s*-\s+\["
+        asterisk_pattern = r"^\s*\*\s+\["
+
+        dash_count = len(re.findall(dash_pattern, content, re.MULTILINE))
+        asterisk_count = len(re.findall(asterisk_pattern, content, re.MULTILINE))
+
+        # Return the more common style, default to "*"
+        return "-" if dash_count > asterisk_count else "*"
+
+    def _create_anchor_link(self, text: str) -> str:
+        """Create anchor link from heading text.
+
+        Args:
+            text: Heading text
+
+        Returns:
+            Anchor link suitable for markdown
+        """
+        # Convert to lowercase and replace spaces/special chars with hyphens
+        anchor = re.sub(r"[^\w\s-]", "", text.lower())
+        anchor = re.sub(r"[-\s]+", "-", anchor)
+        return anchor.strip("-")
+
+    def _generate_toc_lines(
+        self, headings: list[dict[str, Any]], bullet_style: str
+    ) -> str:
+        """Generate TOC lines from headings.
+
+        Args:
+            headings: List of heading dictionaries
+            bullet_style: Bullet style to use
+
+        Returns:
+            Generated TOC lines as string
+        """
+        if not headings:
+            return ""
+
+        lines = []
+        min_level = min(h["level"] for h in headings)
+
+        for heading in headings:
+            # Calculate indentation based on heading level
+            indent_level = heading["level"] - min_level
+            indent = "  " * indent_level
+
+            # Create TOC line
+            line = f"{indent}{bullet_style} [{heading['text']}](#{heading['anchor']})"
+            lines.append(line)
+
+        return "\n".join(lines)
 
 
 class DefaultsCommentGenerator:
@@ -453,9 +567,17 @@ class ReadmeUpdater:
         end_marker: str = MARKER_README_MAIN_END,
         comment_begin: str = MARKER_COMMENT_MARKDOWN_BEGIN,
         comment_end: str = MARKER_COMMENT_MARKDOWN_END,
+        toc_bullet_style: str | None = None,
     ):
         self.start_marker = f"{comment_begin}{start_marker}{comment_end}"
         self.end_marker = f"{comment_begin}{end_marker}{comment_end}"
+
+        # TOC markers
+        self.toc_start_marker = f"{comment_begin}{MARKER_README_TOC_START}{comment_end}"
+        self.toc_end_marker = f"{comment_begin}{MARKER_README_TOC_END}{comment_end}"
+
+        # TOC generator
+        self.toc_generator = TocGenerator(bullet_style=toc_bullet_style)
 
     def update_readme(self, readme_path: Path, new_content: str) -> bool:
         """Update content between markers in README.md."""
@@ -472,24 +594,45 @@ class ReadmeUpdater:
         """Get the updated content without writing to file."""
         if readme_path.exists():
             content = readme_path.read_text(encoding="utf-8")
-            return self._replace_between_markers(content, new_content)
+            # Update main content
+            content = self._replace_between_markers(
+                content, new_content, self.start_marker, self.end_marker
+            )
+            # Update TOC if markers are present
+            content = self._update_toc_section(content)
+            return content
         else:
             # Create new README with template
             return self._create_new_readme(new_content, readme_path.parent.name)
 
-    def _replace_between_markers(self, content: str, new_content: str) -> str:
+    def _replace_between_markers(
+        self, content: str, new_content: str, start_marker: str, end_marker: str
+    ) -> str:
         """Replace content between markers."""
 
-        if self.start_marker not in content or self.end_marker not in content:
+        if start_marker not in content or end_marker not in content:
             # Add markers and content at the end
-            return (
-                content + f"\n\n{self.start_marker}\n{new_content}\n{self.end_marker}\n"
-            )
+            return content + f"\n\n{start_marker}\n{new_content}\n{end_marker}\n"
 
         # Replace content between existing markers
-        pattern = f"({re.escape(self.start_marker)}).*?({re.escape(self.end_marker)})"
+        pattern = f"({re.escape(start_marker)}).*?({re.escape(end_marker)})"
         replacement = f"\\1\n{new_content}\n\\2"
         return re.sub(pattern, replacement, content, flags=re.DOTALL)
+
+    def _update_toc_section(self, content: str) -> str:
+        """Update TOC section if markers are present."""
+
+        # Check if TOC markers exist
+        if self.toc_start_marker not in content or self.toc_end_marker not in content:
+            return content
+
+        # Generate TOC from the content
+        toc_content = self.toc_generator.generate_toc(content)
+
+        # Update TOC section
+        return self._replace_between_markers(
+            content, toc_content, self.toc_start_marker, self.toc_end_marker
+        )
 
     def _create_new_readme(self, role_content: str, role_name: str) -> str:
         """Create a new README with basic template."""

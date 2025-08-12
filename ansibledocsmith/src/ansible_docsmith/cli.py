@@ -75,6 +75,11 @@ def generate(
     verbose: bool = typer.Option(
         False, "-v", "--verbose", help="Enable verbose logging"
     ),
+    readme_toc_list_bulletpoints: str | None = typer.Option(
+        None,
+        "--readme-toc-list-bulletpoints",
+        help="Bullet style for README TOC ('*' or '-'). Auto-detected if not specified.",
+    ),
     template_readme: Path | None = typer.Option(
         None,
         "--template-readme",
@@ -94,6 +99,11 @@ def generate(
         console.print("[red]Error: Template file must have .j2 extension[/red]")
         raise typer.Exit(1)
 
+    # Validate TOC bullet style if provided
+    if readme_toc_list_bulletpoints and readme_toc_list_bulletpoints not in ["*", "-"]:
+        console.print("[red]Error: TOC bullet style must be '*' or '-'[/red]")
+        raise typer.Exit(1)
+
     console.print(f"[bold green]Processing role:[/bold green] {role_path}")
     console.print(
         f"[blue]Options:[/blue] README={output_readme}, "
@@ -109,7 +119,11 @@ def generate(
     try:
         # Initialize processor
         try:
-            processor = RoleProcessor(dry_run=dry_run, template_readme=template_readme)
+            processor = RoleProcessor(
+                dry_run=dry_run,
+                template_readme=template_readme,
+                toc_bullet_style=readme_toc_list_bulletpoints,
+            )
         except ValueError as e:
             logger.error(f"Template error: {e}")
             raise typer.Exit(1)
