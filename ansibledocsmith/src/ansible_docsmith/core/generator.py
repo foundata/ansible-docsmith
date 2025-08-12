@@ -8,7 +8,12 @@ from typing import Any
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
-from ..constants import README_END_MARKER, README_START_MARKER
+from ..constants import (
+    MARKER_COMMENT_MARKDOWN_BEGIN,
+    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_README_MAIN_END,
+    MARKER_README_MAIN_START,
+)
 from ..templates import TemplateManager
 from .exceptions import FileOperationError, TemplateError
 
@@ -444,11 +449,13 @@ class ReadmeUpdater:
 
     def __init__(
         self,
-        start_marker: str = README_START_MARKER,
-        end_marker: str = README_END_MARKER,
+        start_marker: str = MARKER_README_MAIN_START,
+        end_marker: str = MARKER_README_MAIN_END,
+        comment_begin: str = MARKER_COMMENT_MARKDOWN_BEGIN,
+        comment_end: str = MARKER_COMMENT_MARKDOWN_END,
     ):
-        self.start_marker = start_marker
-        self.end_marker = end_marker
+        self.start_marker = f"{comment_begin}{start_marker}{comment_end}"
+        self.end_marker = f"{comment_begin}{end_marker}{comment_end}"
 
     def update_readme(self, readme_path: Path, new_content: str) -> bool:
         """Update content between markers in README.md."""

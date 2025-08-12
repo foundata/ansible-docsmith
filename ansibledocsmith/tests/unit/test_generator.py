@@ -1,6 +1,11 @@
 """Tests for documentation generators."""
 
-from ansible_docsmith import README_END_MARKER, README_START_MARKER
+from ansible_docsmith import (
+    MARKER_COMMENT_MARKDOWN_BEGIN,
+    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_README_MAIN_END,
+    MARKER_README_MAIN_START,
+)
 from ansible_docsmith.core.generator import (
     DefaultsCommentGenerator,
     DocumentationGenerator,
@@ -448,8 +453,10 @@ class TestReadmeUpdater:
 
         content = readme_path.read_text()
         assert "test content" in content.lower()
-        assert README_START_MARKER in content
-        assert README_END_MARKER in content
+        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_start in content
+        assert expected_end in content
 
     def test_update_readme_existing_file_no_markers(self, temp_dir):
         """Test updating existing README without markers."""
@@ -468,7 +475,8 @@ class TestReadmeUpdater:
         content = readme_path.read_text()
         assert "existing content" in content.lower()
         assert "new content" in content.lower()
-        assert README_START_MARKER in content
+        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_start in content
 
     def test_update_readme_existing_file_with_markers(self, temp_dir):
         """Test updating existing README with markers."""
@@ -479,9 +487,9 @@ class TestReadmeUpdater:
 
 Existing content
 
-{README_START_MARKER}
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
 Old documentation
-{README_END_MARKER}
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
 
 More content"""
         readme_path.write_text(existing_content)
@@ -513,7 +521,7 @@ More content"""
     def test_custom_markers(self, temp_dir):
         """Test using custom markers."""
         updater = ReadmeUpdater(
-            start_marker="<!-- START CUSTOM -->", end_marker="<!-- END CUSTOM -->"
+            start_marker="START CUSTOM", end_marker="END CUSTOM"
         )
 
         readme_path = temp_dir / "README.md"

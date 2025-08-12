@@ -2,7 +2,12 @@
 
 import pytest
 
-from ansible_docsmith import README_END_MARKER, README_START_MARKER
+from ansible_docsmith import (
+    MARKER_COMMENT_MARKDOWN_BEGIN,
+    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_README_MAIN_END,
+    MARKER_README_MAIN_START,
+)
 from ansible_docsmith.core.exceptions import ValidationError
 from ansible_docsmith.core.processor import RoleProcessor
 
@@ -340,8 +345,10 @@ var3:
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing required markers" in errors[0]
-        assert README_START_MARKER in errors[0]
-        assert README_END_MARKER in errors[0]
+        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_start in errors[0]
+        assert expected_end in errors[0]
 
     def test_validate_readme_markers_missing_start(self, temp_dir):
         """Test validation when README has end marker but no start marker."""
@@ -354,13 +361,14 @@ var3:
 
 Some content.
 
-{README_END_MARKER}
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
 """)
 
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing start marker" in errors[0]
-        assert README_START_MARKER in errors[0]
+        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_start in errors[0]
 
     def test_validate_readme_markers_missing_end(self, temp_dir):
         """Test validation when README has start marker but no end marker."""
@@ -371,14 +379,15 @@ Some content.
         readme_path = role_path / "README.md"
         readme_path.write_text(f"""# My Role
 
-{README_START_MARKER}
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
 Some content.
 """)
 
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing end marker" in errors[0]
-        assert README_END_MARKER in errors[0]
+        expected_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}"
+        assert expected_end in errors[0]
 
     def test_validate_readme_markers_both_present(self, temp_dir):
         """Test validation when README has both markers (should pass)."""
@@ -391,9 +400,9 @@ Some content.
 
 Some content.
 
-{README_START_MARKER}
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
 Generated content here.
-{README_END_MARKER}
+{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
 
 More content.
 """)

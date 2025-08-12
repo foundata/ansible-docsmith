@@ -1,8 +1,12 @@
 """Global constants for ansible-docsmith."""
 
-# README section markers for managed documentation sections
-README_START_MARKER = "<!-- BEGIN ANSIBLE DOCSMITH -->"
-README_END_MARKER = "<!-- END ANSIBLE DOCSMITH -->"
+# README section markers for managed documentation sections (content only)
+MARKER_README_MAIN_START = "BEGIN ANSIBLE DOCSMITH"
+MARKER_README_MAIN_END = "END ANSIBLE DOCSMITH"
+
+# Markdown comment markers for different output formats
+MARKER_COMMENT_MARKDOWN_BEGIN = "<!-- "
+MARKER_COMMENT_MARKDOWN_END = " -->"
 
 # CLI branding (please keep rendered length under 75 chars)
 CLI_HEADER = (

@@ -3,7 +3,13 @@
 __version__ = "1.0.0"
 __author__ = "foundata GmbH"
 
-from .constants import CLI_HEADER, README_END_MARKER, README_START_MARKER
+from .constants import (
+    CLI_HEADER,
+    MARKER_COMMENT_MARKDOWN_BEGIN,
+    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_README_MAIN_END,
+    MARKER_README_MAIN_START,
+)
 from .core.exceptions import (
     AnsibleDocSmithError,
     FileOperationError,
@@ -20,8 +26,10 @@ __all__ = [
     "__version__",
     "__author__",
     "CLI_HEADER",
-    "README_START_MARKER",
-    "README_END_MARKER",
+    "MARKER_README_MAIN_START",
+    "MARKER_README_MAIN_END",
+    "MARKER_COMMENT_MARKDOWN_BEGIN",
+    "MARKER_COMMENT_MARKDOWN_END",
     "RoleProcessor",
     "ArgumentSpecParser",
     "DocumentationGenerator",
