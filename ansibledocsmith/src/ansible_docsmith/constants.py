@@ -9,8 +9,8 @@ MARKER_README_TOC_START = "BEGIN ANSIBLE DOCSMITH TOC"
 MARKER_README_TOC_END = "END ANSIBLE DOCSMITH TOC"
 
 # Markdown comment markers for different output formats
-MARKER_COMMENT_MARKDOWN_BEGIN = "<!-- "
-MARKER_COMMENT_MARKDOWN_END = " -->"
+MARKER_COMMENT_MD_BEGIN = "<!-- "
+MARKER_COMMENT_MD_END = " -->"
 
 # CLI branding (please keep rendered length under 75 chars)
 CLI_HEADER = (

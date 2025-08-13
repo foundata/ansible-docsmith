@@ -9,8 +9,8 @@ from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from ..constants import (
-    MARKER_COMMENT_MARKDOWN_BEGIN,
-    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_COMMENT_MD_BEGIN,
+    MARKER_COMMENT_MD_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
     MARKER_README_TOC_END,
@@ -565,8 +565,8 @@ class ReadmeUpdater:
         self,
         start_marker: str = MARKER_README_MAIN_START,
         end_marker: str = MARKER_README_MAIN_END,
-        comment_begin: str = MARKER_COMMENT_MARKDOWN_BEGIN,
-        comment_end: str = MARKER_COMMENT_MARKDOWN_END,
+        comment_begin: str = MARKER_COMMENT_MD_BEGIN,
+        comment_end: str = MARKER_COMMENT_MD_END,
         toc_bullet_style: str | None = None,
     ):
         self.start_marker = f"{comment_begin}{start_marker}{comment_end}"

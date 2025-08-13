@@ -7,7 +7,7 @@ description = "DocSmith for Ansible: automating role documentation (using argume
 keywords = ["ansible", "documentation", "yaml", "cli", "automation"]
 license = "GPL-3.0-or-later"
 license-files = ["LICENSES/*.txt"]
-readme = {file = "README.md", content-type = "text/markdown"}
+readme = {file = "../README.md", content-type = "text/markdown"}
 authors = [
   { name = "foundata GmbH" },
   { name = "Andreas Haerter", email = "ah@foundata.com" },
@@ -71,6 +71,7 @@ line-length = 88
 target-version = "py311"
 
 [tool.ruff.lint]
+# https://docs.astral.sh/ruff/settings/#lint_select
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -79,6 +80,7 @@ select = [
     "B",  # flake8-bugbear
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
+    "Q",  # flake8-quotes
 ]
 ignore = [
     "B008",  # Allow function calls in argument defaults for Typer

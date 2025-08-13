@@ -5,8 +5,8 @@ __author__ = "foundata GmbH"
 
 from .constants import (
     CLI_HEADER,
-    MARKER_COMMENT_MARKDOWN_BEGIN,
-    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_COMMENT_MD_BEGIN,
+    MARKER_COMMENT_MD_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
     MARKER_README_TOC_END,
@@ -37,8 +37,8 @@ __all__ = [
     "MARKER_README_MAIN_END",
     "MARKER_README_TOC_START",
     "MARKER_README_TOC_END",
-    "MARKER_COMMENT_MARKDOWN_BEGIN",
-    "MARKER_COMMENT_MARKDOWN_END",
+    "MARKER_COMMENT_MD_BEGIN",
+    "MARKER_COMMENT_MD_END",
     "RoleProcessor",
     "ArgumentSpecParser",
     "DocumentationGenerator",

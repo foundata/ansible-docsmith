@@ -78,7 +78,9 @@ def generate(
     readme_toc_list_bulletpoints: str | None = typer.Option(
         None,
         "--readme-toc-list-bulletpoints",
-        help="Bullet style for README TOC ('*' or '-'). Auto-detected if not specified.",
+        help=(
+            "Bullet style for README TOC ('*' or '-'). Auto-detected if not specified."
+        ),
     ),
     template_readme: Path | None = typer.Option(
         None,

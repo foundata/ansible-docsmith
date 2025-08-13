@@ -1,8 +1,8 @@
 """Tests for documentation generators."""
 
 from ansible_docsmith import (
-    MARKER_COMMENT_MARKDOWN_BEGIN,
-    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_COMMENT_MD_BEGIN,
+    MARKER_COMMENT_MD_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
 )
@@ -454,8 +454,10 @@ class TestReadmeUpdater:
 
         content = readme_path.read_text()
         assert "test content" in content.lower()
-        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
-        expected_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
+        expected_end = (
+            f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}"
+        )
         assert expected_start in content
         assert expected_end in content
 
@@ -476,7 +478,7 @@ class TestReadmeUpdater:
         content = readme_path.read_text()
         assert "existing content" in content.lower()
         assert "new content" in content.lower()
-        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
         assert expected_start in content
 
     def test_update_readme_existing_file_with_markers(self, temp_dir):
@@ -488,9 +490,9 @@ class TestReadmeUpdater:
 
 Existing content
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}
 Old documentation
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}
 
 More content"""
         readme_path.write_text(existing_content)
@@ -552,15 +554,15 @@ Old content
         # Create README with both main and TOC markers
         existing_content = f"""# My Role
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}
 Old main content
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}
 
 ## Table of Contents
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MD_END}
 Old TOC content
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MD_END}
 
 ## Section One
 

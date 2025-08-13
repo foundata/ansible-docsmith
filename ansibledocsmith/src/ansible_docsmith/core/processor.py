@@ -415,8 +415,8 @@ class RoleProcessor:
             if not has_toc_start and not has_toc_end:
                 notices.append(
                     f"README.md does not contain TOC markers. "
-                    f"Add '{toc_start_marker}' and '{toc_end_marker}' to enable automatic "
-                    f"Table of Contents generation."
+                    f"Add '{toc_start_marker}' and '{toc_end_marker}' to enable "
+                    f"automatic Table of Contents generation."
                 )
             elif has_toc_start and not has_toc_end:
                 errors.append(

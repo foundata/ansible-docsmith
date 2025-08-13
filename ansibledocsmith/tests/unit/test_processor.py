@@ -3,8 +3,8 @@
 import pytest
 
 from ansible_docsmith import (
-    MARKER_COMMENT_MARKDOWN_BEGIN,
-    MARKER_COMMENT_MARKDOWN_END,
+    MARKER_COMMENT_MD_BEGIN,
+    MARKER_COMMENT_MD_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
     MARKER_README_TOC_END,
@@ -347,8 +347,10 @@ var3:
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing required markers" in errors[0]
-        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
-        expected_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
+        expected_end = (
+            f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}"
+        )
         assert expected_start in errors[0]
         assert expected_end in errors[0]
 
@@ -363,13 +365,13 @@ var3:
 
 Some content.
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}
 """)
 
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing start marker" in errors[0]
-        expected_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
         assert expected_start in errors[0]
 
     def test_validate_readme_markers_missing_end(self, temp_dir):
@@ -381,14 +383,16 @@ Some content.
         readme_path = role_path / "README.md"
         readme_path.write_text(f"""# My Role
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}
 Some content.
 """)
 
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing end marker" in errors[0]
-        expected_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_end = (
+            f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}"
+        )
         assert expected_end in errors[0]
 
     def test_validate_readme_markers_both_present(self, temp_dir):
@@ -402,9 +406,9 @@ Some content.
 
 Some content.
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}
 Generated content here.
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}
 
 More content.
 """)
@@ -425,8 +429,12 @@ More content.
         assert len(errors) == 0
         assert len(notices) == 1
         assert "does not contain TOC markers" in notices[0]
-        expected_toc_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}"
-        expected_toc_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_toc_start = (
+            f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MD_END}"
+        )
+        expected_toc_end = (
+            f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MD_END}"
+        )
         assert expected_toc_start in notices[0]
         assert expected_toc_end in notices[0]
 
@@ -441,14 +449,16 @@ More content.
 
 Some content.
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MD_END}
 """)
 
         errors, notices = processor._validate_readme_toc_markers(role_path)
         assert len(errors) == 1
         assert len(notices) == 0
         assert "missing TOC start marker" in errors[0]
-        expected_toc_start = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_toc_start = (
+            f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MD_END}"
+        )
         assert expected_toc_start in errors[0]
 
     def test_validate_readme_toc_markers_missing_end(self, temp_dir):
@@ -460,7 +470,7 @@ Some content.
         readme_path = role_path / "README.md"
         readme_path.write_text(f"""# My Role
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MD_END}
 Some content.
 """)
 
@@ -468,7 +478,9 @@ Some content.
         assert len(errors) == 1
         assert len(notices) == 0
         assert "missing TOC end marker" in errors[0]
-        expected_toc_end = f"{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}"
+        expected_toc_end = (
+            f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MD_END}"
+        )
         assert expected_toc_end in errors[0]
 
     def test_validate_readme_toc_markers_both_present(self, temp_dir):
@@ -480,9 +492,9 @@ Some content.
         readme_path = role_path / "README.md"
         readme_path.write_text(f"""# My Role
 
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_START}{MARKER_COMMENT_MD_END}
 Generated TOC here.
-{MARKER_COMMENT_MARKDOWN_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MARKDOWN_END}
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_TOC_END}{MARKER_COMMENT_MD_END}
 
 ## Section One
 
