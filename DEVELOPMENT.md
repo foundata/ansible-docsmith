@@ -227,6 +227,7 @@ If you need to test actual file creation/modification, create a temporary copy:
 cp -r tests/fixtures/example-role-* /tmp
 
 uv run ansible-docsmith generate /tmp/example-role-simple
+uv run ansible-docsmith generate /tmp/example-role-simple-with-toc
 uv run ansible-docsmith generate /tmp/example-role-multiple-entry-points
 uv run ansible-docsmith generate /tmp/example-role-simple-rst
 ```
