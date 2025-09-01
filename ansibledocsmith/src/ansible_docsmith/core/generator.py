@@ -326,29 +326,58 @@ def create_documentation_generator(
         raise ValueError(f"Unsupported format type: {format_type}")
 
 
-# For backwards compatibility
-DocumentationGenerator = MarkdownDocumentationGenerator
 
 
-class TocGenerator:
-    """Generate Table of Contents from markdown content."""
+class BaseTocGenerator(ABC):
+    """Abstract base class for Table of Contents generators."""
 
     def __init__(self, bullet_style: str | None = None):
         """Initialize TOC generator.
 
         Args:
-            bullet_style: Bullet style to use ("*" or "-"). If None, auto-detect.
+            bullet_style: Bullet style to use. If None, auto-detect.
         """
         self.bullet_style = bullet_style
 
-    def generate_toc(self, content: str) -> str:
-        """Generate Table of Contents from markdown content.
+    @abstractmethod
+    def _get_format_type(self) -> str:
+        """Return the format type this generator handles."""
+        pass
 
-        Args:
-            content: Markdown content to analyze
+    @abstractmethod
+    def _extract_headings(self, content: str) -> list[dict[str, Any]]:
+        """Extract headings from content.
 
         Returns:
-            Generated TOC as markdown string
+            List of heading dictionaries with 'text', 'level', and 'anchor' keys
+        """
+        pass
+
+    @abstractmethod
+    def _detect_bullet_style(self, content: str) -> str:
+        """Auto-detect bullet style from existing content."""
+        pass
+
+    @abstractmethod
+    def _create_anchor_link(self, text: str) -> str:
+        """Create anchor link from heading text."""
+        pass
+
+    @abstractmethod
+    def _generate_toc_lines(
+        self, headings: list[dict[str, Any]], bullet_style: str
+    ) -> str:
+        """Generate TOC lines from headings."""
+        pass
+
+    def generate_toc(self, content: str) -> str:
+        """Generate Table of Contents from content.
+
+        Args:
+            content: Content to analyze
+
+        Returns:
+            Generated TOC as string
         """
         headings = self._extract_headings(content)
         if not headings:
@@ -358,6 +387,14 @@ class TocGenerator:
         bullet_style = self.bullet_style or self._detect_bullet_style(content)
 
         return self._generate_toc_lines(headings, bullet_style)
+
+
+class MarkdownTocGenerator(BaseTocGenerator):
+    """Generate Table of Contents from markdown content."""
+
+    def _get_format_type(self) -> str:
+        """Return the format type this generator handles."""
+        return "markdown"
 
     def _extract_headings(self, content: str) -> list[dict[str, Any]]:
         """Extract headings from markdown content.
@@ -440,6 +477,146 @@ class TocGenerator:
             lines.append(line)
 
         return "\n".join(lines)
+
+
+class RSTTocGenerator(BaseTocGenerator):
+    """Generate Table of Contents from reStructuredText content."""
+
+    def _get_format_type(self) -> str:
+        """Return the format type this generator handles."""
+        return "rst"
+
+    def _extract_headings(self, content: str) -> list[dict[str, Any]]:
+        """Extract headings from RST content.
+
+        Returns:
+            List of heading dictionaries with 'text', 'level', and 'anchor' keys
+        """
+        headings = []
+        lines = content.split("\n")
+
+        for i, line in enumerate(lines):
+            line = line.strip()
+            if not line:
+                continue
+
+            # Check next line for RST underline
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+
+                # RST heading patterns with underlines
+                if next_line and len(set(next_line)) == 1:
+                    underline_char = next_line[0]
+                    if underline_char in "=-`':\"~^_*+#<>" and len(next_line) >= len(
+                        line
+                    ):
+                        # Map underline characters to heading levels (RST convention)
+                        level_map = {
+                            "=": 1,
+                            "-": 2,
+                            "`": 3,
+                            "'": 4,
+                            ":": 5,
+                            '"': 6,
+                            "~": 3,
+                            "^": 4,
+                            "_": 5,
+                            "*": 6,
+                            "+": 7,
+                            "#": 8,
+                            "<": 9,
+                            ">": 10,
+                        }
+                        level = level_map.get(underline_char, 1)
+                        anchor = self._create_anchor_link(line)
+
+                        headings.append(
+                            {"text": line, "level": level, "anchor": anchor}
+                        )
+
+        return headings
+
+    def _detect_bullet_style(self, content: str) -> str:
+        """Auto-detect bullet style from existing RST content."""
+        # Look for existing list patterns in RST
+        dash_pattern = r"^\s*-\s+\`"
+        asterisk_pattern = r"^\s*\*\s+\`"
+
+        dash_count = len(re.findall(dash_pattern, content, re.MULTILINE))
+        asterisk_count = len(re.findall(asterisk_pattern, content, re.MULTILINE))
+
+        # Return the more common style, default to "*"
+        return "-" if dash_count > asterisk_count else "*"
+
+    def _create_anchor_link(self, text: str) -> str:
+        """Create anchor link from heading text for RST.
+
+        Args:
+            text: Heading text
+
+        Returns:
+            Anchor link suitable for RST
+        """
+        # Convert to lowercase and replace spaces/special chars with hyphens
+        anchor = re.sub(r"[^\w\s-]", "", text.lower())
+        anchor = re.sub(r"[-\s]+", "-", anchor)
+        return anchor.strip("-")
+
+    def _generate_toc_lines(
+        self, headings: list[dict[str, Any]], bullet_style: str
+    ) -> str:
+        """Generate TOC lines from headings for RST.
+
+        Args:
+            headings: List of heading dictionaries
+            bullet_style: Bullet style to use
+
+        Returns:
+            Generated TOC lines as RST string
+        """
+        if not headings:
+            return ""
+
+        lines = []
+        min_level = min(h["level"] for h in headings)
+
+        for heading in headings:
+            # Calculate indentation based on heading level
+            indent_level = heading["level"] - min_level
+            indent = "  " * indent_level
+
+            # Create TOC line with RST-style internal link
+            line = (
+                f"{indent}{bullet_style} `{heading['text']} <#{heading['anchor']}>`__"
+            )
+            lines.append(line)
+
+        return "\n".join(lines)
+
+
+def create_toc_generator(
+    format_type: str = "markdown", bullet_style: str | None = None
+) -> BaseTocGenerator:
+    """Create a TOC generator for the specified format.
+
+    Args:
+        format_type: Output format ("markdown" or "rst")
+        bullet_style: Bullet style to use. If None, auto-detect.
+
+    Returns:
+        Appropriate TOC generator instance
+
+    Raises:
+        ValueError: If format_type is not supported
+    """
+    if format_type.lower() == "markdown":
+        return MarkdownTocGenerator(bullet_style)
+    elif format_type.lower() == "rst":
+        return RSTTocGenerator(bullet_style)
+    else:
+        raise ValueError(f"Unsupported format type: {format_type}")
+
+
 
 
 class DefaultsCommentGenerator:
@@ -749,11 +926,9 @@ class ReadmeUpdater:
         self.toc_start_marker = f"{comment_begin}{MARKER_README_TOC_START}{comment_end}"
         self.toc_end_marker = f"{comment_begin}{MARKER_README_TOC_END}{comment_end}"
 
-        # TOC generator (only for Markdown currently)
-        self.toc_generator = (
-            TocGenerator(bullet_style=toc_bullet_style)
-            if self.format_type == "markdown"
-            else None
+        # TOC generator for the specified format
+        self.toc_generator = create_toc_generator(
+            format_type=self.format_type, bullet_style=toc_bullet_style
         )
 
     def update_readme(self, readme_path: Path, new_content: str) -> bool:

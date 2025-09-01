@@ -14,16 +14,16 @@ from .parser import ArgumentSpecParser
 
 def detect_format_from_role(role_path: Path) -> str:
     """Auto-detect format based on existing README files in role directory.
-    
+
     Args:
         role_path: Path to the role directory
-        
+
     Returns:
         'rst' if README.rst exists, 'markdown' if README.md exists or neither exists
     """
     rst_readme = role_path / "README.rst"
     md_readme = role_path / "README.md"
-    
+
     # If both exist, prefer RST (since it's more specific)
     if rst_readme.exists():
         return "rst"
@@ -59,7 +59,7 @@ class RoleProcessor:
         self.template_readme = template_readme
         self.toc_bullet_style = toc_bullet_style
         self.role_path = role_path
-        
+
         # Resolve format type
         if format_type.lower() == "auto" and role_path:
             self.format_type = detect_format_from_role(role_path)
@@ -71,7 +71,7 @@ class RoleProcessor:
 
         # Initialize components
         self.parser = ArgumentSpecParser()
-        
+
         # For auto format, defer generator initialization until format is resolved
         if self.format_type == "auto":
             self.doc_generator = None
@@ -83,7 +83,7 @@ class RoleProcessor:
             self.readme_updater = ReadmeUpdater(
                 format_type=self.format_type, toc_bullet_style=toc_bullet_style
             )
-        
+
         self.defaults_generator = DefaultsCommentGenerator()
 
     def _resolve_auto_format(self, role_path: Path) -> None:
@@ -105,7 +105,7 @@ class RoleProcessor:
         """
         # Resolve auto format if needed
         self._resolve_auto_format(role_path)
-            
+
         try:
             # Basic structure validation
             role_data = self.parser.validate_structure(role_path)

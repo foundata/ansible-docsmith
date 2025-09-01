@@ -8,14 +8,13 @@ from .exceptions import (
     TemplateError,
     ValidationError,
 )
-from .generator import DefaultsCommentGenerator, DocumentationGenerator
+from .generator import DefaultsCommentGenerator
 from .parser import ArgumentSpecParser
 from .processor import RoleProcessor
 
 __all__ = [
     "RoleProcessor",
     "ArgumentSpecParser",
-    "DocumentationGenerator",
     "DefaultsCommentGenerator",
     "AnsibleDocSmithError",
     "ValidationError",

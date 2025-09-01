@@ -23,10 +23,13 @@ from .core.exceptions import (
     ValidationError,
 )
 from .core.generator import (
+    BaseTocGenerator,
     DefaultsCommentGenerator,
-    DocumentationGenerator,
+    MarkdownTocGenerator,
     ReadmeUpdater,
-    TocGenerator,
+    RSTDocumentationGenerator,
+    RSTTocGenerator,
+    create_toc_generator,
 )
 from .core.parser import ArgumentSpecParser
 from .core.processor import RoleProcessor
@@ -45,10 +48,13 @@ __all__ = [
     "MARKER_COMMENT_RST_END",
     "RoleProcessor",
     "ArgumentSpecParser",
-    "DocumentationGenerator",
     "DefaultsCommentGenerator",
     "ReadmeUpdater",
-    "TocGenerator",
+    "BaseTocGenerator",
+    "MarkdownTocGenerator",
+    "RSTDocumentationGenerator",
+    "RSTTocGenerator",
+    "create_toc_generator",
     "AnsibleDocSmithError",
     "ValidationError",
     "ParseError",

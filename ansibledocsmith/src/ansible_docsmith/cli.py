@@ -204,7 +204,9 @@ def validate(
     try:
         # Validate format type
         if format_type.lower() not in ["auto", "markdown", "rst"]:
-            console.print("[red]Error: Format must be 'auto', 'markdown' or 'rst'[/red]")
+            console.print(
+                "[red]Error: Format must be 'auto', 'markdown' or 'rst'[/red]"
+            )
             raise typer.Exit(1)
 
         # Initialize processor

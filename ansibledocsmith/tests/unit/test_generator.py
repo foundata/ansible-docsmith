@@ -8,21 +8,22 @@ from ansible_docsmith import (
 )
 from ansible_docsmith.core.generator import (
     DefaultsCommentGenerator,
-    DocumentationGenerator,
     MarkdownDocumentationGenerator,
-    RSTDocumentationGenerator,
+    MarkdownTocGenerator,
     ReadmeUpdater,
-    TocGenerator,
+    RSTDocumentationGenerator,
+    RSTTocGenerator,
     create_documentation_generator,
+    create_toc_generator,
 )
 
 
 class TestDocumentationGenerator:
-    """Test the DocumentationGenerator class."""
+    """Test the DocumentationGenerator class (alias for MarkdownDocumentationGenerator)."""
 
     def test_generate_role_documentation(self, sample_role_with_specs):
         """Test generating role documentation."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Parse the specs from fixture
         specs = {
@@ -53,7 +54,7 @@ class TestDocumentationGenerator:
 
     def test_generate_documentation_no_options(self, sample_role_path):
         """Test generating documentation with no options."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         specs = {
             "main": {
@@ -72,7 +73,7 @@ class TestDocumentationGenerator:
 
     def test_ansible_escape_filter(self):
         """Test Ansible variable escaping."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         result = generator._ansible_escape_filter("{{ variable }}")
         assert result == "\\{\\{ variable \\}\\}"
@@ -82,7 +83,7 @@ class TestDocumentationGenerator:
 
     def test_code_escape_filter(self):
         """Test code escaping for Markdown."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         result = generator._code_escape_filter("test|value")
         assert result == "`test\\|value`"
@@ -95,7 +96,7 @@ class TestDocumentationGenerator:
 
     def test_format_default_filter(self):
         """Test default value formatting."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # String
         result = generator._format_default_filter("test")
@@ -126,7 +127,7 @@ class TestDocumentationGenerator:
 
     def test_multiline_description_handling(self, sample_role_with_specs):
         """Test handling of multiline descriptions in documentation generation."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Test with a multiline description that includes newlines
         multiline_description = """First paragraph of description.
@@ -170,7 +171,7 @@ class TestTableDescriptionFilter:
 
     def test_html_encoding_basic_tags(self):
         """Test that basic HTML tags are properly encoded."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Test common HTML tags
         input_text = "This has <em>emphasis</em> and <b>bold</b> text."
@@ -182,7 +183,7 @@ class TestTableDescriptionFilter:
 
     def test_html_encoding_xss_prevention(self):
         """Test that XSS attack vectors are properly neutralized."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Test script tag XSS
         input_text = 'Dangerous <script>alert("XSS")</script> content'
@@ -206,7 +207,7 @@ class TestTableDescriptionFilter:
 
     def test_html_encoding_special_characters(self):
         """Test that special characters are properly encoded."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Test ampersand, quotes, and angle brackets
         input_text = 'Variables like ${VAR} & "quoted strings" < > symbols'
@@ -218,7 +219,7 @@ class TestTableDescriptionFilter:
 
     def test_multiline_single_breaks_to_spaces(self):
         """Test that single line breaks within paragraphs become spaces."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         input_text = """First line continues
 on the second line and
@@ -229,7 +230,7 @@ ends on third line."""
 
     def test_multiline_double_breaks_to_br_tags(self):
         """Test that double line breaks (paragraphs) become <br><br> tags."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         input_text = """First paragraph with some content.
 
@@ -245,7 +246,7 @@ Third paragraph here."""
 
     def test_list_descriptions_with_br_tags(self):
         """Test that list descriptions are joined with <br><br>."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         input_list = [
             "First item in the list.",
@@ -261,7 +262,7 @@ Third paragraph here."""
 
     def test_list_with_html_encoding(self):
         """Test that HTML in list items gets properly encoded."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         input_list = [
             "First item with <em>HTML</em>.",
@@ -276,7 +277,7 @@ Third paragraph here."""
 
     def test_combined_html_and_multiline(self):
         """Test HTML encoding combined with multiline processing."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         input_text = """First paragraph with <b>bold</b> text.
 
@@ -291,7 +292,7 @@ Second paragraph with <script>alert("test")</script> content."""
 
     def test_edge_cases_none_and_empty(self):
         """Test edge cases with None and empty inputs."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Test None input
         result = generator._format_table_description_filter(None)
@@ -307,7 +308,7 @@ Second paragraph with <script>alert("test")</script> content."""
 
     def test_edge_cases_empty_list(self):
         """Test edge cases with empty and invalid lists."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Test empty list
         result = generator._format_table_description_filter([])
@@ -326,7 +327,7 @@ Second paragraph with <script>alert("test")</script> content."""
 
     def test_whitespace_normalization(self):
         """Test that multiple spaces are normalized to single spaces."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         input_text = "Text    with     multiple   spaces    here."
         result = generator._format_table_description_filter(input_text)
@@ -335,7 +336,7 @@ Second paragraph with <script>alert("test")</script> content."""
 
     def test_complex_real_world_example(self):
         """Test with a complex real-world example from the fixture."""
-        generator = DocumentationGenerator()
+        generator = MarkdownDocumentationGenerator()
 
         # Based on the actual fixture content
         input_text = (
@@ -587,11 +588,11 @@ Some content here.
 
 
 class TestTocGenerator:
-    """Test the TocGenerator class."""
+    """Test the TOC generator functionality (using MarkdownTocGenerator)."""
 
     def test_generate_toc_basic(self):
         """Test basic TOC generation."""
-        generator = TocGenerator(bullet_style="*")
+        generator = MarkdownTocGenerator(bullet_style="*")
 
         content = """# Main Title
 
@@ -620,7 +621,7 @@ Final content.
 
     def test_generate_toc_with_dash_bullets(self):
         """Test TOC generation with dash bullets."""
-        generator = TocGenerator(bullet_style="-")
+        generator = MarkdownTocGenerator(bullet_style="-")
 
         content = """# Main Title
 
@@ -639,7 +640,7 @@ More content.
 
     def test_extract_headings(self):
         """Test heading extraction."""
-        generator = TocGenerator()
+        generator = MarkdownTocGenerator()
 
         content = """# Title One<a id="custom-id"></a>
 
@@ -665,7 +666,7 @@ Some text that is not a heading.
 
     def test_create_anchor_link(self):
         """Test anchor link creation."""
-        generator = TocGenerator()
+        generator = MarkdownTocGenerator()
 
         test_cases = [
             ("Simple Title", "simple-title"),
@@ -681,7 +682,7 @@ Some text that is not a heading.
 
     def test_detect_bullet_style(self):
         """Test bullet style detection."""
-        generator = TocGenerator()
+        generator = MarkdownTocGenerator()
 
         # Content with more asterisk bullets
         content_asterisk = """
@@ -711,7 +712,7 @@ with no bullet lists.
 
     def test_generate_toc_auto_detect_bullets(self):
         """Test TOC generation with auto-detected bullet style."""
-        generator = TocGenerator()  # No bullet style specified
+        generator = MarkdownTocGenerator()  # No bullet style specified
 
         content = """# Main Title
 
@@ -730,7 +731,7 @@ More content.
 
     def test_generate_toc_empty_content(self):
         """Test TOC generation with no headings."""
-        generator = TocGenerator()
+        generator = MarkdownTocGenerator()
 
         content = """
 Just some regular text
@@ -742,7 +743,7 @@ with no headings at all.
 
     def test_generate_toc_complex_headings(self):
         """Test TOC generation with complex heading text."""
-        generator = TocGenerator(bullet_style="*")
+        generator = MarkdownTocGenerator(bullet_style="*")
 
         content = """# Role: `example-role`
 
@@ -762,6 +763,176 @@ with no headings at all.
         ]
 
         assert toc == "\n".join(expected_lines)
+
+
+class TestMarkdownTocGenerator:
+    """Test the MarkdownTocGenerator class."""
+
+    def test_markdown_get_format_type(self):
+        """Test that MarkdownTocGenerator returns correct format type."""
+        generator = MarkdownTocGenerator()
+        assert generator._get_format_type() == "markdown"
+
+    def test_markdown_toc_generation_same_as_legacy(self):
+        """Test that MarkdownTocGenerator produces same results as legacy TocGenerator."""
+        content = """# Main Title
+
+Some content here.
+
+## Section One
+
+Content for section one.
+
+### Subsection
+
+More content.
+
+## Section Two
+
+Final content.
+"""
+
+        legacy_generator = MarkdownTocGenerator(bullet_style="*")
+        new_generator = MarkdownTocGenerator(bullet_style="*")
+
+        legacy_result = legacy_generator.generate_toc(content)
+        new_result = new_generator.generate_toc(content)
+
+        assert legacy_result == new_result
+
+
+class TestRSTTocGenerator:
+    """Test the RSTTocGenerator class."""
+
+    def test_rst_get_format_type(self):
+        """Test that RSTTocGenerator returns correct format type."""
+        generator = RSTTocGenerator()
+        assert generator._get_format_type() == "rst"
+
+    def test_rst_extract_headings(self):
+        """Test extracting headings from RST content."""
+        generator = RSTTocGenerator()
+        content = """Main Title
+==========
+
+Some content here.
+
+Section One
+-----------
+
+Content for section one.
+
+Subsection
+``````````
+
+More content.
+
+Section Two  
+-----------
+
+Final content.
+"""
+
+        headings = generator._extract_headings(content)
+
+        assert len(headings) == 4
+        assert headings[0]["text"] == "Main Title"
+        assert headings[0]["level"] == 1
+        assert headings[1]["text"] == "Section One"
+        assert headings[1]["level"] == 2
+        assert headings[2]["text"] == "Subsection"
+        assert headings[2]["level"] == 3
+        assert headings[3]["text"] == "Section Two"
+        assert headings[3]["level"] == 2
+
+    def test_rst_create_anchor_link(self):
+        """Test creating anchor links for RST format."""
+        generator = RSTTocGenerator()
+
+        assert generator._create_anchor_link("Simple Title") == "simple-title"
+        assert (
+            generator._create_anchor_link("Title with: Special! Chars?")
+            == "title-with-special-chars"
+        )
+        assert generator._create_anchor_link("Multiple   Spaces") == "multiple-spaces"
+
+    def test_rst_generate_toc_lines(self):
+        """Test generating TOC lines in RST format."""
+        generator = RSTTocGenerator(bullet_style="*")
+
+        headings = [
+            {"text": "Main Title", "level": 1, "anchor": "main-title"},
+            {"text": "Section One", "level": 2, "anchor": "section-one"},
+            {"text": "Section Two", "level": 2, "anchor": "section-two"},
+        ]
+
+        result = generator._generate_toc_lines(headings, "*")
+        expected_lines = [
+            "* `Main Title <#main-title>`__",
+            "  * `Section One <#section-one>`__",
+            "  * `Section Two <#section-two>`__",
+        ]
+
+        assert result == "\n".join(expected_lines)
+
+    def test_rst_detect_bullet_style(self):
+        """Test auto-detecting bullet style from RST content."""
+        generator = RSTTocGenerator()
+
+        # Content with dash bullets
+        dash_content = """
+- `Link One <#one>`__
+- `Link Two <#two>`__
+"""
+        assert generator._detect_bullet_style(dash_content) == "-"
+
+        # Content with asterisk bullets
+        asterisk_content = """
+* `Link One <#one>`__
+* `Link Two <#two>`__
+"""
+        assert generator._detect_bullet_style(asterisk_content) == "*"
+
+        # Default when no pattern found
+        empty_content = "Just some text without TOC patterns"
+        assert generator._detect_bullet_style(empty_content) == "*"
+
+
+class TestCreateTocGenerator:
+    """Test the factory function for creating TOC generators."""
+
+    def test_create_markdown_toc_generator(self):
+        """Test creating a Markdown TOC generator."""
+        generator = create_toc_generator("markdown")
+        assert isinstance(generator, MarkdownTocGenerator)
+        assert generator._get_format_type() == "markdown"
+
+    def test_create_rst_toc_generator(self):
+        """Test creating an RST TOC generator."""
+        generator = create_toc_generator("rst")
+        assert isinstance(generator, RSTTocGenerator)
+        assert generator._get_format_type() == "rst"
+
+    def test_create_toc_generator_with_bullet_style(self):
+        """Test factory function with bullet style parameter."""
+        generator = create_toc_generator("markdown", bullet_style="-")
+        assert generator.bullet_style == "-"
+
+    def test_create_toc_generator_case_insensitive(self):
+        """Test factory function is case insensitive."""
+        generator = create_toc_generator("RST")
+        assert isinstance(generator, RSTTocGenerator)
+
+        generator = create_toc_generator("Markdown")
+        assert isinstance(generator, MarkdownTocGenerator)
+
+    def test_create_toc_generator_unsupported_format(self):
+        """Test factory function with unsupported format."""
+        import pytest
+
+        with pytest.raises(ValueError, match="Unsupported format type: html"):
+            create_toc_generator("html")
+
 
 
 class TestRSTDocumentationGenerator:
@@ -888,8 +1059,3 @@ class TestCreateDocumentationGenerator:
         with pytest.raises(ValueError, match="Unsupported format type: html"):
             create_documentation_generator("html")
 
-    def test_backward_compatibility_alias(self):
-        """Test that DocumentationGenerator is an alias for Markdown generator."""
-        # The old DocumentationGenerator should still work
-        generator = DocumentationGenerator()
-        assert isinstance(generator, MarkdownDocumentationGenerator)
