@@ -12,6 +12,28 @@ from .generator import (
 from .parser import ArgumentSpecParser
 
 
+def detect_format_from_role(role_path: Path) -> str:
+    """Auto-detect format based on existing README files in role directory.
+    
+    Args:
+        role_path: Path to the role directory
+        
+    Returns:
+        'rst' if README.rst exists, 'markdown' if README.md exists or neither exists
+    """
+    rst_readme = role_path / "README.rst"
+    md_readme = role_path / "README.md"
+    
+    # If both exist, prefer RST (since it's more specific)
+    if rst_readme.exists():
+        return "rst"
+    elif md_readme.exists():
+        return "markdown"
+    else:
+        # Default to markdown if neither exists
+        return "markdown"
+
+
 @dataclass
 class ProcessingResults:
     """Results from role processing operation."""
@@ -30,12 +52,19 @@ class RoleProcessor:
         dry_run: bool = False,
         template_readme: Path = None,
         toc_bullet_style: str | None = None,
-        format_type: str = "markdown",
+        format_type: str = "auto",
+        role_path: Path | None = None,
     ):
         self.dry_run = dry_run
         self.template_readme = template_readme
         self.toc_bullet_style = toc_bullet_style
-        self.format_type = format_type.lower()
+        self.role_path = role_path
+        
+        # Resolve format type
+        if format_type.lower() == "auto" and role_path:
+            self.format_type = detect_format_from_role(role_path)
+        else:
+            self.format_type = format_type.lower()
 
         # Initialize components
         self.parser = ArgumentSpecParser()
@@ -52,6 +81,14 @@ class RoleProcessor:
         Validate role structure and return metadata with further check results
         (like consistency, unknown keys).
         """
+        # Auto-detect format if needed
+        if hasattr(self, '_original_format_type') and self._original_format_type == "auto":
+            self.format_type = detect_format_from_role(role_path)
+            # Reinitialize components with detected format  
+            self.readme_updater = ReadmeUpdater(
+                format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
+            )
+            
         try:
             # Basic structure validation
             role_data = self.parser.validate_structure(role_path)
@@ -98,6 +135,17 @@ class RoleProcessor:
         update_defaults: bool = True,
     ) -> ProcessingResults:
         """Process the entire role for documentation generation."""
+
+        # Auto-detect format if needed
+        if hasattr(self, '_original_format_type') and self._original_format_type == "auto":
+            self.format_type = detect_format_from_role(role_path)
+            # Reinitialize components with detected format
+            self.doc_generator = create_documentation_generator(
+                format_type=self.format_type, template_file=self.template_readme
+            )
+            self.readme_updater = ReadmeUpdater(
+                format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
+            )
 
         results = ProcessingResults(
             operations=[], errors=[], warnings=[], file_diffs=[]

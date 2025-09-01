@@ -65,9 +65,9 @@ def generate(
         True, "--readme/--no-readme", help="Generate/update README documentation"
     ),
     format_type: str = typer.Option(
-        "markdown",
+        "auto",
         "--format",
-        help="Output format: 'markdown' or 'rst'",
+        help="Output format: 'auto', 'markdown' or 'rst' (auto detects from existing files)",
         case_sensitive=False,
     ),
     update_defaults: bool = typer.Option(
@@ -103,8 +103,8 @@ def generate(
     _display_header()
 
     # Validate format type
-    if format_type.lower() not in ["markdown", "rst"]:
-        console.print("[red]Error: Format must be 'markdown' or 'rst'[/red]")
+    if format_type.lower() not in ["auto", "markdown", "rst"]:
+        console.print("[red]Error: Format must be 'auto', 'markdown' or 'rst'[/red]")
         raise typer.Exit(1)
 
     # Validate template file extension if provided
@@ -137,6 +137,7 @@ def generate(
                 template_readme=template_readme,
                 toc_bullet_style=readme_toc_list_bulletpoints,
                 format_type=format_type,
+                role_path=role_path,
             )
         except ValueError as e:
             logger.error(f"Template error: {e}")
@@ -184,9 +185,9 @@ def validate(
         dir_okay=True,
     ),
     format_type: str = typer.Option(
-        "markdown",
+        "auto",
         "--format",
-        help="Expected format: 'markdown' or 'rst'",
+        help="Expected format: 'auto', 'markdown' or 'rst' (auto detects from existing files)",
         case_sensitive=False,
     ),
     verbose: bool = typer.Option(
@@ -202,12 +203,12 @@ def validate(
 
     try:
         # Validate format type
-        if format_type.lower() not in ["markdown", "rst"]:
-            console.print("[red]Error: Format must be 'markdown' or 'rst'[/red]")
+        if format_type.lower() not in ["auto", "markdown", "rst"]:
+            console.print("[red]Error: Format must be 'auto', 'markdown' or 'rst'[/red]")
             raise typer.Exit(1)
 
         # Initialize processor
-        processor = RoleProcessor(format_type=format_type)
+        processor = RoleProcessor(format_type=format_type, role_path=role_path)
 
         # Validate the role
         role_data = processor.validate_role(role_path)

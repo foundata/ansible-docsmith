@@ -95,6 +95,7 @@ ansible-docsmith/
     │   │   └── readme/
     │   │       ├── __init__.py
     │   │       └── default.md.j2
+    │   │       └── default.rst.j2
     │   └── utils/              # Utility functions
     │       ├── __init__.py
     │       └── logging.py
@@ -227,6 +228,7 @@ cp -r tests/fixtures/example-role-* /tmp
 
 uv run ansible-docsmith generate /tmp/example-role-simple
 uv run ansible-docsmith generate /tmp/example-role-multiple-entry-points
+uv run ansible-docsmith generate /tmp/example-role-simple-rst
 ```
 
 
