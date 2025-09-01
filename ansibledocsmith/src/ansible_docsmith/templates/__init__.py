@@ -51,12 +51,15 @@ class TemplateManager:
         # Create temporary directory
         self._temp_dir = Path(tempfile.mkdtemp(prefix="ansible_docsmith_template_"))
 
-        # Create readme subdirectory
+        # Always use readme subdirectory (template type)
         readme_dir = self._temp_dir / "readme"
         readme_dir.mkdir()
 
-        # Copy template file to readme/default.md.j2
-        template_dest = readme_dir / "default.md.j2"
+        # Determine template extension based on file extension
+        if template_file.suffix in [".rst", ".txt"]:
+            template_dest = readme_dir / "default.rst.j2"
+        else:
+            template_dest = readme_dir / "default.md.j2"
         shutil.copy2(template_file, template_dest)
 
         return self._temp_dir
@@ -103,35 +106,50 @@ class TemplateManager:
         """Add custom filter to the Jinja environment."""
         self.env.filters[name] = filter_func
 
-    def get_template(self, template_name: str, template_type: str = "readme") -> str:
-        """Get template content by name and type.
+    def get_template(
+        self,
+        template_name: str,
+        template_type: str = "readme",
+        format_type: str = "markdown",
+    ) -> str:
+        """Get template content by name, type and format.
 
         Args:
             template_name: Name of the template (e.g., 'default')
             template_type: Type of template (e.g., 'readme')
+            format_type: Output format ('markdown' or 'rst')
 
         Returns:
             Template content as string
         """
-        template_path = f"{template_type}/{template_name}.md.j2"
+        # Determine file extension based on format
+        ext = "rst.j2" if format_type.lower() == "rst" else "md.j2"
+        template_path = f"{template_type}/{template_name}.{ext}"
         # Read template file directly to get source content
         template_file = self.template_dir / template_path
         return template_file.read_text(encoding="utf-8")
 
     def render_template(
-        self, template_name: str, template_type: str = "readme", **context
+        self,
+        template_name: str,
+        template_type: str = "readme",
+        format_type: str = "markdown",
+        **context,
     ) -> str:
         """Render template with given context.
 
         Args:
             template_name: Name of the template (e.g., 'default')
             template_type: Type of template (e.g., 'readme')
+            format_type: Output format ('markdown' or 'rst')
             **context: Template context variables
 
         Returns:
             Rendered template content
         """
-        template_path = f"{template_type}/{template_name}.md.j2"
+        # Determine file extension based on format
+        ext = "rst.j2" if format_type.lower() == "rst" else "md.j2"
+        template_path = f"{template_type}/{template_name}.{ext}"
         template = self.env.get_template(template_path)
         return template.render(**context)
 
@@ -150,10 +168,11 @@ class TemplateManager:
 
         templates = []
         for template_file in template_dir.glob("*.j2"):
-            # Remove .md.j2 extension to get template name
+            # Remove extension to get template name
             name = template_file.stem
-            if name.endswith(".md"):
-                name = name[:-3]  # Remove .md part
+            # Remove format-specific suffix (.md or .rst)
+            if name.endswith(".md") or name.endswith(".rst"):
+                name = name[:-4] if name.endswith(".rst") else name[:-3]
             templates.append(name)
 
         return sorted(templates)

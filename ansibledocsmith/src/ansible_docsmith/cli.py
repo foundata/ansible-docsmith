@@ -62,7 +62,13 @@ def generate(
         dir_okay=True,
     ),
     output_readme: bool = typer.Option(
-        True, "--readme/--no-readme", help="Generate/update README.md documentation"
+        True, "--readme/--no-readme", help="Generate/update README documentation"
+    ),
+    format_type: str = typer.Option(
+        "markdown",
+        "--format",
+        help="Output format: 'markdown' or 'rst'",
+        case_sensitive=False,
     ),
     update_defaults: bool = typer.Option(
         True,
@@ -96,6 +102,11 @@ def generate(
     logger = setup_logging(verbose)
     _display_header()
 
+    # Validate format type
+    if format_type.lower() not in ["markdown", "rst"]:
+        console.print("[red]Error: Format must be 'markdown' or 'rst'[/red]")
+        raise typer.Exit(1)
+
     # Validate template file extension if provided
     if template_readme and not template_readme.name.endswith(".j2"):
         console.print("[red]Error: Template file must have .j2 extension[/red]")
@@ -125,6 +136,7 @@ def generate(
                 dry_run=dry_run,
                 template_readme=template_readme,
                 toc_bullet_style=readme_toc_list_bulletpoints,
+                format_type=format_type,
             )
         except ValueError as e:
             logger.error(f"Template error: {e}")

@@ -12,6 +12,10 @@ MARKER_README_TOC_END = "END ANSIBLE DOCSMITH TOC"
 MARKER_COMMENT_MD_BEGIN = "<!-- "
 MARKER_COMMENT_MD_END = " -->"
 
+# ReStructuredText comment
+MARKER_COMMENT_RST_BEGIN = ".. "
+MARKER_COMMENT_RST_END = ""
+
 # CLI branding (please keep rendered length under 75 chars)
 CLI_HEADER = (
     "Welcome to [link=https://github.com/foundata/ansible-docsmith]DocSmith[/link] "

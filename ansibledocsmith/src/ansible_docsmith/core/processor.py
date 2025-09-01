@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .exceptions import ProcessingError, ValidationError
-from .generator import DefaultsCommentGenerator, DocumentationGenerator, ReadmeUpdater
+from .generator import (
+    DefaultsCommentGenerator,
+    ReadmeUpdater,
+    create_documentation_generator,
+)
 from .parser import ArgumentSpecParser
 
 
@@ -26,16 +30,22 @@ class RoleProcessor:
         dry_run: bool = False,
         template_readme: Path = None,
         toc_bullet_style: str | None = None,
+        format_type: str = "markdown",
     ):
         self.dry_run = dry_run
         self.template_readme = template_readme
         self.toc_bullet_style = toc_bullet_style
+        self.format_type = format_type.lower()
 
         # Initialize components
         self.parser = ArgumentSpecParser()
-        self.doc_generator = DocumentationGenerator(template_file=template_readme)
+        self.doc_generator = create_documentation_generator(
+            format_type=self.format_type, template_file=template_readme
+        )
         self.defaults_generator = DefaultsCommentGenerator()
-        self.readme_updater = ReadmeUpdater(toc_bullet_style=toc_bullet_style)
+        self.readme_updater = ReadmeUpdater(
+            format_type=self.format_type, toc_bullet_style=toc_bullet_style
+        )
 
     def validate_role(self, role_path: Path) -> dict:
         """

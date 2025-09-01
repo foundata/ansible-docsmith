@@ -1,0 +1,44 @@
+Role variables
+==============
+
+{% if has_options %}
+The following variables can be configured for this role:
+
+{% for var_name, var_spec in options.items() %}
+``{{ var_name | ansible_escape }}``
+{{ '-' * (var_name | length + 4) }}
+
+{{ var_spec.description | format_description }}
+
+:Type: ``{{ var_spec.type }}``
+:Required: {{ 'Yes' if var_spec.required else 'No' }}
+{% if var_spec.default is not none %}
+:Default: {{ var_spec.default | format_default }}
+{% endif %}
+{% if var_spec.choices %}
+:Choices: {{ var_spec.choices | map('string') | map('code_escape') | join(', ') }}
+{% endif %}
+{% if var_spec.elements %}
+:List Elements: ``{{ var_spec.elements }}``
+{% endif %}
+
+{% if var_spec.options %}
+**Nested options:**
+
+{% for sub_name, sub_spec in var_spec.options.items() %}
+``{{ sub_name }}``
+{{ '~' * (sub_name | length + 4) }}
+
+{{ sub_spec.description }}
+
+:Type: {{ sub_spec.type }}
+:Required: {{ 'Yes' if sub_spec.required else 'No' }}
+:Default: {{ sub_spec.default | format_default }}
+
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No variables are defined for this role.
+{% endif %}

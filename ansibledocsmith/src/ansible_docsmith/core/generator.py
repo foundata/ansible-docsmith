@@ -1,7 +1,9 @@
-"""Documentation generators for Markdown and YAML comments."""
+"""Documentation generators for Markdown, reStructuredText and YAML comments."""
 
 import html
 import re
+from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +13,8 @@ from ruamel.yaml.error import YAMLError
 from ..constants import (
     MARKER_COMMENT_MD_BEGIN,
     MARKER_COMMENT_MD_END,
+    MARKER_COMMENT_RST_BEGIN,
+    MARKER_COMMENT_RST_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
     MARKER_README_TOC_END,
@@ -20,8 +24,8 @@ from ..templates import TemplateManager
 from .exceptions import FileOperationError, TemplateError
 
 
-class DocumentationGenerator:
-    """Generate Markdown documentation from argument specs."""
+class BaseDocumentationGenerator(ABC):
+    """Abstract base class for documentation generators."""
 
     def __init__(
         self,
@@ -39,16 +43,28 @@ class DocumentationGenerator:
         self.template_manager = TemplateManager(template_dir, template_file)
         self.template_name = template_name
 
-        # Add custom filters to the Jinja environment
-        self.template_manager.add_filter("ansible_escape", self._ansible_escape_filter)
-        self.template_manager.add_filter("code_escape", self._code_escape_filter)
-        self.template_manager.add_filter("format_default", self._format_default_filter)
-        self.template_manager.add_filter(
-            "format_description", self._format_description_filter
-        )
-        self.template_manager.add_filter(
-            "format_table_description", self._format_table_description_filter
-        )
+        # Add format-specific filters to the Jinja environment
+        self._setup_filters()
+
+    def _setup_filters(self):
+        """Setup format-specific filters."""
+        filters = self._get_filters()
+        for name, filter_func in filters.items():
+            self.template_manager.add_filter(name, filter_func)
+
+    @abstractmethod
+    def _get_filters(self) -> dict[str, Callable[[Any], str]]:
+        """Get format-specific filters."""
+        pass
+
+    def _get_template_subdir(self) -> str:
+        """Get the template subdirectory (same for all formats)."""
+        return "readme"
+
+    @abstractmethod
+    def _get_format_type(self) -> str:
+        """Get the format type for this generator."""
+        pass
 
     def generate_role_documentation(
         self, specs: dict[str, Any], role_name: str, role_path: Path
@@ -73,28 +89,26 @@ class DocumentationGenerator:
                 "has_options": bool(primary_spec.get("options", {})),
             }
 
-            # Render template using template manager
+            # Render template using template manager with format type
             return self.template_manager.render_template(
-                self.template_name, "readme", **context
+                self.template_name,
+                self._get_template_subdir(),
+                self._get_format_type(),
+                **context,
             )
 
         except Exception as e:
             raise TemplateError(f"Failed to generate documentation: {e}")
 
+    @abstractmethod
     def _ansible_escape_filter(self, value: Any) -> str:
-        """Escape Ansible variable syntax for Markdown."""
-        if value is None:
-            return "N/A"
-        value_str = str(value)
-        return value_str.replace("{{", "\\{\\{").replace("}}", "\\}\\}")
+        """Escape Ansible variable syntax for the target format."""
+        pass
 
+    @abstractmethod
     def _code_escape_filter(self, value: Any) -> str:
-        """Escape code for Markdown code blocks."""
-        if value is None:
-            return "N/A"
-        value_str = str(value)
-        escaped = value_str.replace("`", "\\`").replace("|", "\\|")
-        return f"`{escaped}`"
+        """Escape code for the target format."""
+        pass
 
     def _format_default_filter(self, value: Any) -> str:
         """Format default values for display."""
@@ -112,14 +126,52 @@ class DocumentationGenerator:
     def _format_description_filter(self, description: Any) -> str:
         """Format description for README display, handling both strings and lists."""
         if isinstance(description, list):
-            # Join list items with double newlines for paragraph separation in markdown
+            # Join list items with double newlines for paragraph separation
             return "\n\n".join(
                 str(item).strip() for item in description if str(item).strip()
             )
         return str(description).strip() if description else ""
 
+    @abstractmethod
     def _format_table_description_filter(self, description: Any) -> str:
         """Format description for table display, handling multiline strings properly."""
+        pass
+
+
+class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
+    """Generate Markdown documentation from argument specs."""
+
+    def _get_filters(self) -> dict[str, Callable[[Any], str]]:
+        """Get Markdown-specific filters."""
+        return {
+            "ansible_escape": self._ansible_escape_filter,
+            "code_escape": self._code_escape_filter,
+            "format_default": self._format_default_filter,
+            "format_description": self._format_description_filter,
+            "format_table_description": self._format_table_description_filter,
+        }
+
+    def _get_format_type(self) -> str:
+        """Get the format type for Markdown generator."""
+        return "markdown"
+
+    def _ansible_escape_filter(self, value: Any) -> str:
+        """Escape Ansible variable syntax for Markdown."""
+        if value is None:
+            return "N/A"
+        value_str = str(value)
+        return value_str.replace("{{", "\\{\\{").replace("}}", "\\}\\}")
+
+    def _code_escape_filter(self, value: Any) -> str:
+        """Escape code for Markdown code blocks."""
+        if value is None:
+            return "N/A"
+        value_str = str(value)
+        escaped = value_str.replace("`", "\\`").replace("|", "\\|")
+        return f"`{escaped}`"
+
+    def _format_table_description_filter(self, description: Any) -> str:
+        """Format description for Markdown table display, handling multiline strings."""
         if description is None:
             return ""
 
@@ -164,6 +216,118 @@ class DocumentationGenerator:
 
         # Join paragraphs with <br><br> for proper table display
         return "<br><br>".join(processed_paragraphs)
+
+
+class RSTDocumentationGenerator(BaseDocumentationGenerator):
+    """Generate reStructuredText documentation from argument specs."""
+
+    def _get_filters(self) -> dict[str, Callable[[Any], str]]:
+        """Get reStructuredText-specific filters."""
+        return {
+            "ansible_escape": self._ansible_escape_filter,
+            "code_escape": self._code_escape_filter,
+            "format_default": self._format_default_filter,
+            "format_description": self._format_description_filter,
+            "format_table_description": self._format_table_description_filter,
+        }
+
+    def _get_format_type(self) -> str:
+        """Get the format type for RST generator."""
+        return "rst"
+
+    def _ansible_escape_filter(self, value: Any) -> str:
+        """Escape Ansible variable syntax for reStructuredText."""
+        if value is None:
+            return "N/A"
+        value_str = str(value)
+        # RST doesn't need special escaping for Ansible variables
+        return value_str
+
+    def _code_escape_filter(self, value: Any) -> str:
+        """Escape code for reStructuredText code blocks."""
+        if value is None:
+            return "N/A"
+        value_str = str(value)
+        # RST uses double backticks for inline code
+        escaped = value_str.replace("`", "\\`")
+        return f"``{escaped}``"
+
+    def _format_table_description_filter(self, description: Any) -> str:
+        """Format description for reStructuredText table display."""
+        if description is None:
+            return ""
+
+        # Normalize description to string format
+        if isinstance(description, list):
+            # Join list items with double newlines for paragraph separation
+            text = "\n\n".join(
+                str(item).strip() for item in description if str(item).strip()
+            )
+        else:
+            # Convert to string and strip, handling any YAML object types
+            try:
+                text = str(description)
+                text = text.strip() if hasattr(text, "strip") else text
+            except Exception:
+                return ""
+
+        if not text:
+            return ""
+
+        # Process multiline descriptions for RST table display:
+        # Replace line breaks with spaces for single-line table cells
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+        # For RST tables, we need to handle multiline content differently
+        # Replace paragraph breaks with | (pipe) for RST table continuation
+        paragraphs = text.split("\n\n")
+        processed_paragraphs = []
+
+        for paragraph in paragraphs:
+            if paragraph.strip():
+                # Replace single newlines within paragraph with spaces
+                processed_paragraph = paragraph.replace("\n", " ")
+                # Clean up multiple spaces
+                processed_paragraph = " ".join(processed_paragraph.split())
+                processed_paragraphs.append(processed_paragraph)
+
+        # Join paragraphs with | for RST table line continuation
+        return " | ".join(processed_paragraphs)
+
+
+# Factory function to create appropriate generator
+def create_documentation_generator(
+    format_type: str = "markdown",
+    template_dir: Path | None = None,
+    template_name: str = "default",
+    template_file: Path | None = None,
+) -> BaseDocumentationGenerator:
+    """Create a documentation generator for the specified format.
+
+    Args:
+        format_type: Output format ("markdown" or "rst")
+        template_dir: Custom template directory
+        template_name: Name of the template to use
+        template_file: Single template file
+
+    Returns:
+        Appropriate documentation generator instance
+
+    Raises:
+        ValueError: If format_type is not supported
+    """
+    if format_type.lower() == "markdown":
+        return MarkdownDocumentationGenerator(
+            template_dir, template_name, template_file
+        )
+    elif format_type.lower() == "rst":
+        return RSTDocumentationGenerator(template_dir, template_name, template_file)
+    else:
+        raise ValueError(f"Unsupported format type: {format_type}")
+
+
+# For backwards compatibility
+DocumentationGenerator = MarkdownDocumentationGenerator
 
 
 class TocGenerator:
@@ -559,16 +723,25 @@ class DefaultsCommentGenerator:
 
 
 class ReadmeUpdater:
-    """Update README.md files with generated content."""
+    """Update README files with generated content."""
 
     def __init__(
         self,
+        format_type: str = "markdown",
         start_marker: str = MARKER_README_MAIN_START,
         end_marker: str = MARKER_README_MAIN_END,
-        comment_begin: str = MARKER_COMMENT_MD_BEGIN,
-        comment_end: str = MARKER_COMMENT_MD_END,
         toc_bullet_style: str | None = None,
     ):
+        self.format_type = format_type.lower()
+
+        # Set format-specific comment markers
+        if self.format_type == "rst":
+            comment_begin = MARKER_COMMENT_RST_BEGIN
+            comment_end = MARKER_COMMENT_RST_END
+        else:
+            comment_begin = MARKER_COMMENT_MD_BEGIN
+            comment_end = MARKER_COMMENT_MD_END
+
         self.start_marker = f"{comment_begin}{start_marker}{comment_end}"
         self.end_marker = f"{comment_begin}{end_marker}{comment_end}"
 
@@ -576,11 +749,15 @@ class ReadmeUpdater:
         self.toc_start_marker = f"{comment_begin}{MARKER_README_TOC_START}{comment_end}"
         self.toc_end_marker = f"{comment_begin}{MARKER_README_TOC_END}{comment_end}"
 
-        # TOC generator
-        self.toc_generator = TocGenerator(bullet_style=toc_bullet_style)
+        # TOC generator (only for Markdown currently)
+        self.toc_generator = (
+            TocGenerator(bullet_style=toc_bullet_style)
+            if self.format_type == "markdown"
+            else None
+        )
 
     def update_readme(self, readme_path: Path, new_content: str) -> bool:
-        """Update content between markers in README.md."""
+        """Update content between markers in README file."""
 
         try:
             updated_content = self._get_updated_content(readme_path, new_content)
@@ -620,7 +797,11 @@ class ReadmeUpdater:
         return re.sub(pattern, replacement, content, flags=re.DOTALL)
 
     def _update_toc_section(self, content: str) -> str:
-        """Update TOC section if markers are present."""
+        """Update TOC section if markers are present (Markdown only)."""
+
+        # Skip TOC generation for non-Markdown formats
+        if not self.toc_generator:
+            return content
 
         # Check if TOC markers exist
         if self.toc_start_marker not in content or self.toc_end_marker not in content:
@@ -636,7 +817,47 @@ class ReadmeUpdater:
 
     def _create_new_readme(self, role_content: str, role_name: str) -> str:
         """Create a new README with basic template."""
-        return f"""# Ansible role: `{role_name}`
+        if self.format_type == "rst":
+            return f"""Ansible role: {role_name}
+{"=" * (15 + len(role_name))}
+
+FIXME Add role description here.
+
+{self.start_marker}
+{role_content}
+{self.end_marker}
+
+
+Dependencies
+============
+
+See ``dependencies`` in ``meta/main.yml``.
+
+
+Compatibility
+=============
+
+See ``min_ansible_version`` in ``meta/main.yml``.
+
+
+Licensing, copyright
+====================
+
+Copyright (c) [FIXME YYYY Your Name]
+
+[FIXME Adapt license:
+This project is licensed under the GNU General Public License v3.0 or later
+(SPDX-License-Identifier: ``GPL-3.0-or-later``)].
+
+
+Author information
+==================
+
+This project was created and is maintained by [FIXME Your Name].
+
+"""
+        else:
+            return f"""# Ansible role: `{role_name}`
 
 FIXME Add role description here.
 
