@@ -63,31 +63,48 @@ class RoleProcessor:
         # Resolve format type
         if format_type.lower() == "auto" and role_path:
             self.format_type = detect_format_from_role(role_path)
+        elif format_type.lower() == "auto":
+            # Defer format detection until role_path is known
+            self.format_type = "auto"
         else:
             self.format_type = format_type.lower()
 
         # Initialize components
         self.parser = ArgumentSpecParser()
-        self.doc_generator = create_documentation_generator(
-            format_type=self.format_type, template_file=template_readme
-        )
+        
+        # For auto format, defer generator initialization until format is resolved
+        if self.format_type == "auto":
+            self.doc_generator = None
+            self.readme_updater = None
+        else:
+            self.doc_generator = create_documentation_generator(
+                format_type=self.format_type, template_file=template_readme
+            )
+            self.readme_updater = ReadmeUpdater(
+                format_type=self.format_type, toc_bullet_style=toc_bullet_style
+            )
+        
         self.defaults_generator = DefaultsCommentGenerator()
-        self.readme_updater = ReadmeUpdater(
-            format_type=self.format_type, toc_bullet_style=toc_bullet_style
-        )
+
+    def _resolve_auto_format(self, role_path: Path) -> None:
+        """Resolve auto format detection and initialize generators if needed."""
+        if self.format_type == "auto":
+            self.format_type = detect_format_from_role(role_path)
+            # Initialize generators now that format is resolved
+            self.doc_generator = create_documentation_generator(
+                format_type=self.format_type, template_file=self.template_readme
+            )
+            self.readme_updater = ReadmeUpdater(
+                format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
+            )
 
     def validate_role(self, role_path: Path) -> dict:
         """
         Validate role structure and return metadata with further check results
         (like consistency, unknown keys).
         """
-        # Auto-detect format if needed
-        if hasattr(self, '_original_format_type') and self._original_format_type == "auto":
-            self.format_type = detect_format_from_role(role_path)
-            # Reinitialize components with detected format  
-            self.readme_updater = ReadmeUpdater(
-                format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
-            )
+        # Resolve auto format if needed
+        self._resolve_auto_format(role_path)
             
         try:
             # Basic structure validation
@@ -136,16 +153,8 @@ class RoleProcessor:
     ) -> ProcessingResults:
         """Process the entire role for documentation generation."""
 
-        # Auto-detect format if needed
-        if hasattr(self, '_original_format_type') and self._original_format_type == "auto":
-            self.format_type = detect_format_from_role(role_path)
-            # Reinitialize components with detected format
-            self.doc_generator = create_documentation_generator(
-                format_type=self.format_type, template_file=self.template_readme
-            )
-            self.readme_updater = ReadmeUpdater(
-                format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
-            )
+        # Resolve auto format if needed
+        self._resolve_auto_format(role_path)
 
         results = ProcessingResults(
             operations=[], errors=[], warnings=[], file_diffs=[]
@@ -420,6 +429,9 @@ class RoleProcessor:
         """Validate that existing README file contains required markers."""
         errors = []
 
+        # Resolve auto format if needed
+        self._resolve_auto_format(role_path)
+
         # Check for README files in order of preference based on format
         readme_ext = "rst" if self.format_type == "rst" else "md"
         readme_path = role_path / f"README.{readme_ext}"
@@ -473,6 +485,9 @@ class RoleProcessor:
         """
         errors = []
         notices = []
+
+        # Resolve auto format if needed
+        self._resolve_auto_format(role_path)
 
         # Use same logic as _validate_readme_markers for file detection
         readme_ext = "rst" if self.format_type == "rst" else "md"
