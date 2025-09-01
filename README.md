@@ -57,8 +57,8 @@ pipx install ansible-docsmith
 1. If not already existing, simply **create an `argument_specs.yml`** for [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). Try to add `description:` to your variables. The more complete your specification, the better the argument validation and documentation.
 2. **Add simple markers in your role's `README.md`** where DocSmith shall maintain the human-readable documentation:
    ```
-   <!-- BEGIN ANSIBLE DOCSMITH -->
-   <!-- END ANSIBLE DOCSMITH -->
+   <!-- BEGIN ANSIBLE DOCSMITH MAIN -->
+   <!-- END ANSIBLE DOCSMITH MAIN -->
    ```
    All content between these markers will be removed and updated on each `ansible-docsmith generate` run.
 
@@ -122,7 +122,7 @@ ansible-docsmith validate /path/to/role --verbose
 
 ### Custom templates<a id="usage-custom-templates"></a>
 
-You can customize the generated Markdown output by providing your own [Jinja2 template](https://jinja.palletsprojects.com/en/stable/templates/). The rendered content will be inserted between the `<!-- BEGIN ANSIBLE DOCSMITH -->` and `<!-- END ANSIBLE DOCSMITH -->` markers in the role’s `README.md` file.
+You can customize the generated Markdown output by providing your own [Jinja2 template](https://jinja.palletsprojects.com/en/stable/templates/). The rendered content will be inserted between the `<!-- BEGIN ANSIBLE DOCSMITH MAIN -->` and `<!-- END ANSIBLE DOCSMITH MAIN -->` markers in the role's `README.md` file.
 
 ```bash
 # Use a custom template for README generation

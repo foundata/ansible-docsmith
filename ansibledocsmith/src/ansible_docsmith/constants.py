@@ -1,14 +1,14 @@
 """Global constants for ansible-docsmith."""
 
 # README section markers for managed documentation sections (content only)
-MARKER_README_MAIN_START = "BEGIN ANSIBLE DOCSMITH"
-MARKER_README_MAIN_END = "END ANSIBLE DOCSMITH"
+MARKER_README_MAIN_START = "BEGIN ANSIBLE DOCSMITH MAIN"
+MARKER_README_MAIN_END = "END ANSIBLE DOCSMITH MAIN"
 
 # TOC section markers for table of contents (content only)
 MARKER_README_TOC_START = "BEGIN ANSIBLE DOCSMITH TOC"
 MARKER_README_TOC_END = "END ANSIBLE DOCSMITH TOC"
 
-# Markdown comment markers for different output formats
+# Markdown comment markers
 MARKER_COMMENT_MD_BEGIN = "<!-- "
 MARKER_COMMENT_MD_END = " -->"
 
