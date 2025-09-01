@@ -1,0 +1,118 @@
+# Please note: This file is just a dummy for testing. It might make no sense
+# at all. If you are searching for an acme.sh role, look at the "run" role of
+# the https://github.com/foundata/ansible-collection-acmesh collection.
+
+---
+
+argument_specs:
+  main:
+    unknown_key: true # This triggers a warning during validation if no serious errors are found (leading to exceptions / fatal errors)
+    short_description: ACME Shell certificate management tool
+    description:
+      - "This role manages SSL certificates using acme-shell tool"
+      - "It can obtain, renew, and manage certificates from Let's Encrypt"
+    author:
+      - "foundata GmbH"
+      - "John Doe <jd@example.com>"
+    version_added: "1.0.0"
+    options:
+
+      acmesh_state:
+        type: "str"
+        required: true
+        description: |
+          Determines whether the managed resources should be "present" or
+          "absent".
+
+          "present" ensures that required components, such as software packages, are installed and configured.
+
+          "absent" reverts changes as much as possible, such as removing packages, deleting created users,
+          stopping services, restoring modified settings, …
+        choices:
+          - "present"
+          - "absent"
+
+      acmesh_domain:
+        type: str
+        required: true
+        description: "Primary domain name for the certificate. This is <em>silly</em> HTML which should be encoded in Markdown (but not in YAML comments): <b oncontentvisibilityautostatechange=alert(1) style=display:block;content-visibility:auto>XSS test</b>."
+
+      acmesh_alt_names:
+        type: list
+        elements: str
+        required: false
+        default: []
+        # Demo: multiple paragraphs, long lines
+        description:
+          - "Alternative domain names (SAN) for the certificate."
+          - "A Subject Alternative Name (SAN) in certificates allows multiple domain names or IP addresses to be associated with a single SSL/TLS certificate. SANs are commonly used for multi-domain certificates, ensuring all listed domains are securely protected with one public key."
+
+      acmesh_email:
+        type: str
+        required: true
+        description: "Email address for ACME account registration"
+
+      acmesh_staging:
+        type: bool
+        required: false
+        default: false
+        description: "Use Let's Encrypt staging environment for testing"
+
+      acmesh_challenge_type:
+        type: str
+        required: false
+        default: "http-01"
+        choices:
+          - "http-01"
+          - "dns-01"
+        description: "ACME challenge type to use for domain validation"
+
+      acmesh_webroot_path:
+        type: path
+        required: false
+        default: "/var/www/html"
+        description: "Path to webroot directory for HTTP-01 challenge"
+
+      # This variable is defined here but not listed in defaults/main.yml.
+      # Since it has no default value in the specification, this may be intentional
+      # and should only trigger a notice during validation.
+      acmesh_dns_provider:
+        type: str
+        required: false
+        description: "DNS provider for DNS-01 challenge"
+        choices:
+          - "cloudflare"
+          - "route53"
+          - "digitalocean"
+
+      acmesh_config:
+        type: dict
+        required: false
+        default: {}
+        description: "Additional configuration options"
+        options:
+          force_renewal:
+            type: bool
+            default: false
+            description: "Force certificate renewal even if not expired"
+          key_size:
+            type: int
+            default: 2048
+            choices: [2048, 4096]
+            description: "RSA key size in bits"
+
+      acmesh_hooks:
+        type: dict
+        required: false
+        default: {}
+        description: "Custom hooks for certificate lifecycle events"
+        options:
+          pre_issue:
+            type: str
+            description: "Command to run before certificate issuance"
+          post_issue:
+            type: str
+            description: "Command to run after certificate issuance"
+          deploy:
+            type: str
+            description: "Command to run for certificate deployment"

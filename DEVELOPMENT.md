@@ -200,6 +200,7 @@ Always use `--dry-run` when testing with fixture files to prevent modifications!
 # Test with example role fixture (read-only)
 uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 uv run ansible-docsmith generate tests/fixtures/example-role-multiple-entry-points --dry-run
+uv run ansible-docsmith generate tests/fixtures/example-role-simple-rst --dry-run
 
 # Test validation (always a read-only operation): success
 uv run ansible-docsmith validate tests/fixtures/example-role-multiple-entry-points
