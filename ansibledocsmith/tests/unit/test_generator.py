@@ -9,8 +9,11 @@ from ansible_docsmith import (
 from ansible_docsmith.core.generator import (
     DefaultsCommentGenerator,
     DocumentationGenerator,
+    MarkdownDocumentationGenerator,
+    RSTDocumentationGenerator,
     ReadmeUpdater,
     TocGenerator,
+    create_documentation_generator,
 )
 
 
@@ -759,3 +762,134 @@ with no headings at all.
         ]
 
         assert toc == "\n".join(expected_lines)
+
+
+class TestRSTDocumentationGenerator:
+    """Test the RSTDocumentationGenerator class."""
+
+    def test_rst_generate_role_documentation(self, sample_role_with_specs):
+        """Test generating RST role documentation."""
+        generator = RSTDocumentationGenerator()
+
+        # Parse the specs from fixture
+        specs = {
+            "main": {
+                "short_description": "Test role",
+                "description": "A test role for testing",
+                "author": ["Test Author"],
+                "options": {
+                    "test_var": {
+                        "type": "str",
+                        "required": True,
+                        "default": None,
+                        "description": "A test variable",
+                        "choices": [],
+                        "options": {},
+                    }
+                },
+            }
+        }
+
+        result = generator.generate_role_documentation(
+            specs, "test-role", sample_role_with_specs
+        )
+
+        # Check RST-specific formatting
+        assert "role variables" in result.lower()
+        assert "==============" in result  # RST heading underline
+        assert "``test_var``" in result  # RST inline code
+        assert ":Type: ``str``" in result  # RST field list
+        assert ":Required: Yes" in result
+        assert "a test variable" in result.lower()
+
+    def test_rst_ansible_escape_filter(self):
+        """Test RST Ansible escape filter (should not escape)."""
+        generator = RSTDocumentationGenerator()
+
+        # RST doesn't need Ansible variable escaping
+        result = generator._ansible_escape_filter("{{ variable }}")
+        assert result == "{{ variable }}"
+
+        result = generator._ansible_escape_filter(None)
+        assert result == "N/A"
+
+    def test_rst_code_escape_filter(self):
+        """Test RST code escape filter."""
+        generator = RSTDocumentationGenerator()
+
+        # RST uses double backticks for inline code
+        result = generator._code_escape_filter("test|value")
+        assert result == "``test|value``"
+
+        result = generator._code_escape_filter("test`value")
+        assert result == "``test\\`value``"  # Escape backticks in RST
+
+        result = generator._code_escape_filter(None)
+        assert result == "N/A"
+
+    def test_rst_format_table_description_filter(self):
+        """Test RST table description formatting."""
+        generator = RSTDocumentationGenerator()
+
+        # Test multiline text with paragraph breaks
+        input_text = "First paragraph.\n\nSecond paragraph."
+        result = generator._format_table_description_filter(input_text)
+
+        # RST uses pipe separators instead of <br><br>
+        assert "First paragraph. | Second paragraph." == result
+
+    def test_rst_format_description_filter(self):
+        """Test RST description formatting."""
+        generator = RSTDocumentationGenerator()
+
+        # Test list input
+        input_list = ["First item", "Second item"]
+        result = generator._format_description_filter(input_list)
+        expected = "First item\n\nSecond item"
+        assert result == expected
+
+        # Test string input
+        input_str = "Simple description"
+        result = generator._format_description_filter(input_str)
+        assert result == "Simple description"
+
+        # Test None input
+        result = generator._format_description_filter(None)
+        assert result == ""
+
+
+class TestCreateDocumentationGenerator:
+    """Test the factory function for creating generators."""
+
+    def test_create_markdown_generator(self):
+        """Test creating a Markdown generator."""
+        generator = create_documentation_generator("markdown")
+        assert isinstance(generator, MarkdownDocumentationGenerator)
+        assert generator._get_format_type() == "markdown"
+
+    def test_create_rst_generator(self):
+        """Test creating an RST generator."""
+        generator = create_documentation_generator("rst")
+        assert isinstance(generator, RSTDocumentationGenerator)
+        assert generator._get_format_type() == "rst"
+
+    def test_create_generator_case_insensitive(self):
+        """Test factory function is case insensitive."""
+        generator = create_documentation_generator("RST")
+        assert isinstance(generator, RSTDocumentationGenerator)
+
+        generator = create_documentation_generator("Markdown")
+        assert isinstance(generator, MarkdownDocumentationGenerator)
+
+    def test_create_generator_unsupported_format(self):
+        """Test factory function with unsupported format."""
+        import pytest
+
+        with pytest.raises(ValueError, match="Unsupported format type: html"):
+            create_documentation_generator("html")
+
+    def test_backward_compatibility_alias(self):
+        """Test that DocumentationGenerator is an alias for Markdown generator."""
+        # The old DocumentationGenerator should still work
+        generator = DocumentationGenerator()
+        assert isinstance(generator, MarkdownDocumentationGenerator)

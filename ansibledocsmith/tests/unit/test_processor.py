@@ -5,13 +5,15 @@ import pytest
 from ansible_docsmith import (
     MARKER_COMMENT_MD_BEGIN,
     MARKER_COMMENT_MD_END,
+    MARKER_COMMENT_RST_BEGIN,
+    MARKER_COMMENT_RST_END,
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
     MARKER_README_TOC_END,
     MARKER_README_TOC_START,
 )
 from ansible_docsmith.core.exceptions import ValidationError
-from ansible_docsmith.core.processor import RoleProcessor
+from ansible_docsmith.core.processor import RoleProcessor, detect_format_from_role
 
 
 class TestRoleProcessor:
@@ -515,3 +517,251 @@ More content.
         errors, notices = processor._validate_readme_toc_markers(role_path)
         assert errors == []
         assert notices == []
+
+    def test_validate_role_rst_success(self, temp_dir):
+        """Test successful RST role validation."""
+        processor = RoleProcessor(format_type="rst")
+
+        # Create a role with RST README and proper markers
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create meta directory and argument_specs.yml
+        meta_dir = role_path / "meta"
+        meta_dir.mkdir()
+        spec_file = meta_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    short_description: "Test role"
+    description: "A test role"
+    options:
+      test_var:
+        type: str
+        description: "A test variable"
+""")
+
+        # Create defaults directory and main.yml
+        defaults_dir = role_path / "defaults"
+        defaults_dir.mkdir()
+        defaults_file = defaults_dir / "main.yml"
+        defaults_file.write_text("---\ntest_var: test_value")
+
+        # Create README.rst with proper markers
+        readme_path = role_path / "README.rst"
+        rst_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
+        rst_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        readme_path.write_text(f"""Test Role RST
+==============
+
+Some description.
+
+{rst_start}
+Role variables
+==============
+
+``test_var``
+-------------
+
+A test variable
+
+:Type: ``str``
+:Required: No
+:Default: `"test_value"`
+
+{rst_end}
+
+License
+-------
+
+MIT
+""")
+
+        result = processor.validate_role(role_path)
+
+        assert "specs" in result
+        assert "spec_file" in result
+        assert "role_name" in result
+        assert result["role_name"] == role_path.name
+        assert len(result["errors"]) == 0
+
+    def test_validate_role_rst_missing_markers_forced(self, temp_dir):
+        """Test RST validation fails when markers are missing and format is forced."""
+        processor = RoleProcessor(format_type="rst")
+
+        # Create a role with RST README but missing markers
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create meta directory and argument_specs.yml
+        meta_dir = role_path / "meta"
+        meta_dir.mkdir()
+        spec_file = meta_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    short_description: "Test role"
+    description: "A test role"
+    options:
+      test_var:
+        type: str
+        description: "A test variable"
+""")
+
+        # Create defaults directory and main.yml
+        defaults_dir = role_path / "defaults"
+        defaults_dir.mkdir()
+        defaults_file = defaults_dir / "main.yml"
+        defaults_file.write_text("---\ntest_var: test_value")
+
+        # Create README.rst WITHOUT proper markers
+        readme_path = role_path / "README.rst"
+        readme_path.write_text("""Test Role RST
+==============
+
+Some description without markers.
+
+License
+-------
+
+MIT
+""")
+
+        with pytest.raises(ValidationError) as exc_info:
+            processor.validate_role(role_path)
+
+        error_message = str(exc_info.value)
+        assert "validation failed" in error_message.lower()
+        assert "missing required markers" in error_message.lower()
+        rst_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
+        rst_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        assert rst_start in error_message
+        assert rst_end in error_message
+
+    def test_validate_readme_markers_rst_missing_both(self, temp_dir):
+        """Test validation when RST README exists but has no markers."""
+        processor = RoleProcessor(format_type="rst")
+
+        # Create role with README.rst missing markers
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.rst"
+        readme_path.write_text("Test Role\n=========\n\nSome content without markers.")
+
+        errors = processor._validate_readme_markers(role_path)
+        assert len(errors) == 1
+        assert "missing required markers" in errors[0]
+        expected_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
+        expected_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        assert expected_start in errors[0]
+        assert expected_end in errors[0]
+
+    def test_validate_readme_markers_rst_both_present(self, temp_dir):
+        """Test validation when RST README has both markers (should pass)."""
+        processor = RoleProcessor(format_type="rst")
+
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+        readme_path = role_path / "README.rst"
+        rst_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
+        rst_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        readme_path.write_text(f"""Test Role
+=========
+
+Some content.
+
+{rst_start}
+Generated content here.
+{rst_end}
+
+More content.
+""")
+
+        errors = processor._validate_readme_markers(role_path)
+        assert errors == []
+
+    def test_detect_format_from_role_rst_exists(self, temp_dir):
+        """Test format detection when README.rst exists."""
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create README.rst
+        readme_rst = role_path / "README.rst"
+        readme_rst.write_text("Test Role\n=========\n\nDescription.")
+
+        result = detect_format_from_role(role_path)
+        assert result == "rst"
+
+    def test_detect_format_from_role_md_exists(self, temp_dir):
+        """Test format detection when README.md exists."""
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create README.md
+        readme_md = role_path / "README.md"
+        readme_md.write_text("# Test Role\n\nDescription.")
+
+        result = detect_format_from_role(role_path)
+        assert result == "markdown"
+
+    def test_detect_format_from_role_both_exist_prefer_rst(self, temp_dir):
+        """Test format detection when both README files exist (should prefer RST)."""
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create both README files
+        readme_rst = role_path / "README.rst"
+        readme_rst.write_text("Test Role\n=========\n\nDescription.")
+        readme_md = role_path / "README.md"
+        readme_md.write_text("# Test Role\n\nDescription.")
+
+        result = detect_format_from_role(role_path)
+        assert result == "rst"
+
+    def test_detect_format_from_role_neither_exists(self, temp_dir):
+        """Test format detection when no README exists (should default to markdown)."""
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        result = detect_format_from_role(role_path)
+        assert result == "markdown"
+
+    def test_processor_auto_format_detection(self, temp_dir):
+        """Test RoleProcessor with auto format detection."""
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create README.rst
+        readme_rst = role_path / "README.rst"
+        readme_rst.write_text("Test Role\n=========\n\nDescription.")
+
+        # Create processor with auto format
+        processor = RoleProcessor(format_type="auto")
+
+        # Mock the validation to just check the format is detected correctly
+        detected_format = (
+            processor.format_type
+            if processor.format_type != "auto"
+            else detect_format_from_role(role_path)
+        )
+        assert detected_format == "rst"
+
+    def test_processor_markdown_format_detection(self, temp_dir):
+        """Test RoleProcessor with markdown format when README.md exists."""
+        role_path = temp_dir / "test-role"
+        role_path.mkdir()
+
+        # Create README.md
+        readme_md = role_path / "README.md"
+        readme_md.write_text("# Test Role\n\nDescription.")
+
+        # Create processor with auto format
+        processor = RoleProcessor(format_type="auto")
+
+        # Mock the validation to just check the format is detected correctly
+        detected_format = (
+            processor.format_type
+            if processor.format_type != "auto"
+            else detect_format_from_role(role_path)
+        )
+        assert detected_format == "markdown"
