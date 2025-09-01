@@ -202,8 +202,10 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 uv run ansible-docsmith generate tests/fixtures/example-role-multiple-entry-points --dry-run
 
 # Test validation (always a read-only operation): success
-uv run ansible-docsmith validate tests/fixtures/example-role-simple
 uv run ansible-docsmith validate tests/fixtures/example-role-multiple-entry-points
+
+# Test validation (always a read-only operation): success with warning
+uv run ansible-docsmith validate tests/fixtures/example-role-simple
 
 # Test validation (always a read-only operation): failure
 uv run ansible-docsmith validate tests/fixtures/example-role-mismatch-spec-defaults
