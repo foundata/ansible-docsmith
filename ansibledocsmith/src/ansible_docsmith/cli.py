@@ -183,6 +183,12 @@ def validate(
         file_okay=False,
         dir_okay=True,
     ),
+    format_type: str = typer.Option(
+        "markdown",
+        "--format",
+        help="Expected format: 'markdown' or 'rst'",
+        case_sensitive=False,
+    ),
     verbose: bool = typer.Option(
         False, "-v", "--verbose", help="Enable verbose logging"
     ),
@@ -195,8 +201,13 @@ def validate(
     console.print(f"[green]Validating:[/green] {role_path}")
 
     try:
+        # Validate format type
+        if format_type.lower() not in ["markdown", "rst"]:
+            console.print("[red]Error: Format must be 'markdown' or 'rst'[/red]")
+            raise typer.Exit(1)
+
         # Initialize processor
-        processor = RoleProcessor()
+        processor = RoleProcessor(format_type=format_type)
 
         # Validate the role
         role_data = processor.validate_role(role_path)

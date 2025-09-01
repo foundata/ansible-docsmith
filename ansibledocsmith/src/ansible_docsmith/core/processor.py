@@ -127,9 +127,11 @@ class RoleProcessor:
     def _process_readme(
         self, role_path: Path, specs: dict, role_name: str, results: ProcessingResults
     ):
-        """Generate/update README.md file."""
+        """Generate/update README file."""
 
-        readme_path = role_path / "README.md"
+        # Determine README file extension based on format
+        readme_ext = "rst" if self.format_type == "rst" else "md"
+        readme_path = role_path / f"README.{readme_ext}"
 
         try:
             # Generate documentation content
@@ -367,9 +369,19 @@ class RoleProcessor:
         return errors, warnings, notices
 
     def _validate_readme_markers(self, role_path: Path) -> list[str]:
-        """Validate that existing README.md contains required markers."""
+        """Validate that existing README file contains required markers."""
         errors = []
-        readme_path = role_path / "README.md"
+
+        # Check for README files in order of preference based on format
+        readme_ext = "rst" if self.format_type == "rst" else "md"
+        readme_path = role_path / f"README.{readme_ext}"
+
+        # If format-specific file doesn't exist, check the other format
+        if not readme_path.exists():
+            alt_ext = "md" if readme_ext == "rst" else "rst"
+            alt_readme_path = role_path / f"README.{alt_ext}"
+            if alt_readme_path.exists():
+                readme_path = alt_readme_path
 
         if not readme_path.exists():
             # No README exists - that's fine, generate will create one
@@ -385,31 +397,44 @@ class RoleProcessor:
 
             if not has_start and not has_end:
                 errors.append(
-                    f"README.md exists but is missing required markers. "
+                    f"README.{readme_path.suffix[1:]} exists but is missing required markers. "
                     f"Add '{start_marker}' and '{end_marker}' to allow "
                     f"ansible-docsmith to manage documentation sections."
                 )
             elif not has_start:
-                errors.append(f"README.md is missing start marker: '{start_marker}'")
+                errors.append(
+                    f"README.{readme_path.suffix[1:]} is missing start marker: '{start_marker}'"
+                )
             elif not has_end:
-                errors.append(f"README.md is missing end marker: '{end_marker}'")
+                errors.append(
+                    f"README.{readme_path.suffix[1:]} is missing end marker: '{end_marker}'"
+                )
 
         except Exception as e:
-            errors.append(f"Error reading README.md: {e}")
+            errors.append(f"Error reading README.{readme_path.suffix[1:]}: {e}")
 
         return errors
 
     def _validate_readme_toc_markers(
         self, role_path: Path
     ) -> tuple[list[str], list[str]]:
-        """Validate TOC markers in README.md.
+        """Validate TOC markers in README file.
 
         Returns:
             Tuple of (errors, notices)
         """
         errors = []
         notices = []
-        readme_path = role_path / "README.md"
+
+        # Use same logic as _validate_readme_markers for file detection
+        readme_ext = "rst" if self.format_type == "rst" else "md"
+        readme_path = role_path / f"README.{readme_ext}"
+
+        if not readme_path.exists():
+            alt_ext = "md" if readme_ext == "rst" else "rst"
+            alt_readme_path = role_path / f"README.{alt_ext}"
+            if alt_readme_path.exists():
+                readme_path = alt_readme_path
 
         if not readme_path.exists():
             return errors, notices
@@ -424,20 +449,22 @@ class RoleProcessor:
 
             if not has_toc_start and not has_toc_end:
                 notices.append(
-                    f"README.md does not contain TOC markers. "
+                    f"README.{readme_path.suffix[1:]} does not contain TOC markers. "
                     f"Add '{toc_start_marker}' and '{toc_end_marker}' to enable "
                     f"automatic Table of Contents generation."
                 )
             elif has_toc_start and not has_toc_end:
                 errors.append(
-                    f"README.md is missing TOC end marker: '{toc_end_marker}'"
+                    f"README.{readme_path.suffix[1:]} is missing TOC end marker: '{toc_end_marker}'"
                 )
             elif not has_toc_start and has_toc_end:
                 errors.append(
-                    f"README.md is missing TOC start marker: '{toc_start_marker}'"
+                    f"README.{readme_path.suffix[1:]} is missing TOC start marker: '{toc_start_marker}'"
                 )
 
         except Exception as e:
-            errors.append(f"Error reading README.md for TOC validation: {e}")
+            errors.append(
+                f"Error reading README.{readme_path.suffix[1:]} for TOC validation: {e}"
+            )
 
         return errors, notices
