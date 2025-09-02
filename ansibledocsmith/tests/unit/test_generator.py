@@ -574,17 +574,24 @@ Some content here.
 """
         readme_path.write_text(existing_content)
 
-        new_main_content = "New main content"
+        new_main_content = """## Role variables
+
+### Variable details
+
+Some variable documentation here."""
         result = updater.update_readme(readme_path, new_main_content)
 
         assert result is True
 
         content = readme_path.read_text()
-        assert "New main content" in content
+        assert "Role variables" in content
         assert "Old main content" not in content
-        # TOC should be regenerated based on headings
-        assert "* [My Role](#my-role)" in content
-        assert "* [Section One](#section-one)" in content
+        # TOC should be regenerated based only on headings from main content
+        assert "* [Role variables](#role-variables)" in content
+        assert "* [Variable details](#variable-details)" in content
+        # Should NOT include headings from outside the main content
+        assert "* [My Role](#my-role)" not in content
+        assert "* [Section One](#section-one)" not in content
 
 
 class TestTocGenerator:
@@ -934,7 +941,6 @@ class TestCreateTocGenerator:
             create_toc_generator("html")
 
 
-
 class TestRSTDocumentationGenerator:
     """Test the RSTDocumentationGenerator class."""
 
@@ -1058,4 +1064,3 @@ class TestCreateDocumentationGenerator:
 
         with pytest.raises(ValueError, match="Unsupported format type: html"):
             create_documentation_generator("html")
-
