@@ -875,9 +875,12 @@ Final content.
 
         result = generator._generate_toc_lines(headings, "*")
         expected_lines = [
+            "",  # Leading blank line
             "* `Main Title <#main-title>`__",
+            "",  # Blank line before level change
             "  * `Section One <#section-one>`__",
             "  * `Section Two <#section-two>`__",
+            "",  # Trailing blank line
         ]
 
         assert result == "\n".join(expected_lines)

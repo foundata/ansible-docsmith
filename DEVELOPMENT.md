@@ -160,9 +160,11 @@ Execute the test suite to verify your changes:
 ```bash
 # Run all tests
 uv run pytest
+uv run python -m pytest # alternative call
 
 # Run all tests with verbose output
 uv run pytest -v
+uv run python -m pytest -v # alternative call
 ```
 
 More examples:
@@ -228,6 +230,8 @@ cp -r tests/fixtures/example-role-* /tmp
 
 uv run ansible-docsmith generate /tmp/example-role-simple
 uv run ansible-docsmith generate /tmp/example-role-simple-toc
+uv run ansible-docsmith generate /tmp/example-role-simple-toc-rst
+uv run ansible-docsmith generate /tmp/example-role-simple-toc-rst-fallback
 uv run ansible-docsmith generate /tmp/example-role-multiple-entry-points
 uv run ansible-docsmith generate /tmp/example-role-simple-rst
 ```

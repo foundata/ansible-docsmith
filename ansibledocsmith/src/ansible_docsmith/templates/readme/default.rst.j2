@@ -1,12 +1,25 @@
+
 Role variables
 ==============
 
 {% if has_options %}
 The following variables can be configured for this role:
 
+.. csv-table::
+   :header: "Variable", "Type", "Required", "Default", "Description"
+   :widths: 20, 10, 10, 15, 45
+
 {% for var_name, var_spec in options.items() %}
-``{{ var_name | ansible_escape }}``
-{{ '-' * (var_name | length + 4) }}
+   "``{{ var_name | ansible_escape }}``", "``{{ var_spec.type }}``", "{{ 'Yes' if var_spec.required else 'No' }}", "{{ var_spec.default | format_default | csv_escape }}", "{{ var_spec.description | format_table_description | csv_escape }}"
+{% endfor %}
+
+
+Variable details
+----------------
+
+{% for var_name, var_spec in options.items() %}
+``{{ var_name }}``
+{{ '~' * (var_name | length + 4) }}
 
 {{ var_spec.description | format_description }}
 
@@ -25,16 +38,12 @@ The following variables can be configured for this role:
 {% if var_spec.options %}
 **Nested options:**
 
+.. csv-table::
+   :header: "Option", "Type", "Required", "Default", "Description"
+   :widths: 20, 10, 10, 15, 45
+
 {% for sub_name, sub_spec in var_spec.options.items() %}
-``{{ sub_name }}``
-{{ '~' * (sub_name | length + 4) }}
-
-{{ sub_spec.description }}
-
-:Type: {{ sub_spec.type }}
-:Required: {{ 'Yes' if sub_spec.required else 'No' }}
-:Default: {{ sub_spec.default | format_default }}
-
+   "``{{ sub_name }}``", "{{ sub_spec.type }}", "{{ 'Yes' if sub_spec.required else 'No' }}", "{{ sub_spec.default | format_default | csv_escape }}", "{{ sub_spec.description | csv_escape }}"
 {% endfor %}
 {% endif %}
 

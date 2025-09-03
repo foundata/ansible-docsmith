@@ -229,6 +229,7 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
             "format_default": self._format_default_filter,
             "format_description": self._format_description_filter,
             "format_table_description": self._format_table_description_filter,
+            "csv_escape": self._csv_escape_filter,
         }
 
     def _get_format_type(self) -> str:
@@ -293,6 +294,24 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
 
         # Join paragraphs with | for RST table line continuation
         return " | ".join(processed_paragraphs)
+
+    def _csv_escape_filter(self, value: Any) -> str:
+        """Escape double quotes in strings for CSV format.
+        
+        In CSV format, double quotes within field values must be escaped
+        by doubling them (e.g., 'He said ""Hello""' for: He said "Hello").
+        
+        Args:
+            value: The value to escape for CSV
+            
+        Returns:
+            CSV-escaped string
+        """
+        if value is None:
+            return ""
+        value_str = str(value)
+        # Escape double quotes by doubling them
+        return value_str.replace('"', '""')
 
 
 # Factory function to create appropriate generator
@@ -478,7 +497,17 @@ class MarkdownTocGenerator(BaseTocGenerator):
 
 
 class RSTTocGenerator(BaseTocGenerator):
-    """Generate Table of Contents from reStructuredText content."""
+    """
+    Generate Table of Contents from reStructuredText content.
+
+    ATTENTION:
+    Unlike the ToC generation in Markdown, use something like
+
+      .. contents:: Table of Contents
+
+    whenever possible. This is a very rough list based fallback mechanism if
+    your reStructuredText (reST) renderer is very limited.
+    """
 
     def _get_format_type(self) -> str:
         """Return the format type this generator handles."""
@@ -527,6 +556,10 @@ class RSTTocGenerator(BaseTocGenerator):
                         }
                         level = level_map.get(underline_char, 1)
                         anchor = self._create_anchor_link(line)
+
+                        # Strip inline "``" as "```foo`` <#anchor>`" does not work
+                        # with many renderers out there
+                        line = re.sub(r"``", "", line)
 
                         headings.append(
                             {"text": line, "level": level, "anchor": anchor}
@@ -577,17 +610,25 @@ class RSTTocGenerator(BaseTocGenerator):
 
         lines = []
         min_level = min(h["level"] for h in headings)
+        prev_level = None
 
-        for heading in headings:
+        lines.append("")
+        for i, heading in enumerate(headings):
             # Calculate indentation based on heading level
             indent_level = heading["level"] - min_level
             indent = "  " * indent_level
+
+            # Add blank line before level changes (except for the first item)
+            if i > 0 and prev_level is not None and heading["level"] != prev_level:
+                lines.append("")
 
             # Create TOC line with RST-style internal link
             line = (
                 f"{indent}{bullet_style} `{heading['text']} <#{heading['anchor']}>`__"
             )
             lines.append(line)
+            prev_level = heading["level"]
+        lines.append("")
 
         return "\n".join(lines)
 
