@@ -689,7 +689,7 @@ flow naturally while preserving readability throughout.
 Double linebreaks create proper paragraph separation like this one.
 
 - List items are preserved perfectly
-- Each item appears on its own line  
+- Each item appears on its own line
 - Multi-line list items like this one that spans
   across multiple lines are handled correctly
 - Even complex items work great
@@ -1024,7 +1024,7 @@ flow naturally while preserving readability throughout.
 Double linebreaks create proper paragraph separation like this one.
 
 - List items are preserved perfectly
-- Each item appears on its own line  
+- Each item appears on its own line
 - Multi-line list items like this one that spans
   across multiple lines are handled correctly
 - Even complex items work great
@@ -1474,6 +1474,191 @@ Final content.
 
         assert legacy_result == new_result
 
+    def test_ast_extract_headings_with_code_blocks(self):
+        """Test that AST-based extraction avoids false positives from code blocks."""
+        generator = MarkdownTocGenerator()
+
+        # This is the problematic case mentioned by the user
+        content = """# Real Heading
+
+Some text here.
+
+```bash
+# this is not a headline but a comment
+echo "some code"
+```
+
+## Another Real Heading
+
+```yaml
+# Also not a heading
+key: value
+```
+
+### Third Real Heading"""
+
+        headings = generator._extract_headings(content)
+
+        # Should only extract actual headings, not code comments
+        assert len(headings) == 3
+        assert headings[0]["text"] == "Real Heading"
+        assert headings[0]["level"] == 1
+        assert headings[1]["text"] == "Another Real Heading"
+        assert headings[1]["level"] == 2
+        assert headings[2]["text"] == "Third Real Heading"
+        assert headings[2]["level"] == 3
+
+    def test_ast_extract_headings_with_inline_code(self):
+        """Test headings with inline code are handled properly."""
+        generator = MarkdownTocGenerator()
+
+        content = """# Configure `nginx` Settings
+
+## Variable `ssl_enabled`<a id="variable-ssl_enabled"></a>
+
+### Method `configure_ssl()`"""
+
+        headings = generator._extract_headings(content)
+
+        assert len(headings) == 3
+        assert headings[0]["text"] == "Configure `nginx` Settings"
+        assert headings[0]["level"] == 1
+        assert headings[1]["text"] == "Variable `ssl_enabled`"
+        assert headings[1]["level"] == 2
+        assert (
+            headings[1]["anchor"] == "variable-ssl_enabled"
+        )  # Custom anchor preserved
+        assert headings[2]["text"] == "Method `configure_ssl()`"
+        assert headings[2]["level"] == 3
+
+    def test_ast_extract_headings_mixed_content(self):
+        """Test complex markdown with various constructs."""
+        generator = MarkdownTocGenerator()
+
+        content = """# Main Document
+
+## Introduction
+
+Some text with [links](#somewhere) and **bold text**.
+
+### Code Examples
+
+Here's a code block:
+
+```python
+def function():
+    # This comment should not be extracted as a heading
+    return "# Neither should this string"
+```
+
+## FAQ
+
+### What about `inline code`?
+
+Answer here.
+
+```markdown
+# This is markdown inside code block
+## Should not be extracted
+```
+
+#### Final Section"""
+
+        headings = generator._extract_headings(content)
+
+        expected_headings = [
+            {"text": "Main Document", "level": 1, "anchor": "main-document"},
+            {"text": "Introduction", "level": 2, "anchor": "introduction"},
+            {"text": "Code Examples", "level": 3, "anchor": "code-examples"},
+            {"text": "FAQ", "level": 2, "anchor": "faq"},
+            {
+                "text": "What about `inline code`?",
+                "level": 3,
+                "anchor": "what-about-inline-code",
+            },
+            {"text": "Final Section", "level": 4, "anchor": "final-section"},
+        ]
+
+        assert len(headings) == len(expected_headings)
+        for i, expected in enumerate(expected_headings):
+            assert headings[i]["text"] == expected["text"]
+            assert headings[i]["level"] == expected["level"]
+            assert headings[i]["anchor"] == expected["anchor"]
+
+    def test_ast_extract_headings_fallback_on_error(self):
+        """Test fallback to regex extraction when AST parsing fails."""
+        generator = MarkdownTocGenerator()
+
+        # Mock the Parser to raise an exception
+        import unittest.mock
+
+        with unittest.mock.patch("commonmark.Parser") as mock_parser:
+            mock_parser.side_effect = Exception("Parser error")
+
+            content = """# Test Heading
+## Second Heading"""
+
+            headings = generator._extract_headings(content)
+
+            # Should fall back to regex method
+            assert len(headings) == 2
+            assert headings[0]["text"] == "Test Heading"
+            assert headings[1]["text"] == "Second Heading"
+
+    def test_ast_extract_headings_empty_content(self):
+        """Test AST extraction with empty or whitespace content."""
+        generator = MarkdownTocGenerator()
+
+        # Empty content
+        assert generator._extract_headings("") == []
+
+        # Only whitespace
+        assert generator._extract_headings("   \n\n   ") == []
+
+        # Content with no headings
+        content = """Just some regular text
+
+with multiple paragraphs
+
+but no headings at all."""
+
+        assert generator._extract_headings(content) == []
+
+    def test_ast_extract_text_from_node(self):
+        """Test the helper method for extracting text from AST nodes."""
+        from commonmark import Parser
+
+        generator = MarkdownTocGenerator()
+        parser = Parser()
+
+        # Test with simple heading
+        ast = parser.parse("# Simple Heading")
+        heading_node = ast.first_child
+        text = generator._extract_text_from_node(heading_node)
+        assert text == "Simple Heading"
+
+        # Test with heading containing inline code
+        ast = parser.parse("# Configure `nginx` Settings")
+        heading_node = ast.first_child
+        text = generator._extract_text_from_node(heading_node)
+        assert text == "Configure `nginx` Settings"
+
+    def test_ast_fallback_method(self):
+        """Test the fallback regex-based extraction method."""
+        generator = MarkdownTocGenerator()
+
+        content = """# Main Title<a id="custom-id"></a>
+## Section Title
+### Subsection"""
+
+        headings = generator._extract_headings_fallback(content)
+
+        assert len(headings) == 3
+        assert headings[0]["text"] == "Main Title"
+        assert headings[0]["anchor"] == "custom-id"
+        assert headings[1]["text"] == "Section Title"
+        assert headings[2]["text"] == "Subsection"
+
 
 class TestRSTTocGenerator:
     """Test the RSTTocGenerator class."""
@@ -1501,7 +1686,7 @@ Subsection
 
 More content.
 
-Section Two  
+Section Two
 -----------
 
 Final content.

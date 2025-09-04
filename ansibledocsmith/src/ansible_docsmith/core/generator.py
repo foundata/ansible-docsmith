@@ -503,10 +503,93 @@ class MarkdownTocGenerator(BaseTocGenerator):
         return "markdown"
 
     def _extract_headings(self, content: str) -> list[dict[str, Any]]:
-        """Extract headings from markdown content.
+        """Extract headings from markdown content using CommonMark AST.
+
+        Uses AST parsing to avoid false positives from code blocks or other
+        contexts where '#' characters might appear but aren't actually headings.
 
         Returns:
             List of heading dictionaries with 'text', 'level', and 'anchor' keys
+        """
+        if not content.strip():
+            return []
+
+        try:
+            from commonmark import Parser
+
+            headings = []
+            parser = Parser()
+            ast = parser.parse(content)
+
+            # Walk through all nodes in the AST
+            walker = ast.walker()
+            event = walker.nxt()
+
+            while event is not None:
+                node, entering = event["node"], event["entering"]
+
+                # Process heading nodes when entering them
+                if entering and node.t == "heading":
+                    level = node.level
+                    # Extract text content from all child nodes
+                    text = self._extract_text_from_node(node)
+
+                    # Check for existing anchor in the heading text
+                    anchor_match = re.search(r'<a\s+id="([^"]+)"></a>', text)
+                    if anchor_match:
+                        anchor = anchor_match.group(1)
+                        # Remove the anchor tag from the text
+                        text = re.sub(r'<a\s+id="[^"]+"></a>', "", text).strip()
+                    else:
+                        anchor = self._create_anchor_link(text)
+
+                    headings.append({"text": text, "level": level, "anchor": anchor})
+
+                event = walker.nxt()
+
+            return headings
+
+        except Exception:
+            # Fallback to regex-based extraction if AST parsing fails
+            return self._extract_headings_fallback(content)
+
+    def _extract_text_from_node(self, node) -> str:
+        """Extract text from a CommonMark AST node preserving inline formatting.
+
+        This method preserves inline code formatting by adding backticks around
+        code nodes to maintain the original heading text appearance.
+
+        Args:
+            node: CommonMark AST node
+
+        Returns:
+            Text content with inline formatting preserved
+        """
+        text_parts = []
+        walker = node.walker()
+        event = walker.nxt()
+
+        while event is not None:
+            current_node, entering = event["node"], event["entering"]
+
+            if entering and current_node.t == "code":
+                # For inline code, add backticks to preserve formatting
+                text_parts.append(f"`{current_node.literal}`")
+            elif entering and current_node.literal:
+                text_parts.append(current_node.literal)
+
+            event = walker.nxt()
+
+        return "".join(text_parts).strip()
+
+    def _extract_headings_fallback(self, content: str) -> list[dict[str, Any]]:
+        """Fallback regex-based heading extraction for error cases.
+
+        Args:
+            content: Markdown content to parse
+
+        Returns:
+            List of heading dictionaries
         """
         headings = []
         heading_pattern = r'^(#{1,6})\s+(.+?)(?:<a\s+id="([^"]+)"></a>)?$'
