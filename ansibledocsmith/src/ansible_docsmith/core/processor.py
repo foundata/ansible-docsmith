@@ -285,6 +285,17 @@ class RoleProcessor:
             pass  # Ignore parsing errors, handled elsewhere
         return set()
 
+    def _extract_defaults_values_from_file(self, defaults_path: Path) -> dict[str, any]:
+        """Extract variable names and their values from a defaults YAML file."""
+        try:
+            with open(defaults_path) as file:
+                data = self.parser.yaml.load(file)
+                if data and isinstance(data, dict):
+                    return data
+        except Exception:
+            pass  # Ignore parsing errors, handled elsewhere
+        return {}
+
     def _validate_unknown_keys(self, spec_file: Path) -> list[str]:
         """Validate that only known keys are used in argument_specs."""
         warnings = []
@@ -422,6 +433,46 @@ class RoleProcessor:
                         f"argument_specs.yml but not in defaults/{entry_point}.yml "
                         f"(may be intentional): {sorted(missing_in_defaults)}"
                     )
+
+                # WARNING: Default value mismatches between specs and defaults files
+                if entry_point in defaults_files:
+                    defaults_values = self._extract_defaults_values_from_file(
+                        defaults_files[entry_point]
+                    )
+
+                    # Get spec defaults from original file (not normalized)
+                    spec_defaults = {}
+                    if spec_file:
+                        original_specs = self._parse_original_specs(spec_file)
+                        original_options = original_specs.get(entry_point, {}).get(
+                            "options", {}
+                        )
+                        for name, var_spec in original_options.items():
+                            if isinstance(var_spec, dict) and "default" in var_spec:
+                                spec_defaults[name] = var_spec["default"]
+                    else:
+                        # Fallback: use processed specs
+                        for name, var_spec in spec.get("options", {}).items():
+                            if (
+                                isinstance(var_spec, dict)
+                                and "default" in var_spec
+                                and var_spec["default"] is not None
+                            ):
+                                spec_defaults[name] = var_spec["default"]
+
+                    # Compare values for variables that exist in both places
+                    for var_name in spec_defaults:
+                        if var_name in defaults_values:
+                            spec_value = spec_defaults[var_name]
+                            defaults_value = defaults_values[var_name]
+                            if spec_value != defaults_value:
+                                warnings.append(
+                                    f"Entry point '{entry_point}': Default value "
+                                    f"mismatch for variable '{var_name}': "
+                                    f"argument_specs.yml defines {spec_value!r} but "
+                                    f"defaults/{entry_point}.yml defines "
+                                    f"{defaults_value!r}"
+                                )
 
         return errors, warnings, notices
 

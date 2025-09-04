@@ -4,5 +4,5 @@
 ---
 
 install_path: "/opt/myapp"
-install_version: "latest"
-install_force: false
+install_version: "stable"  # specs say "latest" - should trigger mismatch warning
+install_force: true  # specs say false - should trigger mismatch warning

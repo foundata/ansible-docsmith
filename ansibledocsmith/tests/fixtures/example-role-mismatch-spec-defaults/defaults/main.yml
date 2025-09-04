@@ -3,6 +3,5 @@
 
 ---
 
-# 1. main_state intentionally not listed here to trigger an validation error.
-# 2. The main_missing_in_spec variable is to trigger an validation error.
-main_missing_in_spec: false
+# main_state has a different value here vs argument_specs.yml to test value mismatch warning
+main_state: "absent"  # specs say "present" - should trigger mismatch warning

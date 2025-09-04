@@ -176,14 +176,74 @@ class TestRoleProcessor:
             fixture_path, role_data["specs"], role_data["spec_file"]
         )
 
-        # Should have specific errors
-        error_messages = "\n".join(errors)
-        assert "main_missing_in_spec" in error_messages
-        assert "main_state" in error_messages
-        assert "defaults/main.yml but missing from argument_specs.yml" in error_messages
+        # Should have no errors now (fixed the mismatch fixture)
+        assert len(errors) == 0
+
+        # Should have value mismatch warnings
+        warning_messages = "\n".join(warnings)
+        assert "Default value mismatch for variable 'main_state'" in warning_messages
+        assert "argument_specs.yml defines 'present'" in warning_messages
+        assert "defaults/main.yml defines 'absent'" in warning_messages
         assert (
-            "have defaults in argument_specs.yml but are missing from" in error_messages
+            "Default value mismatch for variable 'install_version'" in warning_messages
         )
+        assert "Default value mismatch for variable 'install_force'" in warning_messages
+
+    def test_validate_defaults_value_mismatch_detection(self, temp_dir):
+        """Test detection of default value mismatches between specs and defaults."""
+        processor = RoleProcessor()
+
+        # Create required directory structure
+        meta_dir = temp_dir / "meta"
+        meta_dir.mkdir()
+
+        # Create argument_specs.yml with specific default values
+        spec_file = meta_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    options:
+      test_string:
+        type: str
+        default: "expected_value"
+      test_bool:
+        type: bool
+        default: true
+      test_number:
+        type: int
+        default: 42
+""")
+
+        # Create defaults/main.yml with different values
+        defaults_dir = temp_dir / "defaults"
+        defaults_dir.mkdir()
+        defaults_file = defaults_dir / "main.yml"
+        defaults_file.write_text("""---
+test_string: "different_value"
+test_bool: false
+test_number: 99
+""")
+
+        # Run validation
+        role_data = processor.parser.validate_structure(temp_dir)
+        errors, warnings, notices = processor._validate_defaults_consistency(
+            temp_dir, role_data["specs"], role_data["spec_file"]
+        )
+
+        # Should have no errors but three mismatch warnings
+        assert len(errors) == 0
+        assert len(warnings) == 3
+
+        warning_messages = "\n".join(warnings)
+        assert "Default value mismatch for variable 'test_string'" in warning_messages
+        assert "'expected_value'" in warning_messages
+        assert "'different_value'" in warning_messages
+        assert "Default value mismatch for variable 'test_bool'" in warning_messages
+        assert "True" in warning_messages
+        assert "False" in warning_messages
+        assert "Default value mismatch for variable 'test_number'" in warning_messages
+        assert "42" in warning_messages
+        assert "99" in warning_messages
 
     def test_validate_unknown_keys(self, temp_dir):
         """Test validation of unknown keys in argument_specs."""
@@ -251,22 +311,26 @@ var3:
 
         assert result == set()
 
-    def test_validate_role_with_consistency_errors(self):
-        """Test that validate_role fails when there are consistency errors."""
+    def test_validate_role_with_value_mismatch_warnings(self):
+        """Test that validate_role succeeds but reports value mismatch warnings."""
         processor = RoleProcessor()
 
         from pathlib import Path
 
         fixture_path = Path("tests/fixtures/example-role-mismatch-spec-defaults")
 
-        # Should raise ValidationError due to consistency errors
-        with pytest.raises(ValidationError) as exc_info:
-            processor.validate_role(fixture_path)
+        # Should succeed but return warnings about value mismatches
+        role_data = processor.validate_role(fixture_path)
 
-        error_message = str(exc_info.value)
-        assert "validation failed" in error_message.lower()
-        assert "main_missing_in_spec" in error_message.lower()
-        assert "main_state" in error_message.lower()
+        # Check that warnings are present
+        assert "warnings" in role_data
+        assert len(role_data["warnings"]) > 0
+
+        warning_messages = "\n".join(role_data["warnings"])
+        assert "Default value mismatch" in warning_messages
+        assert "main_state" in warning_messages
+        assert "install_version" in warning_messages
+        assert "install_force" in warning_messages
 
     def test_validate_role_with_warnings_only(self):
         """Test that validate_role passes when there are only warnings."""
