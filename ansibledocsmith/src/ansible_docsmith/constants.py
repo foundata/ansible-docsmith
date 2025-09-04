@@ -16,6 +16,9 @@ MARKER_COMMENT_MD_END = " -->"
 MARKER_COMMENT_RST_BEGIN = ".. "
 MARKER_COMMENT_RST_END = ""
 
+# Default maximum length for variable description shown in tables
+TABLE_DESCRIPTION_MAX_LENGTH = 250
+
 # CLI branding (please keep rendered length under 75 chars)
 CLI_HEADER = (
     "Welcome to [link=https://github.com/foundata/ansible-docsmith]DocSmith[/link] "

@@ -20,12 +20,10 @@ from ..constants import (
     MARKER_README_MAIN_START,
     MARKER_README_TOC_END,
     MARKER_README_TOC_START,
+    TABLE_DESCRIPTION_MAX_LENGTH,
 )
 from ..templates import TemplateManager
 from .exceptions import FileOperationError, TemplateError
-
-# Constants
-TABLE_DESCRIPTION_MAX_LENGTH = 250
 
 
 class HTMLStripper(HTMLParser):
@@ -172,9 +170,18 @@ class BaseDocumentationGenerator(ABC):
 
     @abstractmethod
     def _format_table_description_filter(
-        self, description: Any, variable_name: str | None = None
+        self,
+        description: Any,
+        variable_name: str | None = None,
+        max_length: int = TABLE_DESCRIPTION_MAX_LENGTH,
     ) -> str:
-        """Format description for table display, handling multiline strings properly."""
+        """Format description for table display, handling multiline strings properly.
+
+        Args:
+            description: The description content to format
+            variable_name: Optional variable name for creating anchor links
+            max_length: Maximum length before truncation. Use 0 to disable.
+        """
         pass
 
 
@@ -211,9 +218,18 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         return f"`{escaped}`"
 
     def _format_table_description_filter(
-        self, description: Any, variable_name: str | None = None
+        self,
+        description: Any,
+        variable_name: str | None = None,
+        max_length: int = TABLE_DESCRIPTION_MAX_LENGTH,
     ) -> str:
-        """Format description for Markdown table display with HTML stripping."""
+        """Format description for Markdown table display with HTML stripping.
+
+        Args:
+            description: The description content to format
+            variable_name: Optional variable name for creating anchor links
+            max_length: Maximum length before truncation. Use 0 to disable.
+        """
         if description is None:
             return ""
 
@@ -258,15 +274,16 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         result = "<br><br>".join(processed_paragraphs)
 
         # Step 4 & 5: Truncate at max length and add ellipses with link if needed
-        if len(result) > TABLE_DESCRIPTION_MAX_LENGTH:
+        # If max_length is 0 or less, disable truncation
+        if max_length > 0 and len(result) > max_length:
             # Find the last word boundary before or at position max length
-            truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+            truncate_pos = max_length
             while truncate_pos > 0 and result[truncate_pos] != " ":
                 truncate_pos -= 1
 
             # If we couldn't find a space, just truncate at max length
             if truncate_pos == 0:
-                truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+                truncate_pos = max_length
 
             truncated = result[:truncate_pos].rstrip()
 
@@ -316,9 +333,18 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         return f"``{escaped}``"
 
     def _format_table_description_filter(
-        self, description: Any, variable_name: str | None = None
+        self,
+        description: Any,
+        variable_name: str | None = None,
+        max_length: int = TABLE_DESCRIPTION_MAX_LENGTH,
     ) -> str:
-        """Format description for reStructuredText table display with HTML stripping."""
+        """Format description for reStructuredText table display with HTML stripping.
+
+        Args:
+            description: The description content to format
+            variable_name: Optional variable name for creating anchor links
+            max_length: Maximum length before truncation. Use 0 to disable.
+        """
         if description is None:
             return ""
 
@@ -363,15 +389,16 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         result = " | ".join(processed_paragraphs)
 
         # Step 4 & 5: Truncate at max length and add ellipses with link if needed
-        if len(result) > TABLE_DESCRIPTION_MAX_LENGTH:
+        # If max_length is 0 or less, disable truncation
+        if max_length > 0 and len(result) > max_length:
             # Find the last word boundary before or at position max length
-            truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+            truncate_pos = max_length
             while truncate_pos > 0 and result[truncate_pos] != " ":
                 truncate_pos -= 1
 
             # If we couldn't find a space, just truncate at max length
             if truncate_pos == 0:
-                truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+                truncate_pos = max_length
 
             truncated = result[:truncate_pos].rstrip()
 
@@ -531,7 +558,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
                 # Process heading nodes when entering them
                 if entering and node.t == "heading":
                     level = node.level
-                    # Extract text content from all child nodes
+                    # Extract   text content from all child nodes
                     text = self._extract_text_from_node(node)
 
                     # Check for existing anchor in the heading text

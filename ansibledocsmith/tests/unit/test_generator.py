@@ -521,6 +521,61 @@ sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
         result = generator._format_table_description_filter(input_text, "foo")
         assert result == expected
 
+    def test_disable_truncation_with_max_length_zero(self):
+        """Test that setting max_length=0 disables truncation completely."""
+        generator = MarkdownDocumentationGenerator()
+
+        # Create text longer than default max length
+        long_text = "A" * 400  # Much longer than default 250
+
+        # Test default behavior (should truncate)
+        result_default = generator._format_table_description_filter(long_text)
+        assert len(result_default) < 400
+        assert " […]" in result_default
+
+        # Test max_length=0 (should NOT truncate)
+        result_no_limit = generator._format_table_description_filter(
+            long_text, max_length=0
+        )
+        assert len(result_no_limit) == 400
+        assert " […]" not in result_no_limit
+        assert result_no_limit == long_text
+
+        # Test with variable name and max_length=0
+        result_with_var = generator._format_table_description_filter(
+            long_text, "test_var", max_length=0
+        )
+        assert len(result_with_var) == 400
+        assert " […]" not in result_with_var
+        assert "#variable-test_var" not in result_with_var
+
+        # Test negative max_length also disables truncation
+        result_negative = generator._format_table_description_filter(
+            long_text, max_length=-1
+        )
+        assert len(result_negative) == 400
+        assert " […]" not in result_negative
+
+    def test_rst_disable_truncation_with_max_length_zero(self):
+        """Test that RST generator also supports max_length=0 to disable truncation."""
+        generator = RSTDocumentationGenerator()
+
+        # Create text longer than default max length
+        long_text = "B" * 350
+
+        # Test default behavior (should truncate)
+        result_default = generator._format_table_description_filter(long_text)
+        assert len(result_default) < 350
+        assert " […]" in result_default
+
+        # Test max_length=0 (should NOT truncate)
+        result_no_limit = generator._format_table_description_filter(
+            long_text, max_length=0
+        )
+        assert len(result_no_limit) == 350
+        assert " […]" not in result_no_limit
+        assert result_no_limit == long_text
+
 
 class TestDefaultsCommentGenerator:
     """Test the DefaultsCommentGenerator class."""

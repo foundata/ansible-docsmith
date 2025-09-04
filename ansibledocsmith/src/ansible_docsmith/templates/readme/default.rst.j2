@@ -14,12 +14,9 @@ The following variables can be configured for this role:
 {% endfor %}
 
 
-Variable details
-----------------
-
 {% for var_name, var_spec in options.items() %}
 ``{{ var_name }}``
-{{ '~' * (var_name | length + 4) }}
+{{ '-' * (var_name | length + 4) }}
 
 {{ var_spec.description | format_description }}
 
@@ -36,14 +33,15 @@ Variable details
 {% endif %}
 
 {% if var_spec.options %}
-**Nested options:**
+Nested options:
+~~~~~~~~~~~~~~~
 
 .. csv-table::
    :header: "Option", "Type", "Required", "Default", "Description"
    :widths: 20, 10, 10, 15, 45
 
 {% for sub_name, sub_spec in var_spec.options.items() %}
-   "``{{ sub_name }}``", "{{ sub_spec.type }}", "{{ 'Yes' if sub_spec.required else 'No' }}", "{{ sub_spec.default | format_default | csv_escape }}", "{{ sub_spec.description | csv_escape }}"
+   "``{{ sub_name }}``", "{{ sub_spec.type }}", "{{ 'Yes' if sub_spec.required else 'No' }}", "{{ sub_spec.default | format_default | csv_escape }}", "{{ sub_spec.description | format_table_description("", 0) | csv_escape }}"
 {% endfor %}
 {% endif %}
 
