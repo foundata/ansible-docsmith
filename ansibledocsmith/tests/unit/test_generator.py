@@ -440,6 +440,512 @@ class TestDefaultsCommentGenerator:
         result = generator._wrap_text("")
         assert result == [""]
 
+    def test_parse_and_format_description_basic_paragraphs(self):
+        """Test basic paragraph formatting with single/double linebreak rules."""
+        generator = DefaultsCommentGenerator()
+
+        # Single linebreaks should become spaces
+        input_text = """First line continues
+on the second line and
+ends on third line."""
+        result = generator._parse_and_format_description(input_text)
+        expected = "First line continues on the second line and ends on third line."
+        assert result == expected
+
+        # Double linebreaks should create paragraph separation
+        input_text = """First paragraph with some content.
+
+Second paragraph after blank line.
+
+Third paragraph here."""
+        result = generator._parse_and_format_description(input_text)
+        expected = "First paragraph with some content.\n\nSecond paragraph after blank line.\n\nThird paragraph here."
+        assert result == expected
+
+    def test_parse_and_format_description_code_blocks(self):
+        """Test code block preservation without threading."""
+        generator = DefaultsCommentGenerator()
+
+        # Code blocks should be preserved exactly
+        input_text = """Text before code block.
+
+```yaml
+perfect_example:
+  nested_config:
+    key1: "value1"
+    key2: "value2"
+  list_items:
+    - item1
+    - item2
+```
+
+Text after code block continues normally."""
+        result = generator._parse_and_format_description(input_text)
+
+        # Verify code block structure is preserved
+        assert "```yaml" in result
+        assert "perfect_example:" in result
+        assert "nested_config:" in result
+        assert "- item1" in result
+        assert "```" in result
+
+        # Verify paragraphs are properly separated from code block
+        assert "Text before code block.\n\n```yaml" in result
+        assert "```\n\nText after code block continues normally." in result
+
+    def test_parse_and_format_description_lists(self):
+        """Test markdown list preservation."""
+        generator = DefaultsCommentGenerator()
+
+        # Lists should be preserved exactly
+        input_text = """Description with a list:
+
+- First list item
+- Second list item with more details
+- Third item
+
+Regular paragraph after the list."""
+        result = generator._parse_and_format_description(input_text)
+
+        # Verify list structure is preserved
+        assert "- First list item" in result
+        assert "- Second list item with more details" in result
+        assert "- Third item" in result
+
+        # Verify proper paragraph separation
+        assert "Description with a list:\n\n- First list item" in result
+        assert "- Third item\n\nRegular paragraph after the list." in result
+
+    def test_parse_and_format_description_mixed_content(self):
+        """Test complex mixed content with paragraphs, lists, and code blocks."""
+        generator = DefaultsCommentGenerator()
+
+        input_text = """This example demonstrates all formatting working perfectly together.
+
+Single linebreaks within paragraphs become spaces making text
+flow naturally while preserving readability throughout.
+
+Double linebreaks create proper paragraph separation like this one.
+
+- List items are preserved perfectly
+- Each item appears on its own line  
+- Multi-line list items like this one that spans
+  across multiple lines are handled correctly
+- Even complex items work great
+
+Lists can be followed by regular paragraphs that get formatted
+with single linebreaks becoming spaces as expected.
+
+Code blocks are now perfectly preserved:
+```yaml
+perfect_example:
+  nested_config:
+    key1: "value1"
+    key2: "value2"
+    list_items:
+      - item1
+      - item2
+```
+
+And text after code blocks continues to work normally with
+single linebreaks becoming spaces for natural flow."""
+
+        result = generator._parse_and_format_description(input_text)
+
+        # Verify all elements are present and properly formatted
+        assert (
+            "This example demonstrates all formatting working perfectly together."
+            in result
+        )
+        assert (
+            "Single linebreaks within paragraphs become spaces making text flow naturally while preserving readability throughout."
+            in result
+        )
+        assert "- List items are preserved perfectly" in result
+        assert "- Each item appears on its own line" in result
+        assert "```yaml" in result
+        assert "perfect_example:" in result
+        assert (
+            "And text after code blocks continues to work normally with single linebreaks becoming spaces for natural flow."
+            in result
+        )
+
+        # Verify proper separation between blocks
+        parts = result.split("\n\n")
+        assert len(parts) >= 5  # Multiple distinct blocks
+
+    def test_parse_and_format_description_edge_cases(self):
+        """Test edge cases for parser-based description formatting."""
+        generator = DefaultsCommentGenerator()
+
+        # Empty input
+        result = generator._parse_and_format_description("")
+        assert result == ""
+
+        # Whitespace-only input
+        result = generator._parse_and_format_description("   \n\n   ")
+        assert result == ""
+
+        # Single line
+        result = generator._parse_and_format_description("Single line description.")
+        assert result == "Single line description."
+
+        # Only lists
+        input_text = """- Item one
+- Item two
+- Item three"""
+        result = generator._parse_and_format_description(input_text)
+        assert "- Item one" in result
+        assert "- Item two" in result
+        assert "- Item three" in result
+
+        # Only code block
+        input_text = """```bash
+echo "Hello World"
+ls -la
+```"""
+        result = generator._parse_and_format_description(input_text)
+        assert result.startswith("```bash")
+        assert 'echo "Hello World"' in result
+        assert result.endswith("```")
+
+
+class TestBlockAwareProcessing:
+    """Test the new parser-based block-aware processing methods."""
+
+    def test_split_into_blocks_code_detection(self):
+        """Test code block boundary detection and preservation."""
+        generator = DefaultsCommentGenerator()
+
+        # First, let's test the complete parser workflow
+        input_text = "Regular text before.\n\n```yaml\nconfig:\n  key: value\n  items:\n    - one\n    - two\n```\n\nText after code block."
+
+        # Parse it first (this is what happens in the real workflow)
+        parsed_text = generator._parse_and_format_description(input_text)
+        blocks = generator._split_into_blocks(parsed_text)
+
+        # Should have 3 blocks: text, code_block, text
+        assert len(blocks) == 3
+
+        assert blocks[0]["type"] == "text"
+        assert "Regular text before." in blocks[0]["content"]
+
+        assert blocks[1]["type"] == "code_block"
+        assert blocks[1]["content"].startswith("```")
+        assert "config:" in blocks[1]["content"]
+        assert blocks[1]["content"].endswith("```")
+
+        assert blocks[2]["type"] == "text"
+        assert "Text after code block." in blocks[2]["content"]
+
+    def test_split_into_blocks_list_detection(self):
+        """Test list block detection and preservation."""
+        generator = DefaultsCommentGenerator()
+
+        input_text = """Text before list.
+
+- First item
+- Second item with continuation
+  that spans multiple lines
+- Third item
+
+Text after list."""
+
+        blocks = generator._split_into_blocks(input_text)
+
+        # Should detect list as separate block
+        list_block = None
+        for block in blocks:
+            if block["type"] == "list":
+                list_block = block
+                break
+
+        assert list_block is not None
+        assert "- First item" in list_block["content"]
+        assert "- Second item with continuation" in list_block["content"]
+        assert "that spans multiple lines" in list_block["content"]
+        assert "- Third item" in list_block["content"]
+
+    def test_split_into_blocks_mixed_content(self):
+        """Test proper boundaries between different block types."""
+        generator = DefaultsCommentGenerator()
+
+        input_text = "Paragraph text.\n\n- List item one\n- List item two\n\n```python\ndef function():\n    return True\n```\n\nAnother paragraph.\n\n* Different bullet style\n* Second item"
+
+        # Parse it first (this is what happens in the real workflow)
+        parsed_text = generator._parse_and_format_description(input_text)
+        blocks = generator._split_into_blocks(parsed_text)
+
+        # Verify we get the expected block types in order
+        block_types = [block["type"] for block in blocks]
+        expected_types = ["text", "list", "code_block", "text", "list"]
+        assert block_types == expected_types
+
+    def test_split_into_blocks_edge_cases(self):
+        """Test edge cases in block splitting."""
+        generator = DefaultsCommentGenerator()
+
+        # Empty input
+        blocks = generator._split_into_blocks("")
+        assert blocks == []
+
+        # Only whitespace
+        blocks = generator._split_into_blocks("   \n\n   ")
+        assert len(blocks) <= 1  # May contain empty text block
+
+        # Unclosed code block (should handle gracefully)
+        input_text = """Text before.
+
+```yaml
+unclosed_code: true"""
+
+        blocks = generator._split_into_blocks(input_text)
+
+        # Should still create blocks, handling the unclosed code block
+        assert len(blocks) >= 1
+
+        # Find the code block
+        code_block = None
+        for block in blocks:
+            if block["type"] == "code_block":
+                code_block = block
+                break
+
+        if code_block:
+            assert "unclosed_code: true" in code_block["content"]
+
+    def test_format_ast_node_paragraph(self):
+        """Test AST paragraph node formatting."""
+        generator = DefaultsCommentGenerator()
+
+        # Test with actual CommonMark AST node
+        from commonmark import Parser
+
+        parser = Parser()
+        ast = parser.parse("First line\nwith softbreak")
+
+        # Get the paragraph node
+        paragraph_node = ast.first_child
+        assert paragraph_node.t == "paragraph"
+
+        result = generator._format_ast_node(paragraph_node)
+        assert result == "First line with softbreak"
+
+    def test_format_ast_node_code_block(self):
+        """Test AST code block node formatting."""
+        generator = DefaultsCommentGenerator()
+
+        from commonmark import Parser
+
+        parser = Parser()
+        ast = parser.parse("```yaml\nkey: value\n```")
+
+        # Get the code block node
+        code_block_node = ast.first_child
+        assert code_block_node.t == "code_block"
+
+        result = generator._format_ast_node(code_block_node)
+        assert result.startswith("```")
+        assert "key: value" in result
+        assert result.endswith("```")
+
+    def test_format_ast_node_list(self):
+        """Test AST list node formatting."""
+        generator = DefaultsCommentGenerator()
+
+        from commonmark import Parser
+
+        parser = Parser()
+        ast = parser.parse("- First item\n- Second item")
+
+        # Get the list node
+        list_node = ast.first_child
+        assert list_node.t == "list"
+
+        result = generator._format_ast_node(list_node)
+        assert "- First item" in result
+        assert "- Second item" in result
+
+
+class TestParserBasedIntegration:
+    """Integration tests for the complete parser-based workflow."""
+
+    def test_real_world_complex_description(self, sample_role_with_specs_and_defaults):
+        """Test with actual complex descriptions from fixtures."""
+        generator = DefaultsCommentGenerator()
+
+        # Use the complex description from the test fixtures
+        complex_description = """Determines whether the managed resources should be "present" or
+"absent".
+
+"present" ensures that required components, such as software packages, are installed and configured.
+
+"absent" reverts changes as much as possible, such as removing packages, deleting created users,
+stopping services, restoring modified settings, …"""
+
+        result = generator._parse_and_format_description(complex_description)
+
+        # Verify proper formatting
+        assert (
+            'Determines whether the managed resources should be "present" or "absent".'
+            in result
+        )
+        assert '"present" ensures that required components' in result
+        assert '"absent" reverts changes as much as possible' in result
+
+        # Should have proper paragraph separation
+        paragraphs = result.split("\n\n")
+        assert len(paragraphs) == 3
+
+    def test_code_block_threading_prevention(self):
+        """Test that code blocks are NOT threaded (critical regression test)."""
+        generator = DefaultsCommentGenerator()
+
+        # This is the critical test case - code blocks should not be threaded
+        input_text = """Code blocks maintain their structure:
+
+```bash
+# This is a bash code block
+echo "Hello, World!"
+ls -la /home/user/
+```
+
+Regular text after code blocks works perfectly."""
+
+        result = generator._parse_and_format_description(input_text)
+
+        # The code block should be preserved as a complete block
+        assert "```bash" in result
+        assert "# This is a bash code block" in result
+        assert 'echo "Hello, World!"' in result
+        assert "ls -la /home/user/" in result
+        assert "```" in result
+
+        # Verify it's not threaded (each line individually prefixed)
+        # If it were threaded, we'd see something like:
+        # ```bash
+        # # This is a bash code block
+        # echo "Hello, World!"
+        # ls -la /home/user/
+        # ```
+        # But as separate lines, which would break the code block structure
+        lines = result.split("\n")
+        code_start_idx = None
+        code_end_idx = None
+
+        for i, line in enumerate(lines):
+            if line.strip() == "```bash":
+                code_start_idx = i
+            elif line.strip() == "```" and code_start_idx is not None:
+                code_end_idx = i
+                break
+
+        assert code_start_idx is not None
+        assert code_end_idx is not None
+
+        # The code block content should be between these indices
+        code_content = lines[code_start_idx + 1 : code_end_idx]
+        assert len(code_content) == 3
+        assert code_content[0] == "# This is a bash code block"
+        assert code_content[1] == 'echo "Hello, World!"'
+        assert code_content[2] == "ls -la /home/user/"
+
+    def test_comprehensive_formatting_example(self):
+        """Test the comprehensive example from the final test case."""
+        generator = DefaultsCommentGenerator()
+
+        # This is the actual content from /tmp/final-comprehensive-test
+        comprehensive_text = """This example demonstrates all formatting working perfectly together.
+
+Single linebreaks within paragraphs become spaces making text
+flow naturally while preserving readability throughout.
+
+Double linebreaks create proper paragraph separation like this one.
+
+- List items are preserved perfectly
+- Each item appears on its own line  
+- Multi-line list items like this one that spans
+  across multiple lines are handled correctly
+- Even complex items work great
+
+Lists can be followed by regular paragraphs that get formatted
+with single linebreaks becoming spaces as expected.
+
+Code blocks are now perfectly preserved:
+```yaml
+perfect_example:
+  nested_config:
+    key1: "value1"
+    key2: "value2"
+    list_items:
+      - item1
+      - item2
+```
+
+And text after code blocks continues to work normally with
+single linebreaks becoming spaces for natural flow."""
+
+        result = generator._parse_and_format_description(comprehensive_text)
+
+        # Verify all major components are preserved correctly
+        assert (
+            "This example demonstrates all formatting working perfectly together."
+            in result
+        )
+        assert (
+            "Single linebreaks within paragraphs become spaces making text flow naturally while preserving readability throughout."
+            in result
+        )
+        assert "- List items are preserved perfectly" in result
+        assert (
+            "- Multi-line list items like this one that spans across multiple lines are handled correctly"
+            in result
+        )
+        assert "```yaml" in result
+        assert "perfect_example:" in result
+        assert 'key1: "value1"' in result
+        assert "- item1" in result
+        assert (
+            "And text after code blocks continues to work normally with single linebreaks becoming spaces for natural flow."
+            in result
+        )
+
+        # Verify proper paragraph/block separation
+        parts = result.split("\n\n")
+        assert len(parts) >= 6  # Should have multiple distinct sections
+
+    def test_backwards_compatibility_with_existing_tests(
+        self, sample_role_with_specs_and_defaults
+    ):
+        """Test that parser-based approach maintains compatibility with existing functionality."""
+        generator = DefaultsCommentGenerator()
+
+        defaults_path = sample_role_with_specs_and_defaults / "defaults" / "main.yml"
+
+        specs = {
+            "main": {
+                "options": {
+                    "acmesh_domain": {
+                        "description": "Primary domain name for the certificate"
+                    },
+                    "acmesh_email": {
+                        "description": "Email address for ACME account registration"
+                    },
+                    "acmesh_staging": {
+                        "description": "Use Let's Encrypt staging environment for testing"
+                    },
+                }
+            }
+        }
+
+        result = generator.add_comments(defaults_path, specs)
+
+        # Should work exactly as before
+        assert result is not None
+        assert "primary domain name" in result.lower()
+        assert "email address for acme" in result.lower()
+        assert "staging environment" in result.lower()
+
 
 class TestReadmeUpdater:
     """Test the ReadmeUpdater class."""
