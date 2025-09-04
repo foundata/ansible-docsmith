@@ -898,8 +898,9 @@ class DefaultsCommentGenerator:
             # For lists, preserve structure exactly
             return self._format_list_node(node)
         elif node.t == "code_block":
-            # For code blocks, preserve content exactly
-            return f"```\n{node.literal or ''}```"
+            # For code blocks, preserve content exactly including language info
+            language_info = node.info or ""
+            return f"```{language_info}\n{node.literal or ''}```"
         elif node.t == "heading":
             # For headings, format as plain text (shouldn't occur in descriptions)
             return self._format_paragraph_node(node)
@@ -1007,52 +1008,55 @@ class DefaultsCommentGenerator:
             return []
 
         blocks = []
-        lines = text.split('\n')
+        lines = text.split("\n")
         i = 0
 
         while i < len(lines):
             line = lines[i]
 
-            # Check for code block start
-            if line.strip() == '```':
-                # Collect entire code block
+            # Check for code block start (with or without language identifier)
+            # This takes priority over everything else
+            if line.strip().startswith("```"):
+                # Collect entire code block including opening and closing ```
                 code_lines = [line]
                 i += 1
 
-                # Find matching closing ```
+                # Find matching closing ``` - don't treat anything inside as other block types
                 while i < len(lines):
                     code_lines.append(lines[i])
-                    if lines[i].strip() == '```':
+                    if lines[i].strip() == "```":
+                        i += 1  # Move past the closing ```
                         break
                     i += 1
 
-                blocks.append({
-                    'type': 'code_block',
-                    'content': '\n'.join(code_lines)
-                })
+                blocks.append({"type": "code_block", "content": "\n".join(code_lines)})
+                continue  # Skip the i += 1 at the end of the loop
 
-            # Check for list items
-            elif line.strip().startswith('- ') or line.strip().startswith('* '):
+            # Check for list items (only if not inside a code block)
+            elif line.strip().startswith("- ") or line.strip().startswith("* "):
                 # Collect consecutive list items
                 list_lines = []
 
                 while i < len(lines) and (
-                    lines[i].strip().startswith('- ') or
-                    lines[i].strip().startswith('* ') or
-                    lines[i].startswith('  ') or  # List continuation
-                    lines[i].strip() == ''  # Empty lines in lists
+                    lines[i].strip().startswith("- ")
+                    or lines[i].strip().startswith("* ")
+                    or (
+                        lines[i].startswith("  ") and lines[i].strip()
+                    )  # Non-empty list continuation
+                    or lines[i].strip() == ""  # Empty lines in lists
                 ):
+                    # Stop if we hit a code block
+                    if lines[i].strip().startswith("```"):
+                        break
                     list_lines.append(lines[i])
                     i += 1
 
-                # Don't increment i here since we already moved past the list
                 i -= 1  # Back up one since we'll increment at end of loop
 
                 if list_lines:
-                    blocks.append({
-                        'type': 'list',
-                        'content': '\n'.join(list_lines)
-                    })
+                    blocks.append(
+                        {"type": "list", "content": "\n".join(list_lines).rstrip()}
+                    )
 
             # Regular text or empty lines
             else:
@@ -1060,9 +1064,9 @@ class DefaultsCommentGenerator:
                 text_lines = []
 
                 while i < len(lines) and (
-                    not lines[i].strip() == '```' and
-                    not lines[i].strip().startswith('- ') and
-                    not lines[i].strip().startswith('* ')
+                    not lines[i].strip().startswith("```")
+                    and not lines[i].strip().startswith("- ")
+                    and not lines[i].strip().startswith("* ")
                 ):
                     text_lines.append(lines[i])
                     i += 1
@@ -1070,10 +1074,9 @@ class DefaultsCommentGenerator:
                 i -= 1  # Back up one since we'll increment at end of loop
 
                 if text_lines:
-                    blocks.append({
-                        'type': 'text',
-                        'content': '\n'.join(text_lines).rstrip()
-                    })
+                    blocks.append(
+                        {"type": "text", "content": "\n".join(text_lines).rstrip()}
+                    )
 
             i += 1
 
@@ -1096,20 +1099,20 @@ class DefaultsCommentGenerator:
         wrapped_lines = []
 
         for block in blocks:
-            block_type = block['type']
-            content = block['content']
+            block_type = block["type"]
+            content = block["content"]
 
-            if block_type == 'code_block':
+            if block_type == "code_block":
                 # Code blocks are preserved exactly as-is
-                wrapped_lines.extend(content.split('\n'))
+                wrapped_lines.extend(content.split("\n"))
 
-            elif block_type == 'list':
+            elif block_type == "list":
                 # Lists are preserved exactly as-is
-                wrapped_lines.extend(content.split('\n'))
+                wrapped_lines.extend(content.split("\n"))
 
-            elif block_type == 'text':
+            elif block_type == "text":
                 # Regular text gets word-wrapped
-                text_lines = content.split('\n')
+                text_lines = content.split("\n")
                 for line in text_lines:
                     line = line.strip()
 
