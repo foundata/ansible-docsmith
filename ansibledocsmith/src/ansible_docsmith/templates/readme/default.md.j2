@@ -1,3 +1,34 @@
+{% macro render_nested_sections(options_dict, var_path, depth) -%}
+{% if options_dict %}
+{% for option_name, option_spec in options_dict.items() %}
+{% set heading_level = "####" if depth == 1 else "#####" if depth == 2 else "######" %}
+{% set anchor_id = var_path + "-sub-" + option_name %}
+{{ heading_level }} `{{ option_name }}`<a id="{{ anchor_id }}"></a>
+
+{{ option_spec.description | format_description }}
+
+- **Type**: `{{ option_spec.type }}`
+- **Required**: {{ 'Yes' if option_spec.required else 'No' }}
+{% if option_spec.default is not none %}
+- **Default**: {{ option_spec.default | format_default }}
+{% endif %}
+{% if option_spec.choices %}
+- **Choices**: {{ option_spec.choices | map('string') | map('code_escape') | join(', ') }}
+{% endif %}
+{% if option_spec.elements %}
+- **List Elements**: `{{ option_spec.elements }}`
+{% endif %}
+
+{% if depth < 3 and option_spec.options %}
+{{ render_nested_sections(option_spec.options, anchor_id, depth + 1) }}
+{% elif depth >= 3 and option_spec.options %}
+> **Note**: This option has more options but this README shows nested options up to level 3. Please refer to the argument_specs file for complete details.
+
+{% endif %}
+{% endfor %}
+{% endif %}
+{%- endmacro %}
+
 ## Role variables<a id="variables"></a>
 
 {% if has_options %}
@@ -26,15 +57,7 @@ The following variables can be configured for this role:
 - **List Elements**: `{{ var_spec.elements }}`
 {% endif %}
 
-{% if var_spec.options %}
-#### Nested options<a id="variable-{{ var_name }}-options"></a>
-
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-{% for sub_name, sub_spec in var_spec.options.items() %}
-| `{{ sub_name }}` | {{ sub_spec.type }} | {{ 'Yes' if sub_spec.required else 'No' }} | {{ sub_spec.default | format_default }} | {{ sub_spec.description | format_table_description("", 0) }} |
-{% endfor %}
-{% endif %}
+{{ render_nested_sections(var_spec.options, "variable-" + var_name, 1) }}
 
 {% endfor %}
 {% else %}
