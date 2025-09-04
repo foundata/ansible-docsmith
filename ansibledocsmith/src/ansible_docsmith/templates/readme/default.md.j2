@@ -3,10 +3,10 @@
 {% if has_options %}
 The following variables can be configured for this role:
 
-| Variable | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
+| Variable | Type | Required | Default | Description (abstract) |
+|----------|------|----------|---------|------------------------|
 {% for var_name, var_spec in options.items() %}
-| `{{ var_name | ansible_escape }}` | `{{ var_spec.type }}` | {{ 'Yes' if var_spec.required else 'No' }} | {{ var_spec.default | format_default }} | {{ var_spec.description | format_table_description }} |
+| `{{ var_name | ansible_escape }}` | `{{ var_spec.type }}` | {{ 'Yes' if var_spec.required else 'No' }} | {{ var_spec.default | format_default }} | {{ var_spec.description | format_table_description(var_name) }} |
 {% endfor %}
 
 ### Variable details<a id="variable-details"></a>

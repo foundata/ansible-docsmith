@@ -4,6 +4,7 @@ import html
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,43 @@ from ..constants import (
 )
 from ..templates import TemplateManager
 from .exceptions import FileOperationError, TemplateError
+
+# Constants
+TABLE_DESCRIPTION_MAX_LENGTH = 250
+
+
+class HTMLStripper(HTMLParser):
+    """HTML parser that strips all tags and returns clean text."""
+
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.text = []
+
+    def handle_data(self, data):
+        """Handle text data between HTML tags."""
+        self.text.append(data)
+
+    def get_text(self):
+        """Return the cleaned text."""
+        return "".join(self.text)
+
+    @classmethod
+    def strip_tags(cls, html_text: str) -> str:
+        """Strip HTML tags from text and return clean text."""
+        if not html_text:
+            return ""
+
+        stripper = cls()
+        try:
+            stripper.feed(html_text)
+            # Unescape HTML entities as well
+            return html.unescape(stripper.get_text())
+        except Exception:
+            # Fallback to regex if HTML is malformed
+            return re.sub(r"<[^>]+>", "", html_text)
 
 
 class BaseDocumentationGenerator(ABC):
@@ -133,7 +171,9 @@ class BaseDocumentationGenerator(ABC):
         return str(description).strip() if description else ""
 
     @abstractmethod
-    def _format_table_description_filter(self, description: Any) -> str:
+    def _format_table_description_filter(
+        self, description: Any, variable_name: str | None = None
+    ) -> str:
         """Format description for table display, handling multiline strings properly."""
         pass
 
@@ -141,7 +181,7 @@ class BaseDocumentationGenerator(ABC):
 class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
     """Generate Markdown documentation from argument specs."""
 
-    def _get_filters(self) -> dict[str, Callable[[Any], str]]:
+    def _get_filters(self) -> dict[str, Callable]:
         """Get Markdown-specific filters."""
         return {
             "ansible_escape": self._ansible_escape_filter,
@@ -170,8 +210,10 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         escaped = value_str.replace("`", "\\`").replace("|", "\\|")
         return f"`{escaped}`"
 
-    def _format_table_description_filter(self, description: Any) -> str:
-        """Format description for Markdown table display, handling multiline strings."""
+    def _format_table_description_filter(
+        self, description: Any, variable_name: str | None = None
+    ) -> str:
+        """Format description for Markdown table display with HTML stripping."""
         if description is None:
             return ""
 
@@ -192,10 +234,10 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         if not text:
             return ""
 
-        # Process multiline descriptions for table display:
-        # 1. Replace double line breaks (paragraph separators) with <br><br>
-        # 2. Replace single line breaks with spaces
+        # Step 1: Strip all HTML tags using proper HTML parser
+        text = HTMLStripper.strip_tags(text)
 
+        # Step 2 & 3: Process multiline descriptions for table display
         # First, normalize line endings
         text = text.replace("\r\n", "\n").replace("\r", "\n")
 
@@ -210,18 +252,38 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
                 processed_paragraph = paragraph.replace("\n", " ")
                 # Clean up multiple spaces
                 processed_paragraph = " ".join(processed_paragraph.split())
-                # HTML encode the content for safe display in tables
-                processed_paragraph = html.escape(processed_paragraph)
                 processed_paragraphs.append(processed_paragraph)
 
         # Join paragraphs with <br><br> for proper table display
-        return "<br><br>".join(processed_paragraphs)
+        result = "<br><br>".join(processed_paragraphs)
+
+        # Step 4 & 5: Truncate at max length and add ellipses with link if needed
+        if len(result) > TABLE_DESCRIPTION_MAX_LENGTH:
+            # Find the last word boundary before or at position max length
+            truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+            while truncate_pos > 0 and result[truncate_pos] != " ":
+                truncate_pos -= 1
+
+            # If we couldn't find a space, just truncate at max length
+            if truncate_pos == 0:
+                truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+
+            truncated = result[:truncate_pos].rstrip()
+
+            # Add ellipses with link
+            if variable_name:
+                link_target = f"variable-{variable_name}"
+                result = f"{truncated} […](#{link_target})"
+            else:
+                result = f"{truncated} […]"
+
+        return result
 
 
 class RSTDocumentationGenerator(BaseDocumentationGenerator):
     """Generate reStructuredText documentation from argument specs."""
 
-    def _get_filters(self) -> dict[str, Callable[[Any], str]]:
+    def _get_filters(self) -> dict[str, Callable]:
         """Get reStructuredText-specific filters."""
         return {
             "ansible_escape": self._ansible_escape_filter,
@@ -253,8 +315,10 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         escaped = value_str.replace("`", "\\`")
         return f"``{escaped}``"
 
-    def _format_table_description_filter(self, description: Any) -> str:
-        """Format description for reStructuredText table display."""
+    def _format_table_description_filter(
+        self, description: Any, variable_name: str | None = None
+    ) -> str:
+        """Format description for reStructuredText table display with HTML stripping."""
         if description is None:
             return ""
 
@@ -275,7 +339,10 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         if not text:
             return ""
 
-        # Process multiline descriptions for RST table display:
+        # Step 1: Strip all HTML tags using proper HTML parser
+        text = HTMLStripper.strip_tags(text)
+
+        # Step 2 & 3: Process multiline descriptions for RST table display
         # Replace line breaks with spaces for single-line table cells
         text = text.replace("\r\n", "\n").replace("\r", "\n")
 
@@ -293,7 +360,29 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
                 processed_paragraphs.append(processed_paragraph)
 
         # Join paragraphs with | for RST table line continuation
-        return " | ".join(processed_paragraphs)
+        result = " | ".join(processed_paragraphs)
+
+        # Step 4 & 5: Truncate at max length and add ellipses with link if needed
+        if len(result) > TABLE_DESCRIPTION_MAX_LENGTH:
+            # Find the last word boundary before or at position max length
+            truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+            while truncate_pos > 0 and result[truncate_pos] != " ":
+                truncate_pos -= 1
+
+            # If we couldn't find a space, just truncate at max length
+            if truncate_pos == 0:
+                truncate_pos = TABLE_DESCRIPTION_MAX_LENGTH
+
+            truncated = result[:truncate_pos].rstrip()
+
+            # Add ellipses with link (RST format)
+            if variable_name:
+                link_target = f"variable-{variable_name}"
+                result = f"{truncated} `[…] <#{link_target}>`__"
+            else:
+                result = f"{truncated} […]"
+
+        return result
 
     def _csv_escape_filter(self, value: Any) -> str:
         """Escape double quotes in strings for CSV format.
@@ -1021,7 +1110,7 @@ class DefaultsCommentGenerator:
                 code_lines = [line]
                 i += 1
 
-                # Find matching closing ``` - don't treat anything inside as other block types
+                # Find matching closing ``` - don't treat inside as other blocks
                 while i < len(lines):
                     code_lines.append(lines[i])
                     if lines[i].strip() == "```":

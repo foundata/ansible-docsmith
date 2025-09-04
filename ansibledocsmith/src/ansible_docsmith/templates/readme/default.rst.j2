@@ -6,11 +6,11 @@ Role variables
 The following variables can be configured for this role:
 
 .. csv-table::
-   :header: "Variable", "Type", "Required", "Default", "Description"
+   :header: "Variable", "Type", "Required", "Default", "Description (abstract)"
    :widths: 20, 10, 10, 15, 45
 
 {% for var_name, var_spec in options.items() %}
-   "``{{ var_name | ansible_escape }}``", "``{{ var_spec.type }}``", "{{ 'Yes' if var_spec.required else 'No' }}", "{{ var_spec.default | format_default | csv_escape }}", "{{ var_spec.description | format_table_description | csv_escape }}"
+   "``{{ var_name | ansible_escape }}``", "``{{ var_spec.type }}``", "{{ 'Yes' if var_spec.required else 'No' }}", "{{ var_spec.default | format_default | csv_escape }}", "{{ var_spec.description | format_table_description(var_name) | csv_escape }}"
 {% endfor %}
 
 

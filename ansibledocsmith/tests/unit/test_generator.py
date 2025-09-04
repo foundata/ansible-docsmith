@@ -7,7 +7,9 @@ from ansible_docsmith import (
     MARKER_README_MAIN_START,
 )
 from ansible_docsmith.core.generator import (
+    TABLE_DESCRIPTION_MAX_LENGTH,
     DefaultsCommentGenerator,
+    HTMLStripper,
     MarkdownDocumentationGenerator,
     MarkdownTocGenerator,
     ReadmeUpdater,
@@ -166,55 +168,111 @@ Second paragraph with more details.
         assert "- list item 2" in result.lower()
 
 
-class TestTableDescriptionFilter:
-    """Test the format_table_description filter functionality."""
+class TestHTMLStripper:
+    """Test the HTMLStripper class for HTML tag removal and entity unescaping."""
 
-    def test_html_encoding_basic_tags(self):
-        """Test that basic HTML tags are properly encoded."""
+    def test_basic_html_tag_removal(self):
+        """Test that basic HTML tags are properly removed."""
+        result = HTMLStripper.strip_tags("<p>Simple paragraph</p>")
+        assert result == "Simple paragraph"
+
+        result = HTMLStripper.strip_tags("<b>Bold</b> and <em>italic</em> text")
+        assert result == "Bold and italic text"
+
+    def test_nested_html_tags(self):
+        """Test removal of nested HTML tags."""
+        result = HTMLStripper.strip_tags("<div><span>Nested</span> tags</div>")
+        assert result == "Nested tags"
+
+        result = HTMLStripper.strip_tags("<p><b>Bold <em>and italic</em></b> text</p>")
+        assert result == "Bold and italic text"
+
+    def test_html_entities_unescaping(self):
+        """Test that HTML entities are properly unescaped."""
+        result = HTMLStripper.strip_tags("Text with &lt;escaped&gt; entities")
+        assert result == "Text with <escaped> entities"
+
+        result = HTMLStripper.strip_tags("Ampersand &amp; and quotes &quot;here&quot;")
+        assert result == 'Ampersand & and quotes "here"'
+
+    def test_complex_html_with_attributes(self):
+        """Test removal of HTML tags with attributes."""
+        result = HTMLStripper.strip_tags(
+            "<img src='test.jpg' alt='Test image' style='width:100px'/>Caption"
+        )
+        assert result == "Caption"
+
+        result = HTMLStripper.strip_tags(
+            "<a href='#link' class='test' id='mylink'>Link text</a>"
+        )
+        assert result == "Link text"
+
+    def test_script_and_style_content(self):
+        """Test handling of script and style tag content."""
+        # HTMLParser preserves content inside script tags (which is correct behavior)
+        result = HTMLStripper.strip_tags("<script>alert('test')</script>Safe text")
+        assert result == "alert('test')Safe text"
+
+        result = HTMLStripper.strip_tags("<style>body {color: red;}</style>Content")
+        assert result == "body {color: red;}Content"
+
+    def test_edge_cases(self):
+        """Test edge cases for HTML stripping."""
+        # Empty input
+        result = HTMLStripper.strip_tags("")
+        assert result == ""
+
+        # None input
+        result = HTMLStripper.strip_tags(None)
+        assert result == ""
+
+        # No HTML tags
+        result = HTMLStripper.strip_tags("Plain text without tags")
+        assert result == "Plain text without tags"
+
+        # Only HTML tags
+        result = HTMLStripper.strip_tags("<p></p><div></div>")
+        assert result == ""
+
+    def test_malformed_html_fallback(self):
+        """Test fallback behavior with malformed HTML."""
+        # This should still work (HTMLParser is quite robust)
+        result = HTMLStripper.strip_tags("<p>Unclosed paragraph")
+        assert result == "Unclosed paragraph"
+
+        result = HTMLStripper.strip_tags("Text with <unclosed> tag")
+        assert result == "Text with  tag"
+
+
+class TestTableDescriptionFilter:
+    """Test the improved format_table_description filter functionality."""
+
+    def test_html_stripping_basic_tags(self):
+        """Test that HTML tags are properly stripped (not encoded)."""
         generator = MarkdownDocumentationGenerator()
 
-        # Test common HTML tags
+        # Test common HTML tags - should be STRIPPED, not encoded
         input_text = "This has <em>emphasis</em> and <b>bold</b> text."
         result = generator._format_table_description_filter(input_text)
-        expected = (
-            "This has &lt;em&gt;emphasis&lt;/em&gt; and &lt;b&gt;bold&lt;/b&gt; text."
-        )
+        expected = "This has emphasis and bold text."
         assert result == expected
 
-    def test_html_encoding_xss_prevention(self):
-        """Test that XSS attack vectors are properly neutralized."""
+    def test_html_stripping_with_entities(self):
+        """Test that HTML entities are properly unescaped after tag stripping."""
         generator = MarkdownDocumentationGenerator()
 
-        # Test script tag XSS
-        input_text = 'Dangerous <script>alert("XSS")</script> content'
+        input_text = "Text with &lt;entities&gt; and &amp; symbols."
         result = generator._format_table_description_filter(input_text)
-        expected = (
-            "Dangerous &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; content"
-        )
+        expected = "Text with <entities> and & symbols."
         assert result == expected
 
-        # Test complex XSS with attributes
-        input_text = (
-            "Complex <b oncontentvisibilityautostatechange=alert(1) "
-            "style=display:block>XSS</b> test"
-        )
-        result = generator._format_table_description_filter(input_text)
-        expected = (
-            "Complex &lt;b oncontentvisibilityautostatechange=alert(1) "
-            "style=display:block&gt;XSS&lt;/b&gt; test"
-        )
-        assert result == expected
-
-    def test_html_encoding_special_characters(self):
-        """Test that special characters are properly encoded."""
+    def test_html_stripping_complex_tags(self):
+        """Test stripping of complex HTML with attributes."""
         generator = MarkdownDocumentationGenerator()
 
-        # Test ampersand, quotes, and angle brackets
-        input_text = 'Variables like ${VAR} & "quoted strings" < > symbols'
+        input_text = "<p class='test'>This has <b>HTML tags</b> that should be <em>stripped</em>.</p>"
         result = generator._format_table_description_filter(input_text)
-        expected = (
-            "Variables like ${VAR} &amp; &quot;quoted strings&quot; &lt; &gt; symbols"
-        )
+        expected = "This has HTML tags that should be stripped."
         assert result == expected
 
     def test_multiline_single_breaks_to_spaces(self):
@@ -244,6 +302,78 @@ Third paragraph here."""
         )
         assert result == expected
 
+    def test_truncation_at_word_boundary(self):
+        """Test that text is truncated at word boundaries at max length."""
+        generator = MarkdownDocumentationGenerator()
+
+        # Create text longer than max length
+        long_text = (
+            "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, "
+            "sed diam nonumy eirmod tempor invidunt ut labore et dolore "
+            "magna aliquyam erat, sed diam voluptua. At vero eos et accusam "
+            "et justo duo dolores et ea rebum. Stet clita kasd gubergren, "
+            "no sea takimata sanctus est Lorem ipsum."
+        )
+
+        result = generator._format_table_description_filter(long_text, "test_var")
+
+        # Should be truncated and include ellipses with link
+        max_expected = (
+            TABLE_DESCRIPTION_MAX_LENGTH + 50
+        )  # Add buffer for ellipses + link
+        assert len(result) <= max_expected
+        assert result.endswith("[…](#variable-test_var)")
+        assert "Lorem ipsum" in result
+        # Should end at word boundary, not mid-word
+        truncated_part = result.split(" […](")[0]
+        assert not truncated_part.endswith("Lorem")  # Shouldn't cut mid-word
+
+    def test_truncation_with_ellipses_and_link(self):
+        """Test truncation adds proper ellipses and variable link."""
+        generator = MarkdownDocumentationGenerator()
+
+        # Use the first example from requirements
+        long_text = """Determines whether the managed resources should be `present` or `absent`.
+
+`present` ensures that required components, such as software packages, are installed and configured. `absent` reverts changes as much as possible, such as removing packages, deleting created users, stopping services, restoring modified settings.
+
+sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."""
+
+        result = generator._format_table_description_filter(
+            long_text, "run_acmesh_autorenewal"
+        )
+
+        # Should be truncated with link
+        assert "[…](#variable-run_acmesh_autorenewal)" in result
+        assert (
+            "Determines whether the managed resources should be `present` or `absent`"
+            in result
+        )
+        assert "`present` ensures that required components" in result
+
+    def test_no_truncation_for_short_text(self):
+        """Test that short text is not truncated."""
+        generator = MarkdownDocumentationGenerator()
+
+        short_text = "This is a short description."
+        result = generator._format_table_description_filter(short_text, "test_var")
+
+        # Should be unchanged
+        assert result == short_text
+        assert "[…]" not in result
+
+    def test_truncation_without_variable_name(self):
+        """Test truncation behavior without variable name for link."""
+        generator = MarkdownDocumentationGenerator()
+
+        long_text = "A" * 300  # 300 A's
+        result = generator._format_table_description_filter(long_text)
+
+        # Should be truncated with generic ellipses (no link)
+        assert len(result) < 300
+        assert result.endswith(" […]")
+        assert "#variable-" not in result
+
     def test_list_descriptions_with_br_tags(self):
         """Test that list descriptions are joined with <br><br>."""
         generator = MarkdownDocumentationGenerator()
@@ -260,8 +390,8 @@ Third paragraph here."""
         )
         assert result == expected
 
-    def test_list_with_html_encoding(self):
-        """Test that HTML in list items gets properly encoded."""
+    def test_list_with_html_stripping(self):
+        """Test that HTML in list items gets properly stripped."""
         generator = MarkdownDocumentationGenerator()
 
         input_list = [
@@ -269,24 +399,20 @@ Third paragraph here."""
             "Second item with <script>alert('xss')</script>.",
         ]
         result = generator._format_table_description_filter(input_list)
-        expected = (
-            "First item with &lt;em&gt;HTML&lt;/em&gt;.<br><br>Second item with "
-            "&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;."
-        )
+        expected = "First item with HTML.<br><br>Second item with alert('xss')."
         assert result == expected
 
-    def test_combined_html_and_multiline(self):
-        """Test HTML encoding combined with multiline processing."""
+    def test_combined_html_stripping_and_multiline(self):
+        """Test HTML stripping combined with multiline processing."""
         generator = MarkdownDocumentationGenerator()
 
-        input_text = """First paragraph with <b>bold</b> text.
+        input_text = """<p>First paragraph with <b>bold</b> text.</p>
 
-Second paragraph with <script>alert("test")</script> content."""
+<div>Second paragraph with <script>alert("test")</script> content.</div>"""
         result = generator._format_table_description_filter(input_text)
         expected = (
-            "First paragraph with &lt;b&gt;bold&lt;/b&gt; text.<br><br>Second "
-            "paragraph with &lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt; "
-            "content."
+            "First paragraph with bold text.<br><br>Second "
+            'paragraph with alert("test") content.'
         )
         assert result == expected
 
@@ -334,30 +460,65 @@ Second paragraph with <script>alert("test")</script> content."""
         expected = "Text with multiple spaces here."
         assert result == expected
 
-    def test_complex_real_world_example(self):
-        """Test with a complex real-world example from the fixture."""
+    def test_rst_format_table_description_filter(self):
+        """Test RST-specific table description formatting with pipe separators."""
+        generator = RSTDocumentationGenerator()
+
+        # Test multiline text with paragraph breaks
+        input_text = "First paragraph.\n\nSecond paragraph."
+        result = generator._format_table_description_filter(input_text)
+
+        # RST uses pipe separators instead of <br><br>
+        assert result == "First paragraph. | Second paragraph."
+
+    def test_rst_truncation_with_rst_link_format(self):
+        """Test RST truncation uses RST-style link format."""
+        generator = RSTDocumentationGenerator()
+
+        long_text = "A" * 300  # 300 A's
+        result = generator._format_table_description_filter(long_text, "test_var")
+
+        # Should be truncated with RST-style link
+        assert len(result) < 300
+        assert result.endswith("`[…] <#variable-test_var>`__")
+
+    def test_rst_html_stripping(self):
+        """Test that RST generator also strips HTML properly."""
+        generator = RSTDocumentationGenerator()
+
+        input_text = (
+            "<p>This has <b>HTML tags</b> that should be <em>stripped</em>.</p>"
+        )
+        result = generator._format_table_description_filter(input_text)
+        expected = "This has HTML tags that should be stripped."
+        assert result == expected
+
+    def test_requirements_example_1(self):
+        """Test the first example from requirements exactly."""
         generator = MarkdownDocumentationGenerator()
 
-        # Based on the actual fixture content
-        input_text = (
-            'Determines whether the managed resources should be "present" or '
-            '"absent".\n\n'
-            '"present" ensures that required components, such as software '
-            "packages, are installed and configured.\n\n"
-            '"absent" reverts changes as much as possible, such as removing '
-            "packages, deleting created users, stopping services, restoring "
-            "modified settings, …"
-        )
+        input_text = """Determines whether the managed resources should be `present` or `absent`.
 
-        result = generator._format_table_description_filter(input_text)
-        expected = (
-            "Determines whether the managed resources should be &quot;present&quot; "
-            "or &quot;absent&quot;.<br><br>&quot;present&quot; ensures that required "
-            "components, such as software packages, are installed and "
-            "configured.<br><br>&quot;absent&quot; reverts changes as much as "
-            "possible, such as removing packages, deleting created users, "
-            "stopping services, restoring modified settings, …"
+`present` ensures that required components, such as software packages, are installed and configured. `absent` reverts changes as much as possible, such as removing packages, deleting created users, stopping services, restoring modified settings.
+
+sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor"""
+
+        expected = """Determines whether the managed resources should be `present` or `absent`.<br><br>`present` ensures that required components, such as software packages, are installed and configured. `absent` reverts changes as much as possible, such as removing […](#variable-run_acmesh_autorenewal)"""
+
+        result = generator._format_table_description_filter(
+            input_text, "run_acmesh_autorenewal"
         )
+        assert result == expected
+
+    def test_requirements_example_2(self):
+        """Test the second example from requirements exactly."""
+        generator = MarkdownDocumentationGenerator()
+
+        input_text = """Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."""
+
+        expected = """Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea […](#variable-foo)"""
+
+        result = generator._format_table_description_filter(input_text, "foo")
         assert result == expected
 
 
