@@ -297,13 +297,13 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
 
     def _csv_escape_filter(self, value: Any) -> str:
         """Escape double quotes in strings for CSV format.
-        
+
         In CSV format, double quotes within field values must be escaped
         by doubling them (e.g., 'He said ""Hello""' for: He said "Hello").
-        
+
         Args:
             value: The value to escape for CSV
-            
+
         Returns:
             CSV-escaped string
         """
@@ -813,35 +813,326 @@ class DefaultsCommentGenerator:
             return str(default)
 
     def _normalize_description(self, description: Any) -> str:
-        """Normalize description to string format, handling both strings and lists."""
+        """Normalize description to string format with improved formatting rules.
+
+        Rules:
+        - Single linebreaks in regular text become spaces
+        - Two or more linebreaks become double newlines (\n\n)
+        - Markdown lists are preserved
+        - Markdown code blocks are preserved
+        """
         if description is None:
             return ""
 
         if isinstance(description, list):
             # Join list items with double newlines for paragraph separation
-            return "\n\n".join(
+            text = "\n\n".join(
                 str(item).strip() for item in description if str(item).strip()
             )
+        else:
+            # Convert to string and strip, handling any YAML object types
+            try:
+                text = str(description)
+                text = text.strip() if hasattr(text, "strip") else text
+            except Exception:
+                return ""
 
-        # Convert to string and strip, handling any YAML object types
-        try:
-            result = str(description)
-            return result.strip() if hasattr(result, "strip") else result
-        except Exception:
+        if not text:
             return ""
 
+        return self._parse_and_format_description(text)
+
+    def _parse_and_format_description(self, text: str) -> str:
+        """Parse description using commonmark and apply enhanced formatting rules.
+
+        Uses a proper markdown parser to handle complex structures like lists
+        and code blocks correctly.
+
+        Rules:
+        - Single linebreaks (softbreaks) in regular text become spaces
+        - Paragraphs are separated with double newlines (\n\n)
+        - Markdown lists are preserved exactly as-is
+        - Markdown code blocks are preserved exactly as-is
+
+        Args:
+            text: Input text to format
+
+        Returns:
+            Formatted text following the enhanced rules
+        """
+        if not text.strip():
+            return ""
+
+        from commonmark import Parser
+
+        # Parse the markdown text into an AST
+        parser = Parser()
+        ast = parser.parse(text)
+
+        # Convert the AST back to formatted text
+        result_parts = []
+        if ast.first_child:
+            child = ast.first_child
+            while child:
+                formatted_block = self._format_ast_node(child)
+                if formatted_block:
+                    result_parts.append(formatted_block)
+                child = child.nxt
+
+        # Join blocks with double newlines (paragraph separation)
+        return "\n\n".join(result_parts).strip()
+
+    def _format_ast_node(self, node) -> str:
+        """Format a single AST node based on its type.
+
+        Args:
+            node: CommonMark AST node
+
+        Returns:
+            Formatted text for this node
+        """
+        if node.t == "paragraph":
+            # For paragraphs, join inline content and convert softbreaks to spaces
+            return self._format_paragraph_node(node)
+        elif node.t == "list":
+            # For lists, preserve structure exactly
+            return self._format_list_node(node)
+        elif node.t == "code_block":
+            # For code blocks, preserve content exactly
+            return f"```\n{node.literal or ''}```"
+        elif node.t == "heading":
+            # For headings, format as plain text (shouldn't occur in descriptions)
+            return self._format_paragraph_node(node)
+        else:
+            # For other block types, format as paragraph
+            return self._format_paragraph_node(node)
+
+    def _format_paragraph_node(self, node) -> str:
+        """Format a paragraph node, converting softbreaks to spaces.
+
+        Args:
+            node: Paragraph AST node
+
+        Returns:
+            Formatted paragraph text
+        """
+        text_parts = []
+        if node.first_child:
+            child = node.first_child
+            while child:
+                if child.t == "text":
+                    text_parts.append(child.literal or "")
+                elif child.t == "softbreak":
+                    # Single linebreaks become spaces
+                    text_parts.append(" ")
+                elif child.t == "code":
+                    # Inline code - preserve as-is
+                    text_parts.append(f"`{child.literal or ''}`")
+                elif child.t == "linebreak":
+                    # Hard line breaks (two spaces + newline) - preserve
+                    text_parts.append("\n")
+                else:
+                    # Handle other inline elements as text
+                    text_parts.append(child.literal or "")
+                child = child.nxt
+
+        # Join and clean up multiple spaces
+        result = "".join(text_parts)
+        return " ".join(result.split())
+
+    def _format_list_node(self, node) -> str:
+        """Format a list node, preserving structure exactly.
+
+        Args:
+            node: List AST node
+
+        Returns:
+            Formatted list text
+        """
+        list_items = []
+        if node.first_child:
+            item = node.first_child
+            while item:
+                if item.t == "item":
+                    item_text = self._format_list_item_node(item)
+                    if item_text:
+                        list_items.append(item_text)
+                item = item.nxt
+
+        return "\n".join(list_items)
+
+    def _format_list_item_node(self, node) -> str:
+        """Format a list item node.
+
+        Args:
+            node: List item AST node
+
+        Returns:
+            Formatted list item text
+        """
+        # List items start with "- "
+        item_parts = []
+        if node.first_child:
+            child = node.first_child
+            while child:
+                if child.t == "paragraph":
+                    # Format the paragraph content but preserve structure for lists
+                    para_text = self._format_paragraph_node(child)
+                    item_parts.append(para_text)
+                else:
+                    # Handle other content in list items
+                    formatted = self._format_ast_node(child)
+                    if formatted:
+                        item_parts.append(formatted)
+                child = child.nxt
+
+        # Join list item content and prefix with "- "
+        item_content = " ".join(item_parts)
+        return f"- {item_content}"
+
+    def _split_into_blocks(self, text: str) -> list[dict]:
+        """Split text into blocks preserving markdown structure.
+
+        Returns a list of block dictionaries with 'type' and 'content' keys:
+        - type: 'text', 'code_block', or 'list'
+        - content: the block content as string
+
+        Args:
+            text: Formatted text from CommonMark parser
+
+        Returns:
+            List of block dictionaries
+        """
+        if not text.strip():
+            return []
+
+        blocks = []
+        lines = text.split('\n')
+        i = 0
+
+        while i < len(lines):
+            line = lines[i]
+
+            # Check for code block start
+            if line.strip() == '```':
+                # Collect entire code block
+                code_lines = [line]
+                i += 1
+
+                # Find matching closing ```
+                while i < len(lines):
+                    code_lines.append(lines[i])
+                    if lines[i].strip() == '```':
+                        break
+                    i += 1
+
+                blocks.append({
+                    'type': 'code_block',
+                    'content': '\n'.join(code_lines)
+                })
+
+            # Check for list items
+            elif line.strip().startswith('- ') or line.strip().startswith('* '):
+                # Collect consecutive list items
+                list_lines = []
+
+                while i < len(lines) and (
+                    lines[i].strip().startswith('- ') or
+                    lines[i].strip().startswith('* ') or
+                    lines[i].startswith('  ') or  # List continuation
+                    lines[i].strip() == ''  # Empty lines in lists
+                ):
+                    list_lines.append(lines[i])
+                    i += 1
+
+                # Don't increment i here since we already moved past the list
+                i -= 1  # Back up one since we'll increment at end of loop
+
+                if list_lines:
+                    blocks.append({
+                        'type': 'list',
+                        'content': '\n'.join(list_lines)
+                    })
+
+            # Regular text or empty lines
+            else:
+                # Collect consecutive non-special lines
+                text_lines = []
+
+                while i < len(lines) and (
+                    not lines[i].strip() == '```' and
+                    not lines[i].strip().startswith('- ') and
+                    not lines[i].strip().startswith('* ')
+                ):
+                    text_lines.append(lines[i])
+                    i += 1
+
+                i -= 1  # Back up one since we'll increment at end of loop
+
+                if text_lines:
+                    blocks.append({
+                        'type': 'text',
+                        'content': '\n'.join(text_lines).rstrip()
+                    })
+
+            i += 1
+
+        return blocks
+
     def _wrap_text(self, text: str, max_width: int = 78) -> list[str]:
-        """Wrap text to specified width, preserving word boundaries."""
+        """Wrap text to specified width while preserving markdown structure.
+
+        This method is block-aware and preserves code blocks, lists, and other
+        structures exactly as formatted by the CommonMark parser.
+        """
         if not text:
             return [""]
 
-        words = text.split()
+        # Split into blocks first to handle different content types
+        blocks = self._split_into_blocks(text)
+        if not blocks:
+            return [""]
+
+        wrapped_lines = []
+
+        for block in blocks:
+            block_type = block['type']
+            content = block['content']
+
+            if block_type == 'code_block':
+                # Code blocks are preserved exactly as-is
+                wrapped_lines.extend(content.split('\n'))
+
+            elif block_type == 'list':
+                # Lists are preserved exactly as-is
+                wrapped_lines.extend(content.split('\n'))
+
+            elif block_type == 'text':
+                # Regular text gets word-wrapped
+                text_lines = content.split('\n')
+                for line in text_lines:
+                    line = line.strip()
+
+                    if not line:
+                        wrapped_lines.append("")
+                    elif len(line) <= max_width:
+                        wrapped_lines.append(line)
+                    else:
+                        wrapped_lines.extend(self._wrap_single_line(line, max_width))
+
+        return wrapped_lines if wrapped_lines else [""]
+
+    def _wrap_single_line(self, line: str, max_width: int = 78) -> list[str]:
+        """Wrap a single line of text to specified width."""
+        words = line.split()
+        if not words:
+            return [""]
+
         lines = []
         current_line = []
         current_length = 0
 
         for word in words:
-            # Check if adding this word would exceed the limit
             word_length = len(word)
             space_length = 1 if current_line else 0
 
@@ -1060,8 +1351,7 @@ class ReadmeUpdater:
         # Remove content between TOC markers
         if self.toc_start_marker in content and self.toc_end_marker in content:
             pattern = (
-                f"{re.escape(self.toc_start_marker)}.*?"
-                f"{re.escape(self.toc_end_marker)}"
+                f"{re.escape(self.toc_start_marker)}.*?{re.escape(self.toc_end_marker)}"
             )
             content = re.sub(pattern, "", content, flags=re.DOTALL)
 
