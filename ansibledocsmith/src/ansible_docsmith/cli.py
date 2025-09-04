@@ -67,7 +67,7 @@ def generate(
     format_type: str = typer.Option(
         "auto",
         "--format",
-        help="Output format: 'auto', 'markdown' or 'rst' (auto detects from existing files)",
+        help="Output format: 'auto', 'markdown' or 'rst' (auto detects from files)",
         case_sensitive=False,
     ),
     update_defaults: bool = typer.Option(
@@ -187,7 +187,7 @@ def validate(
     format_type: str = typer.Option(
         "auto",
         "--format",
-        help="Expected format: 'auto', 'markdown' or 'rst' (auto detects from existing files)",
+        help="Expected format: 'auto', 'markdown' or 'rst' (auto detects from files)",
         case_sensitive=False,
     ),
     verbose: bool = typer.Option(

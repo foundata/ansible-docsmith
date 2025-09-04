@@ -457,17 +457,19 @@ class RoleProcessor:
 
             if not has_start and not has_end:
                 errors.append(
-                    f"README.{readme_path.suffix[1:]} exists but is missing required markers. "
-                    f"Add '{start_marker}' and '{end_marker}' to allow "
-                    f"ansible-docsmith to manage documentation sections."
+                    f"README.{readme_path.suffix[1:]} exists but is missing "
+                    f"required markers. Add '{start_marker}' and '{end_marker}' "
+                    f"to allow ansible-docsmith to manage documentation sections."
                 )
             elif not has_start:
                 errors.append(
-                    f"README.{readme_path.suffix[1:]} is missing start marker: '{start_marker}'"
+                    f"README.{readme_path.suffix[1:]} is missing "
+                    f"start marker: '{start_marker}'"
                 )
             elif not has_end:
                 errors.append(
-                    f"README.{readme_path.suffix[1:]} is missing end marker: '{end_marker}'"
+                    f"README.{readme_path.suffix[1:]} is missing "
+                    f"end marker: '{end_marker}'"
                 )
 
         except Exception as e:
@@ -518,11 +520,13 @@ class RoleProcessor:
                 )
             elif has_toc_start and not has_toc_end:
                 errors.append(
-                    f"README.{readme_path.suffix[1:]} is missing TOC end marker: '{toc_end_marker}'"
+                    f"README.{readme_path.suffix[1:]} is missing "
+                    f"TOC end marker: '{toc_end_marker}'"
                 )
             elif not has_toc_start and has_toc_end:
                 errors.append(
-                    f"README.{readme_path.suffix[1:]} is missing TOC start marker: '{toc_start_marker}'"
+                    f"README.{readme_path.suffix[1:]} is missing "
+                    f"TOC start marker: '{toc_start_marker}'"
                 )
 
         except Exception as e:

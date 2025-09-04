@@ -349,7 +349,11 @@ var3:
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing required markers" in errors[0]
-        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
+        expected_start = (
+            f"{MARKER_COMMENT_MD_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_MD_END}"
+        )
         expected_end = (
             f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}"
         )
@@ -373,7 +377,11 @@ Some content.
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing start marker" in errors[0]
-        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
+        expected_start = (
+            f"{MARKER_COMMENT_MD_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_MD_END}"
+        )
         assert expected_start in errors[0]
 
     def test_validate_readme_markers_missing_end(self, temp_dir):
@@ -549,8 +557,16 @@ argument_specs:
 
         # Create README.rst with proper markers
         readme_path = role_path / "README.rst"
-        rst_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
-        rst_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        rst_start = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
+        rst_end = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_END}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
         readme_path.write_text(f"""Test Role RST
 ==============
 
@@ -633,8 +649,16 @@ MIT
         error_message = str(exc_info.value)
         assert "validation failed" in error_message.lower()
         assert "missing required markers" in error_message.lower()
-        rst_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
-        rst_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        rst_start = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
+        rst_end = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_END}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
         assert rst_start in error_message
         assert rst_end in error_message
 
@@ -651,8 +675,16 @@ MIT
         errors = processor._validate_readme_markers(role_path)
         assert len(errors) == 1
         assert "missing required markers" in errors[0]
-        expected_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
-        expected_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        expected_start = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
+        expected_end = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_END}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
         assert expected_start in errors[0]
         assert expected_end in errors[0]
 
@@ -663,8 +695,16 @@ MIT
         role_path = temp_dir / "test-role"
         role_path.mkdir()
         readme_path = role_path / "README.rst"
-        rst_start = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_RST_END}"
-        rst_end = f"{MARKER_COMMENT_RST_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_RST_END}"
+        rst_start = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
+        rst_end = (
+            f"{MARKER_COMMENT_RST_BEGIN}"
+            f"{MARKER_README_MAIN_END}"
+            f"{MARKER_COMMENT_RST_END}"
+        )
         readme_path.write_text(f"""Test Role
 =========
 

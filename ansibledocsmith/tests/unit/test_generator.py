@@ -21,7 +21,7 @@ from ansible_docsmith.core.generator import (
 
 
 class TestDocumentationGenerator:
-    """Test the DocumentationGenerator class (alias for MarkdownDocumentationGenerator)."""
+    """Test the DocumentationGenerator class (alias for MarkdownDocGenerator)."""
 
     def test_generate_role_documentation(self, sample_role_with_specs):
         """Test generating role documentation."""
@@ -270,7 +270,10 @@ class TestTableDescriptionFilter:
         """Test stripping of complex HTML with attributes."""
         generator = MarkdownDocumentationGenerator()
 
-        input_text = "<p class='test'>This has <b>HTML tags</b> that should be <em>stripped</em>.</p>"
+        input_text = (
+            "<p class='test'>This has <b>HTML tags</b> that should be "
+            "<em>stripped</em>.</p>"
+        )
         result = generator._format_table_description_filter(input_text)
         expected = "This has HTML tags that should be stripped."
         assert result == expected
@@ -333,11 +336,17 @@ Third paragraph here."""
         generator = MarkdownDocumentationGenerator()
 
         # Use the first example from requirements
-        long_text = """Determines whether the managed resources should be `present` or `absent`.
-
-`present` ensures that required components, such as software packages, are installed and configured. `absent` reverts changes as much as possible, such as removing packages, deleting created users, stopping services, restoring modified settings.
-
-sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."""
+        long_text = (
+            "Determines whether the managed resources should be `present` or "
+            "`absent`.\n\n"
+            "`present` ensures that required components, such as software packages, "
+            "are installed and configured. `absent` reverts changes as much as "
+            "possible, such as removing packages, deleting created users, stopping "
+            "services, restoring modified settings.\n\n"
+            "sed diam voluptua. At vero eos et accusam et justo duo dolores et ea "
+            "rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem "
+            "ipsum dolor sit amet."
+        )
 
         result = generator._format_table_description_filter(
             long_text, "run_acmesh_autorenewal"
@@ -497,13 +506,31 @@ sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
         """Test the first example from requirements exactly."""
         generator = MarkdownDocumentationGenerator()
 
-        input_text = """Determines whether the managed resources should be `present` or `absent`.
+        input_text = (
+            "Determines whether the managed resources should be `present` or "
+            "`absent`.\n\n"
+            "`present` ensures that required components, such as software packages, "
+            "are installed and configured. `absent` reverts changes as much as "
+            "possible, "
+            "such as removing packages, deleting created users, stopping services, "
+            "restoring modified settings.\n\n"
+            "sed diam voluptua. At vero eos et accusam et justo duo dolores et ea "
+            "rebum. "
+            "Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum "
+            "dolor sit "
+            "amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed "
+            "diam nonumy "
+            "eirmod tempor"
+        )
 
-`present` ensures that required components, such as software packages, are installed and configured. `absent` reverts changes as much as possible, such as removing packages, deleting created users, stopping services, restoring modified settings.
-
-sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor"""
-
-        expected = """Determines whether the managed resources should be `present` or `absent`.<br><br>`present` ensures that required components, such as software packages, are installed and configured. `absent` reverts changes as much as possible, such as removing […](#variable-run_acmesh_autorenewal)"""
+        expected = (
+            "Determines whether the managed resources should be `present` or `absent`."
+            "<br><br>`present` ensures that required components, such as software "
+            "packages, "
+            "are installed and configured. `absent` reverts changes as much as "
+            "possible, "
+            "such as removing […](#variable-run_acmesh_autorenewal)"
+        )
 
         result = generator._format_table_description_filter(
             input_text, "run_acmesh_autorenewal"
@@ -514,9 +541,25 @@ sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
         """Test the second example from requirements exactly."""
         generator = MarkdownDocumentationGenerator()
 
-        input_text = """Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."""
+        input_text = (
+            "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy "
+            "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam "
+            "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet "
+            "clita kasd gubergren, no sea takimata sanctus est Lorem ipsum "
+            "dolor sit amet. "
+            "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy "
+            "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam "
+            "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet "
+            "clita kasd gubergren, no sea takimata sanctus est Lorem ipsum "
+            "dolor sit amet."
+        )
 
-        expected = """Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea […](#variable-foo)"""
+        expected = (
+            "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy "
+            "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam "
+            "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet "
+            "clita kasd gubergren, no sea […](#variable-foo)"
+        )
 
         result = generator._format_table_description_filter(input_text, "foo")
         assert result == expected
@@ -675,7 +718,10 @@ Second paragraph after blank line.
 
 Third paragraph here."""
         result = generator._parse_and_format_description(input_text)
-        expected = "First paragraph with some content.\n\nSecond paragraph after blank line.\n\nThird paragraph here."
+        expected = (
+            "First paragraph with some content.\n\nSecond paragraph after blank line."
+            "\n\nThird paragraph here."
+        )
         assert result == expected
 
     def test_parse_and_format_description_code_blocks(self):
@@ -736,7 +782,8 @@ Regular paragraph after the list."""
         """Test complex mixed content with paragraphs, lists, and code blocks."""
         generator = DefaultsCommentGenerator()
 
-        input_text = """This example demonstrates all formatting working perfectly together.
+        input_text = """This example demonstrates all formatting working perfectly
+together.
 
 Single linebreaks within paragraphs become spaces making text
 flow naturally while preserving readability throughout.
@@ -774,16 +821,16 @@ single linebreaks becoming spaces for natural flow."""
             in result
         )
         assert (
-            "Single linebreaks within paragraphs become spaces making text flow naturally while preserving readability throughout."
-            in result
+            "Single linebreaks within paragraphs become spaces making text flow "
+            "naturally while preserving readability throughout." in result
         )
         assert "- List items are preserved perfectly" in result
         assert "- Each item appears on its own line" in result
         assert "```yaml" in result
         assert "perfect_example:" in result
         assert (
-            "And text after code blocks continues to work normally with single linebreaks becoming spaces for natural flow."
-            in result
+            "And text after code blocks continues to work normally with single "
+            "linebreaks becoming spaces for natural flow." in result
         )
 
         # Verify proper separation between blocks
@@ -834,7 +881,10 @@ class TestBlockAwareProcessing:
         generator = DefaultsCommentGenerator()
 
         # First, let's test the complete parser workflow
-        input_text = "Regular text before.\n\n```yaml\nconfig:\n  key: value\n  items:\n    - one\n    - two\n```\n\nText after code block."
+        input_text = (
+            "Regular text before.\n\n```yaml\nconfig:\n  key: value\n  items:\n"
+            "    - one\n    - two\n```\n\nText after code block."
+        )
 
         # Parse it first (this is what happens in the real workflow)
         parsed_text = generator._parse_and_format_description(input_text)
@@ -886,7 +936,11 @@ Text after list."""
         """Test proper boundaries between different block types."""
         generator = DefaultsCommentGenerator()
 
-        input_text = "Paragraph text.\n\n- List item one\n- List item two\n\n```python\ndef function():\n    return True\n```\n\nAnother paragraph.\n\n* Different bullet style\n* Second item"
+        input_text = (
+            "Paragraph text.\n\n- List item one\n- List item two\n\n```python\n"
+            "def function():\n    return True\n```\n\nAnother paragraph.\n\n"
+            "* Different bullet style\n* Second item"
+        )
 
         # Parse it first (this is what happens in the real workflow)
         parsed_text = generator._parse_and_format_description(input_text)
@@ -991,13 +1045,15 @@ class TestParserBasedIntegration:
         generator = DefaultsCommentGenerator()
 
         # Use the complex description from the test fixtures
-        complex_description = """Determines whether the managed resources should be "present" or
-"absent".
-
-"present" ensures that required components, such as software packages, are installed and configured.
-
-"absent" reverts changes as much as possible, such as removing packages, deleting created users,
-stopping services, restoring modified settings, …"""
+        complex_description = (
+            'Determines whether the managed resources should be "present" or '
+            '"absent".\n\n'
+            '"present" ensures that required components, such as software packages, '
+            "are installed and configured.\n\n"
+            '"absent" reverts changes as much as possible, such as removing packages, '
+            "deleting created users, stopping services, restoring modified "
+            "settings, etc."
+        )
 
         result = generator._parse_and_format_description(complex_description)
 
@@ -1071,7 +1127,8 @@ Regular text after code blocks works perfectly."""
         generator = DefaultsCommentGenerator()
 
         # This is the actual content from /tmp/final-comprehensive-test
-        comprehensive_text = """This example demonstrates all formatting working perfectly together.
+        comprehensive_text = """This example demonstrates all formatting working
+perfectly together.
 
 Single linebreaks within paragraphs become spaces making text
 flow naturally while preserving readability throughout.
@@ -1109,21 +1166,21 @@ single linebreaks becoming spaces for natural flow."""
             in result
         )
         assert (
-            "Single linebreaks within paragraphs become spaces making text flow naturally while preserving readability throughout."
-            in result
+            "Single linebreaks within paragraphs become spaces making text flow "
+            "naturally while preserving readability throughout." in result
         )
         assert "- List items are preserved perfectly" in result
         assert (
-            "- Multi-line list items like this one that spans across multiple lines are handled correctly"
-            in result
+            "- Multi-line list items like this one that spans across multiple "
+            "lines are handled correctly" in result
         )
         assert "```yaml" in result
         assert "perfect_example:" in result
         assert 'key1: "value1"' in result
         assert "- item1" in result
         assert (
-            "And text after code blocks continues to work normally with single linebreaks becoming spaces for natural flow."
-            in result
+            "And text after code blocks continues to work normally with single "
+            "linebreaks becoming spaces for natural flow." in result
         )
 
         # Verify proper paragraph/block separation
@@ -1133,7 +1190,7 @@ single linebreaks becoming spaces for natural flow."""
     def test_backwards_compatibility_with_existing_tests(
         self, sample_role_with_specs_and_defaults
     ):
-        """Test that parser-based approach maintains compatibility with existing functionality."""
+        """Test parser-based approach compatibility with existing functionality."""
         generator = DefaultsCommentGenerator()
 
         defaults_path = sample_role_with_specs_and_defaults / "defaults" / "main.yml"
@@ -1148,7 +1205,9 @@ single linebreaks becoming spaces for natural flow."""
                         "description": "Email address for ACME account registration"
                     },
                     "acmesh_staging": {
-                        "description": "Use Let's Encrypt staging environment for testing"
+                        "description": (
+                            "Use Let's Encrypt staging environment for testing"
+                        )
                     },
                 }
             }
@@ -1180,7 +1239,11 @@ class TestReadmeUpdater:
 
         content = readme_path.read_text()
         assert "test content" in content.lower()
-        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
+        expected_start = (
+            f"{MARKER_COMMENT_MD_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_MD_END}"
+        )
         expected_end = (
             f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}"
         )
@@ -1204,7 +1267,11 @@ class TestReadmeUpdater:
         content = readme_path.read_text()
         assert "existing content" in content.lower()
         assert "new content" in content.lower()
-        expected_start = f"{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}"
+        expected_start = (
+            f"{MARKER_COMMENT_MD_BEGIN}"
+            f"{MARKER_README_MAIN_START}"
+            f"{MARKER_COMMENT_MD_END}"
+        )
         assert expected_start in content
 
     def test_update_readme_existing_file_with_markers(self, temp_dir):
@@ -1503,7 +1570,7 @@ class TestMarkdownTocGenerator:
         assert generator._get_format_type() == "markdown"
 
     def test_markdown_toc_generation_same_as_legacy(self):
-        """Test that MarkdownTocGenerator produces same results as legacy TocGenerator."""
+        """Test MarkdownTocGenerator produces same results as legacy TocGenerator."""
         content = """# Main Title
 
 Some content here.
