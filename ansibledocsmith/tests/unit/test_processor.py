@@ -245,6 +245,79 @@ test_number: 99
         assert "42" in warning_messages
         assert "99" in warning_messages
 
+    def test_validate_mutually_exclusive_keys(self, temp_dir):
+        """Test validation of mutually exclusive default and required: true."""
+        processor = RoleProcessor()
+
+        # Create required directory structure
+        meta_dir = temp_dir / "meta"
+        meta_dir.mkdir()
+
+        # Create argument_specs.yml with mutually exclusive keys
+        spec_file = meta_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    options:
+      # ERROR: both default and required: true
+      conflict_var:
+        type: str
+        default: "present"
+        required: true
+
+      # VALID: default with required: false
+      valid_default_false:
+        type: str
+        default: "stable"
+        required: false
+
+      # VALID: default without required key
+      valid_default_implicit:
+        type: bool
+        default: true
+
+      # VALID: required: true without default
+      valid_required_only:
+        type: str
+        required: true
+
+  install:
+    options:
+      # Another ERROR case
+      another_conflict:
+        type: int
+        default: 42
+        required: true
+""")
+
+        # Test the mutually exclusive validation directly
+        errors = processor._validate_mutually_exclusive_keys(spec_file)
+
+        # Should have exactly 2 errors (one for each conflicting variable)
+        assert len(errors) == 2
+
+        error_messages = "\n".join(errors)
+        assert "conflict_var" in error_messages
+        assert "another_conflict" in error_messages
+        assert "mutually exclusive" in error_messages
+        assert "required: true" in error_messages
+
+    def test_validate_mutually_exclusive_keys_with_role_validation(self):
+        """Test that mutually exclusive keys cause role validation to fail."""
+        processor = RoleProcessor()
+
+        from pathlib import Path
+        fixture_path = Path("tests/fixtures/example-role-mutually-exclusive-keys")
+
+        # Should raise ValidationError due to mutually exclusive keys
+        with pytest.raises(ValidationError) as exc_info:
+            processor.validate_role(fixture_path)
+
+        error_message = str(exc_info.value)
+        assert "mutually exclusive" in error_message.lower()
+        assert "conflict_variable" in error_message.lower()
+        assert "install_conflict" in error_message.lower()
+
     def test_validate_unknown_keys(self, temp_dir):
         """Test validation of unknown keys in argument_specs."""
         processor = RoleProcessor()

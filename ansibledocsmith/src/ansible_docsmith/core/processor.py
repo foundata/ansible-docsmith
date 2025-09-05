@@ -125,6 +125,12 @@ class RoleProcessor:
             warnings = self._validate_unknown_keys(role_data["spec_file"])
             role_data["warnings"].extend(warnings)
 
+            # Add mutually exclusive keys validation
+            exclusive_errors = self._validate_mutually_exclusive_keys(
+                role_data["spec_file"]
+            )
+            role_data["errors"].extend(exclusive_errors)
+
             # Add README marker validation
             readme_errors = self._validate_readme_markers(role_path)
             role_data["errors"].extend(readme_errors)
@@ -363,6 +369,41 @@ class RoleProcessor:
                 return data.get("argument_specs", {})
         except Exception:
             return {}
+
+    def _validate_mutually_exclusive_keys(self, spec_file: Path) -> list[str]:
+        """Validate that default and required: true are not used together."""
+        errors = []
+
+        # Parse original specs to preserve structure
+        original_specs = self._parse_original_specs(spec_file)
+        if not original_specs:
+            return errors
+
+        for entry_point, spec in original_specs.items():
+            if not isinstance(spec, dict):
+                continue
+
+            options = spec.get("options", {})
+            if not isinstance(options, dict):
+                continue
+
+            for var_name, var_spec in options.items():
+                if not isinstance(var_spec, dict):
+                    continue
+
+                # Check for the conflict: both default and required: true
+                has_default = "default" in var_spec
+                is_required = var_spec.get("required") is True
+
+                if has_default and is_required:
+                    errors.append(
+                        f"Entry point '{entry_point}': Variable '{var_name}' has "
+                        f"both 'default' and 'required: true' which are mutually "
+                        f"exclusive. Remove either the default value or set "
+                        f"required to false."
+                    )
+
+        return errors
 
     def _validate_defaults_consistency(
         self, role_path: Path, specs: dict, spec_file: Path = None

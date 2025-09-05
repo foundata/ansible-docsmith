@@ -10,7 +10,7 @@ argument_specs:
     options:
       main_state:
         type: "str"
-        required: true
+        required: false
         description: |
           Determines whether the managed resources should be "present" or "absent".
 

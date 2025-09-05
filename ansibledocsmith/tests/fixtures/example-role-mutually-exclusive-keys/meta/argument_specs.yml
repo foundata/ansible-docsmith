@@ -1,0 +1,48 @@
+# Test fixture for mutually exclusive keys validation
+---
+
+argument_specs:
+  main:
+    short_description: "Test role for mutually exclusive keys validation"
+    options:
+      # ERROR CASE: both default and required: true
+      conflict_variable:
+        type: "str"
+        default: "present"
+        required: true
+        description: "This should trigger an error"
+
+      # VALID CASE: default with required: false
+      valid_default_false:
+        type: "str"
+        default: "stable"
+        required: false
+        description: "This is valid"
+
+      # VALID CASE: default without required key
+      valid_default_no_required:
+        type: "bool"
+        default: true
+        description: "This is valid"
+
+      # VALID CASE: required: true without default
+      valid_required_only:
+        type: "str"
+        required: true
+        description: "This is valid"
+
+  install:
+    short_description: "Install entry point"
+    options:
+      # Another ERROR CASE in different entry point
+      install_conflict:
+        type: "int"
+        default: 42
+        required: true
+        description: "Another conflicting variable"
+
+      # Valid case
+      install_path:
+        type: "path"
+        required: true
+        description: "Installation path"
