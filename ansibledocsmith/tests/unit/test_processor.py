@@ -307,6 +307,7 @@ argument_specs:
         processor = RoleProcessor()
 
         from pathlib import Path
+
         fixture_path = Path("tests/fixtures/example-role-mutually-exclusive-keys")
 
         # Should raise ValidationError due to mutually exclusive keys

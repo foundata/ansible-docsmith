@@ -678,26 +678,92 @@ class TestDefaultsCommentGenerator:
 
         assert result is None
 
-    def test_wrap_text(self):
-        """Test text wrapping functionality."""
+    def test_ast_aware_text_wrapping(self):
+        """Test AST-aware text wrapping functionality."""
         generator = DefaultsCommentGenerator()
 
         # Short text (no wrapping needed)
-        result = generator._wrap_text("This is a test description")
-        assert result == ["This is a test description"]
+        result = generator._parse_and_format_description(
+            "This is a test description", max_width=50
+        )
+        assert result == "This is a test description"
 
         # Long text (should wrap)
         long_text = (
             "This is a very long description that should be wrapped because "
             "it exceeds the maximum width limit that we have set for our comments"
         )
-        result = generator._wrap_text(long_text, max_width=50)
-        assert len(result) > 1
-        assert all(len(line) <= 50 for line in result)
+        result = generator._parse_and_format_description(long_text, max_width=50)
+        lines = result.split("\n")
+        assert len(lines) > 1
+        assert all(len(line) <= 50 for line in lines if line.strip())
 
         # Empty text
-        result = generator._wrap_text("")
-        assert result == [""]
+        result = generator._parse_and_format_description("", max_width=50)
+        assert result == ""
+
+    def test_complex_list_formatting_with_nesting(self):
+        """Test complex list formatting with proper nesting and list types."""
+        generator = DefaultsCommentGenerator()
+
+        # Your exact example input
+        input_text = (
+            "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy "
+            "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam "
+            "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet "
+            "clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit "
+            "amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam "
+            "nonumy eirmod tempor invidunt ut labore et dolore magna\n\n"
+            "This is a list:\n\n"
+            "- foo\n"
+            "- bar\n\n"
+            "This is a list with sublist\n\n"
+            "1. foo\n"
+            "2. bar\n"
+            "   - foo\n"
+            "   - bar bar bar\n"
+            "3. hey\n\n"
+            "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy "
+            "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam "
+            "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet "
+            "clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit "
+            "amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam "
+            "nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, "
+            "sed diam voluptua. At vero eos et accusam"
+        )
+
+        # Process with wrapping similar to YAML comment width
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        # Verify that we preserve list types
+        assert "1. foo" in result
+        assert "2. bar" in result
+        assert "3. hey" in result
+
+        # Verify bullet lists are preserved
+        assert "- foo" in result
+        assert "- bar" in result
+
+        # Test that we have proper nesting (nested list items should be indented)
+        lines = result.split("\n")
+
+        # Find the "2. bar" line and check that the nested items follow with indentation
+        for i, line in enumerate(lines):
+            if line.strip() == "2. bar":
+                # Check that nested items follow with proper indentation
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    # Should be indented "- foo"
+                    assert (
+                        "- foo" in next_line or "- foo" in lines[i + 2]
+                        if i + 2 < len(lines)
+                        else False
+                    )
+                break
+
+        # Verify we didn't flatten the structure
+        assert "- bar - foo" not in result  # This was the broken behavior
+        assert "bar- foo" not in result  # This should be properly nested with spacing
 
     def test_parse_and_format_description_basic_paragraphs(self):
         """Test basic paragraph formatting with single/double linebreak rules."""
@@ -874,115 +940,94 @@ ls -la
 
 
 class TestBlockAwareProcessing:
-    """Test the new parser-based block-aware processing methods."""
+    """Test the parser-based text processing methods."""
 
-    def test_split_into_blocks_code_detection(self):
-        """Test code block boundary detection and preservation."""
+    def test_ast_wrapping_preserves_code_blocks(self):
+        """Test that AST-aware wrapping preserves code blocks correctly."""
         generator = DefaultsCommentGenerator()
 
-        # First, let's test the complete parser workflow
+        # Test with code block
         input_text = (
             "Regular text before.\n\n```yaml\nconfig:\n  key: value\n  items:\n"
             "    - one\n    - two\n```\n\nText after code block."
         )
 
-        # Parse it first (this is what happens in the real workflow)
-        parsed_text = generator._parse_and_format_description(input_text)
-        blocks = generator._split_into_blocks(parsed_text)
+        # Parse and format with wrapping
+        result = generator._parse_and_format_description(input_text, max_width=50)
 
-        # Should have 3 blocks: text, code_block, text
-        assert len(blocks) == 3
+        # Verify code block is preserved
+        assert "```yaml" in result
+        assert "config:" in result
+        assert "  key: value" in result
+        assert "```" in result
+        assert "Text after code block." in result
 
-        assert blocks[0]["type"] == "text"
-        assert "Regular text before." in blocks[0]["content"]
-
-        assert blocks[1]["type"] == "code_block"
-        assert blocks[1]["content"].startswith("```")
-        assert "config:" in blocks[1]["content"]
-        assert blocks[1]["content"].endswith("```")
-
-        assert blocks[2]["type"] == "text"
-        assert "Text after code block." in blocks[2]["content"]
-
-    def test_split_into_blocks_list_detection(self):
-        """Test list block detection and preservation."""
+    def test_ast_wrapping_preserves_lists(self):
+        """Test that AST-aware wrapping preserves lists correctly."""
         generator = DefaultsCommentGenerator()
 
         input_text = """Text before list.
 
 - First item
-- Second item with continuation
-  that spans multiple lines
+- Second item with continuation that spans multiple lines
 - Third item
 
 Text after list."""
 
-        blocks = generator._split_into_blocks(input_text)
+        # Parse and format with wrapping
+        result = generator._parse_and_format_description(input_text, max_width=50)
 
-        # Should detect list as separate block
-        list_block = None
-        for block in blocks:
-            if block["type"] == "list":
-                list_block = block
-                break
+        # Verify list structure is preserved
+        assert "- First item" in result
+        assert "- Second item" in result
+        assert "- Third item" in result
+        assert "Text before list." in result
+        assert "Text after list." in result
 
-        assert list_block is not None
-        assert "- First item" in list_block["content"]
-        assert "- Second item with continuation" in list_block["content"]
-        assert "that spans multiple lines" in list_block["content"]
-        assert "- Third item" in list_block["content"]
-
-    def test_split_into_blocks_mixed_content(self):
-        """Test proper boundaries between different block types."""
+    def test_ast_wrapping_mixed_content(self):
+        """Test AST-aware wrapping with mixed content types."""
         generator = DefaultsCommentGenerator()
 
         input_text = (
             "Paragraph text.\n\n- List item one\n- List item two\n\n```python\n"
             "def function():\n    return True\n```\n\nAnother paragraph.\n\n"
-            "* Different bullet style\n* Second item"
+            "- Different bullet style item"
         )
 
-        # Parse it first (this is what happens in the real workflow)
-        parsed_text = generator._parse_and_format_description(input_text)
-        blocks = generator._split_into_blocks(parsed_text)
+        # Parse and format with wrapping
+        result = generator._parse_and_format_description(input_text, max_width=50)
 
-        # Verify we get the expected block types in order
-        block_types = [block["type"] for block in blocks]
-        expected_types = ["text", "list", "code_block", "text", "list"]
-        assert block_types == expected_types
+        # Verify all content types are preserved
+        assert "Paragraph text." in result
+        assert "- List item one" in result
+        assert "```python" in result
+        assert "def function():" in result
+        assert "Another paragraph." in result
+        assert "- Different bullet style item" in result
 
-    def test_split_into_blocks_edge_cases(self):
-        """Test edge cases in block splitting."""
+    def test_ast_wrapping_edge_cases(self):
+        """Test edge cases in AST-aware text wrapping."""
         generator = DefaultsCommentGenerator()
 
         # Empty input
-        blocks = generator._split_into_blocks("")
-        assert blocks == []
+        result = generator._parse_and_format_description("", max_width=50)
+        assert result == ""
 
         # Only whitespace
-        blocks = generator._split_into_blocks("   \n\n   ")
-        assert len(blocks) <= 1  # May contain empty text block
+        result = generator._parse_and_format_description("   \n\n   ", max_width=50)
+        assert result == ""
 
-        # Unclosed code block (should handle gracefully)
-        input_text = """Text before.
+        # Very long single line that needs wrapping
+        long_line = "This is a very long line that should be wrapped " * 5
+        result = generator._parse_and_format_description(long_line, max_width=50)
+        lines = result.split("\n")
 
-```yaml
-unclosed_code: true"""
-
-        blocks = generator._split_into_blocks(input_text)
-
-        # Should still create blocks, handling the unclosed code block
-        assert len(blocks) >= 1
-
-        # Find the code block
-        code_block = None
-        for block in blocks:
-            if block["type"] == "code_block":
-                code_block = block
-                break
-
-        if code_block:
-            assert "unclosed_code: true" in code_block["content"]
+        # Should have multiple lines
+        assert len(lines) > 1
+        # No line should exceed max width
+        for line in lines:
+            if line.strip():  # Skip empty lines
+                assert len(line) <= 50
 
     def test_format_ast_node_paragraph(self):
         """Test AST paragraph node formatting."""
@@ -1035,6 +1080,347 @@ unclosed_code: true"""
         result = generator._format_ast_node(list_node)
         assert "- First item" in result
         assert "- Second item" in result
+
+
+class TestMarkdownListFormattingFixes:
+    """Test the markdown list formatting fixes for CommonMark AST processing."""
+
+    def test_preserve_asterisk_list_markers(self):
+        """
+        Test that asterisk list markers are preserved instead of converted to dashes.
+        """
+        generator = DefaultsCommentGenerator()
+
+        input_text = """List with asterisks:
+
+* First item
+* Second item
+* Third item"""
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        # Asterisks should be preserved
+        assert "* First item" in result
+        assert "* Second item" in result
+        assert "* Third item" in result
+
+        # Should not be converted to dashes
+        assert "- First item" not in result
+
+    def test_proper_list_indentation_levels(self):
+        """Test that nested lists use proper continuation indentation levels."""
+        generator = DefaultsCommentGenerator()
+
+        input_text = """Nested list example:
+
+- Top level item
+  - Second level item
+    - Third level item
+    - Another third level
+  - Back to second level
+- Another top level"""
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        lines = result.split("\n")
+
+        # Find and verify indentation levels
+        for line in lines:
+            if "Top level" in line or "Another top level" in line:
+                # Top level should have no indentation
+                assert line.startswith("- ")
+            elif "Second level" in line or "Back to second level" in line:
+                # Second level should have 4 spaces (continuation alignment)
+                assert line.startswith("    - ")
+            elif "Third level" in line:
+                # Third level should have 6 spaces (nested continuation alignment)
+                assert line.startswith("      - ")
+
+    def test_top_level_list_continuation_indentation(self):
+        """Test that continuation lines for top-level lists get proper indentation."""
+        generator = DefaultsCommentGenerator()
+
+        # Simplified test that matches actual formatting
+        input_text = """- List Item 1 continuation text that should wrap properly
+- List Item 2
+  ```
+  code block content
+  ```
+  More continuation text"""
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        lines = result.split("\n")
+
+        # Verify continuation lines have proper indentation
+        code_block_found = False
+        for i, line in enumerate(lines):
+            if line.strip() == "```":
+                # Code blocks in lists should be indented by 2 spaces
+                if i > 0:  # Not the first line
+                    assert line.startswith("  ```")
+                    code_block_found = True
+            elif "code block content" in line:
+                # Code content should have base indentation (2 spaces)
+                assert line.startswith("  code block content")
+            elif "More continuation text" in line:
+                # Continuation text should be indented by 2 spaces
+                assert line.startswith("  More continuation text")
+
+        assert code_block_found, "Code block was not found in output"
+
+    def test_code_block_indentation_preservation(self):
+        """
+        Test that code blocks preserve internal indentation while getting proper base
+        indentation.
+        """
+        generator = DefaultsCommentGenerator()
+
+        input_text = """- Configuration example:
+  ```yaml
+  config:
+    nested_setting: value
+    list_items:
+      - item1
+      - item2
+  ```
+  End of example."""
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        lines = result.split("\n")
+
+        # Verify code block structure
+        for _i, line in enumerate(lines):
+            if line.strip() == "```yaml":
+                # Code block fence should be indented
+                assert line.startswith("  ```yaml")
+            elif "config:" in line:
+                # Top-level YAML should have base + 0 indentation
+                assert line.startswith("  config:")
+            elif "nested_setting:" in line:
+                # Nested YAML should have base + 2 indentation
+                assert line.startswith("    nested_setting:")
+            elif "list_items:" in line:
+                # List property should have base + 2 indentation
+                assert line.startswith("    list_items:")
+            elif "- item1" in line or "- item2" in line:
+                # List items should have base + 4 indentation
+                assert line.startswith("      - item")
+
+    def test_mixed_list_types_preservation(self):
+        """Test that both bullet and ordered lists are preserved correctly."""
+        generator = DefaultsCommentGenerator()
+
+        input_text = """Mixed list example:
+
+- Bullet item 1
+- Bullet item 2
+  1. Ordered subitem 1
+  2. Ordered subitem 2
+     - Nested bullet under ordered
+  3. Ordered subitem 3
+- Bullet item 3
+
+Separate ordered list:
+
+1. First ordered item
+2. Second ordered item
+   * Bullet under ordered
+   * Another bullet"""
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        # Verify list type preservation
+        assert "- Bullet item 1" in result
+        assert "1. Ordered subitem 1" in result
+        assert "2. Ordered subitem 2" in result
+        assert "- Nested bullet under ordered" in result
+        assert "1. First ordered item" in result
+        assert "* Bullet under ordered" in result
+
+        # Verify proper nesting indentation
+        lines = result.split("\n")
+        for line in lines:
+            if "Ordered subitem" in line:
+                assert line.startswith(
+                    "    "
+                )  # 4-space continuation indent for nested ordered
+            elif "Nested bullet under ordered" in line:
+                assert line.startswith("      - ")  # 6 spaces for bullet under ordered
+            elif "Bullet under ordered" in line:
+                assert line.startswith("     * ")  # 5 spaces for bullet under ordered
+
+    def test_long_text_wrapping_in_nested_lists(self):
+        """
+        Test that long text in nested lists wraps correctly with proper indentation.
+        """
+        generator = DefaultsCommentGenerator()
+
+        input_text = (
+            "Nested list with long text:\n\n"
+            "- First item with some text\n"
+            "  - Second level item with very long text that should wrap at the "
+            "specified line length and maintain proper indentation\n"
+            "    - Third level with even longer text that definitely needs to wrap and "
+            "should maintain consistent indentation throughout the wrapped lines\n"
+            "  - Another second level item"
+        )
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        lines = result.split("\n")
+
+        # Verify wrapping behavior
+        found_wrapped_second_level = False
+        found_wrapped_third_level = False
+
+        for i, line in enumerate(lines):
+            if "Second level item with very long" in line:
+                found_wrapped_second_level = True
+                # Should start with 4-space continuation indent
+                assert line.startswith("    - ")
+                # Next line should be continuation with proper alignment
+                if i + 1 < len(lines) and lines[i + 1].strip():
+                    next_line = lines[i + 1]
+                    if not next_line.strip().startswith("-"):  # Not another list item
+                        assert next_line.startswith(
+                            "      "
+                        )  # 6 spaces for continuation
+
+            elif "Third level with even longer" in line:
+                found_wrapped_third_level = True
+                # Should start with 6-space continuation indent
+                assert line.startswith("      - ")
+                # Check continuation line indentation
+                if i + 1 < len(lines) and lines[i + 1].strip():
+                    next_line = lines[i + 1]
+                    if not next_line.strip().startswith("-"):  # Not another list item
+                        assert next_line.startswith(
+                            "        "
+                        )  # 8 spaces for continuation
+
+        assert found_wrapped_second_level, "Did not find wrapped second level text"
+        assert found_wrapped_third_level, "Did not find wrapped third level text"
+
+    def test_comprehensive_list_and_code_example(self):
+        """Test the comprehensive example from the user's report."""
+        generator = DefaultsCommentGenerator()
+
+        # User's exact test case
+        input_text = (
+            "Text outside the list. Text outside the list. Text outside the list. Text "
+            "outside the list. Text outside the list.Text outside the listText outside "
+            "the listText outside the listText outside the list\n\n"
+            "- List Item 1 For boolean values, use `true`/`false` (these will be"
+            " converted to yes/no\n"
+            "  by configuration tasks as needed). With long text. That should be "
+            "wrapped to max line\n"
+            "- Liste Item 2\n"
+            "- List Item 3\n"
+            "  ```\n"
+            "  # This is code. Must not be touched beside the base indentation!\n"
+            "  HostKey:\n"
+            '    - "long long long long long long long long long long long long long '
+            'long long long long long"\n'
+            '    - "/etc/ssh/ssh_host_ed25519_key"\n'
+            '    - "/etc/ssh/ssh_host_ecdsa_key"\n'
+            "  ```\n"
+            "  This will generate multiple entries in the config file, one per list "
+            "item.\n"
+            "- List Item 4\n"
+            "  - Sublist 1\n"
+            "  - Sublist 2\n"
+            "    1. Sub sub sub list With long text. That should be wrapped to max "
+            "line With long text.\n"
+            "        ```\n"
+            "        # This is code in a sublist. Must not be touched beside the base "
+            "indentation!\n"
+            "        HostKey:\n"
+            '          - "long long long long long long long long long long long long'
+            ' long long long long long long long long"\n'
+            '          - "/etc/ssh/ssh_host_ed25519_key"\n'
+            '          - "/etc/ssh/ssh_host_ecdsa_key"\n'
+            "        ```\n"
+            "        That should be wrapped to max line With long text. That should be"
+            " wrapped to max line\n"
+            "    2. Sub Sub Sub 2\n"
+            "  - sublist 3\n"
+            "- List Item 5\n\n"
+            "Another list with Asterisk:\n\n"
+            "* FOo\n"
+            "* bar\n"
+            "* Baz"
+        )
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        # Convert to YAML comment format for final verification
+        comment_lines = []
+        for line in result.split("\n"):
+            if line.strip():
+                comment_lines.append(f"# {line}")
+            else:
+                comment_lines.append("#")
+        final_result = "\n".join(comment_lines)
+
+        # Key assertions for the fixed issues:
+
+        # 1. Top-level list continuation should be indented
+        assert "# - List Item 3\n#   ```" in final_result
+        assert "# - List Item 3\n# ```" not in final_result  # Should NOT be flush left
+
+        # 2. Code blocks should maintain internal indentation
+        assert "#   HostKey:" in final_result
+        assert (
+            '#     - "long long long' in final_result
+        )  # 4 spaces total (2 base + 2 original)
+
+        # 3. Nested lists should have proper indentation
+        assert (
+            "#     - Sublist 1" in final_result
+        )  # 4-space continuation indent for second level
+        assert (
+            "#       1. Sub sub sub list" in final_result
+        )  # 6-space continuation indent for third level
+
+        # 4. Asterisk preservation
+        assert "# * FOo" in final_result
+        assert "# * bar" in final_result
+        assert "# * Baz" in final_result
+
+        # 5. Deep nesting with code blocks
+        assert "#          ```" in final_result  # Code block in deep nest (10 spaces)
+        assert (
+            "#          HostKey:" in final_result
+        )  # HostKey should be at same level as code fence
+        assert (
+            '#            - "long long' in final_result
+        )  # List items inside code (12 spaces)
+
+    def test_edge_case_empty_lists_and_mixed_content(self):
+        """Test edge cases with empty list items and mixed content."""
+        generator = DefaultsCommentGenerator()
+
+        input_text = """Mixed content test:
+
+- First item
+-
+- Item after empty
+
+  New paragraph in same item.
+
+- Final item
+
+Regular paragraph after list."""
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+
+        # Should handle empty list items gracefully
+        assert "- First item" in result
+        assert "- Item after empty" in result
+        assert "- Final item" in result
+        assert "Regular paragraph after list." in result
 
 
 class TestParserBasedIntegration:

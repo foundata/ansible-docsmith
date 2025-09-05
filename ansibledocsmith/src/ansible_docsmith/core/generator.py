@@ -935,27 +935,25 @@ class DefaultsCommentGenerator:
     def _format_block_comment(self, var_spec: dict[str, Any]) -> list[str]:
         """Format variable spec as detailed block comment with proper line wrapping."""
         description = var_spec.get("description", "")
-        # Normalize description to handle both string and list formats
-        text = self._normalize_description(description)
 
-        # Split into paragraphs
-        paragraphs = text.split("\n\n") if "\n\n" in text else text.split("\n")
+        # Normalize description - handle both string and list formats
+        normalized_description = self._normalize_description(description)
+
+        # Parse and format description with AST-aware wrapping (minus "# " = 78)
+        formatted_text = self._parse_and_format_description(
+            normalized_description, max_width=78
+        )
 
         comment_lines = []
 
         # Add description paragraphs
-        for i, paragraph in enumerate(paragraphs):
-            if i > 0:  # Add blank comment line between paragraphs
-                comment_lines.append("#")
-
-            # Wrap paragraph to 80 chars (minus "# " prefix)
-            wrapped_lines = self._wrap_text(paragraph.strip(), max_width=78)
-
-            for wrapped_line in wrapped_lines:
-                comment_lines.append(f"# {wrapped_line}" if wrapped_line else "#")
+        if formatted_text:
+            lines = formatted_text.split("\n")
+            for line in lines:
+                comment_lines.append(f"# {line}" if line else "#")
 
         # Add separator line before variable details
-        if comment_lines and text.strip():
+        if comment_lines and formatted_text.strip():
             comment_lines.append("#")
 
         # Add variable details
@@ -1041,7 +1039,7 @@ class DefaultsCommentGenerator:
 
         return self._parse_and_format_description(text)
 
-    def _parse_and_format_description(self, text: str) -> str:
+    def _parse_and_format_description(self, text: str, max_width: int = 0) -> str:
         """Parse description using commonmark and apply enhanced formatting rules.
 
         Uses a proper markdown parser to handle complex structures like lists
@@ -1055,6 +1053,7 @@ class DefaultsCommentGenerator:
 
         Args:
             text: Input text to format
+            max_width: Maximum line width for text wrapping. If 0, no wrapping is done.
 
         Returns:
             Formatted text following the enhanced rules
@@ -1073,7 +1072,9 @@ class DefaultsCommentGenerator:
         if ast.first_child:
             child = ast.first_child
             while child:
-                formatted_block = self._format_ast_node(child)
+                formatted_block = self._format_ast_node(
+                    child, max_width, indent_level=0
+                )
                 if formatted_block:
                     result_parts.append(formatted_block)
                 child = child.nxt
@@ -1081,252 +1082,20 @@ class DefaultsCommentGenerator:
         # Join blocks with double newlines (paragraph separation)
         return "\n\n".join(result_parts).strip()
 
-    def _format_ast_node(self, node) -> str:
-        """Format a single AST node based on its type.
+    def _wrap_text_line(self, text: str, max_width: int) -> list[str]:
+        """Helper method to wrap a single line of text to specified width.
 
         Args:
-            node: CommonMark AST node
+            text: Text to wrap
+            max_width: Maximum line width
 
         Returns:
-            Formatted text for this node
+            List of wrapped lines
         """
-        if node.t == "paragraph":
-            # For paragraphs, join inline content and convert softbreaks to spaces
-            return self._format_paragraph_node(node)
-        elif node.t == "list":
-            # For lists, preserve structure exactly
-            return self._format_list_node(node)
-        elif node.t == "code_block":
-            # For code blocks, preserve content exactly including language info
-            language_info = node.info or ""
-            return f"```{language_info}\n{node.literal or ''}```"
-        elif node.t == "heading":
-            # For headings, format as plain text (shouldn't occur in descriptions)
-            return self._format_paragraph_node(node)
-        else:
-            # For other block types, format as paragraph
-            return self._format_paragraph_node(node)
+        if max_width <= 0 or len(text) <= max_width:
+            return [text] if text else [""]
 
-    def _format_paragraph_node(self, node) -> str:
-        """Format a paragraph node, converting softbreaks to spaces.
-
-        Args:
-            node: Paragraph AST node
-
-        Returns:
-            Formatted paragraph text
-        """
-        text_parts = []
-        if node.first_child:
-            child = node.first_child
-            while child:
-                if child.t == "text":
-                    text_parts.append(child.literal or "")
-                elif child.t == "softbreak":
-                    # Single linebreaks become spaces
-                    text_parts.append(" ")
-                elif child.t == "code":
-                    # Inline code - preserve as-is
-                    text_parts.append(f"`{child.literal or ''}`")
-                elif child.t == "linebreak":
-                    # Hard line breaks (two spaces + newline) - preserve
-                    text_parts.append("\n")
-                else:
-                    # Handle other inline elements as text
-                    text_parts.append(child.literal or "")
-                child = child.nxt
-
-        # Join and clean up multiple spaces
-        result = "".join(text_parts)
-        return " ".join(result.split())
-
-    def _format_list_node(self, node) -> str:
-        """Format a list node, preserving structure exactly.
-
-        Args:
-            node: List AST node
-
-        Returns:
-            Formatted list text
-        """
-        list_items = []
-        if node.first_child:
-            item = node.first_child
-            while item:
-                if item.t == "item":
-                    item_text = self._format_list_item_node(item)
-                    if item_text:
-                        list_items.append(item_text)
-                item = item.nxt
-
-        return "\n".join(list_items)
-
-    def _format_list_item_node(self, node) -> str:
-        """Format a list item node.
-
-        Args:
-            node: List item AST node
-
-        Returns:
-            Formatted list item text
-        """
-        # List items start with "- "
-        item_parts = []
-        if node.first_child:
-            child = node.first_child
-            while child:
-                if child.t == "paragraph":
-                    # Format the paragraph content but preserve structure for lists
-                    para_text = self._format_paragraph_node(child)
-                    item_parts.append(para_text)
-                else:
-                    # Handle other content in list items
-                    formatted = self._format_ast_node(child)
-                    if formatted:
-                        item_parts.append(formatted)
-                child = child.nxt
-
-        # Join list item content and prefix with "- "
-        item_content = " ".join(item_parts)
-        return f"- {item_content}"
-
-    def _split_into_blocks(self, text: str) -> list[dict]:
-        """Split text into blocks preserving markdown structure.
-
-        Returns a list of block dictionaries with 'type' and 'content' keys:
-        - type: 'text', 'code_block', or 'list'
-        - content: the block content as string
-
-        Args:
-            text: Formatted text from CommonMark parser
-
-        Returns:
-            List of block dictionaries
-        """
-        if not text.strip():
-            return []
-
-        blocks = []
-        lines = text.split("\n")
-        i = 0
-
-        while i < len(lines):
-            line = lines[i]
-
-            # Check for code block start (with or without language identifier)
-            # This takes priority over everything else
-            if line.strip().startswith("```"):
-                # Collect entire code block including opening and closing ```
-                code_lines = [line]
-                i += 1
-
-                # Find matching closing ``` - don't treat inside as other blocks
-                while i < len(lines):
-                    code_lines.append(lines[i])
-                    if lines[i].strip() == "```":
-                        i += 1  # Move past the closing ```
-                        break
-                    i += 1
-
-                blocks.append({"type": "code_block", "content": "\n".join(code_lines)})
-                continue  # Skip the i += 1 at the end of the loop
-
-            # Check for list items (only if not inside a code block)
-            elif line.strip().startswith("- ") or line.strip().startswith("* "):
-                # Collect consecutive list items
-                list_lines = []
-
-                while i < len(lines) and (
-                    lines[i].strip().startswith("- ")
-                    or lines[i].strip().startswith("* ")
-                    or (
-                        lines[i].startswith("  ") and lines[i].strip()
-                    )  # Non-empty list continuation
-                    or lines[i].strip() == ""  # Empty lines in lists
-                ):
-                    # Stop if we hit a code block
-                    if lines[i].strip().startswith("```"):
-                        break
-                    list_lines.append(lines[i])
-                    i += 1
-
-                i -= 1  # Back up one since we'll increment at end of loop
-
-                if list_lines:
-                    blocks.append(
-                        {"type": "list", "content": "\n".join(list_lines).rstrip()}
-                    )
-
-            # Regular text or empty lines
-            else:
-                # Collect consecutive non-special lines
-                text_lines = []
-
-                while i < len(lines) and (
-                    not lines[i].strip().startswith("```")
-                    and not lines[i].strip().startswith("- ")
-                    and not lines[i].strip().startswith("* ")
-                ):
-                    text_lines.append(lines[i])
-                    i += 1
-
-                i -= 1  # Back up one since we'll increment at end of loop
-
-                if text_lines:
-                    blocks.append(
-                        {"type": "text", "content": "\n".join(text_lines).rstrip()}
-                    )
-
-            i += 1
-
-        return blocks
-
-    def _wrap_text(self, text: str, max_width: int = 78) -> list[str]:
-        """Wrap text to specified width while preserving markdown structure.
-
-        This method is block-aware and preserves code blocks, lists, and other
-        structures exactly as formatted by the CommonMark parser.
-        """
-        if not text:
-            return [""]
-
-        # Split into blocks first to handle different content types
-        blocks = self._split_into_blocks(text)
-        if not blocks:
-            return [""]
-
-        wrapped_lines = []
-
-        for block in blocks:
-            block_type = block["type"]
-            content = block["content"]
-
-            if block_type == "code_block":
-                # Code blocks are preserved exactly as-is
-                wrapped_lines.extend(content.split("\n"))
-
-            elif block_type == "list":
-                # Lists are preserved exactly as-is
-                wrapped_lines.extend(content.split("\n"))
-
-            elif block_type == "text":
-                # Regular text gets word-wrapped
-                text_lines = content.split("\n")
-                for line in text_lines:
-                    line = line.strip()
-
-                    if not line:
-                        wrapped_lines.append("")
-                    elif len(line) <= max_width:
-                        wrapped_lines.append(line)
-                    else:
-                        wrapped_lines.extend(self._wrap_single_line(line, max_width))
-
-        return wrapped_lines if wrapped_lines else [""]
-
-    def _wrap_single_line(self, line: str, max_width: int = 78) -> list[str]:
-        """Wrap a single line of text to specified width."""
-        words = line.split()
+        words = text.split()
         if not words:
             return [""]
 
@@ -1353,6 +1122,286 @@ class DefaultsCommentGenerator:
             lines.append(" ".join(current_line))
 
         return lines if lines else [""]
+
+    def _format_list_node(self, node, max_width: int = 0, indent_level: int = 0) -> str:
+        """Format a list node with proper type recognition and nesting support.
+
+        Args:
+            node: CommonMark list AST node
+            max_width: Maximum line width for wrapping
+            indent_level: Current indentation level
+
+        Returns:
+            Properly formatted list with correct numbering and indentation
+        """
+        if not node.first_child:
+            return ""
+
+        list_items = []
+        # Use 2 spaces per indentation level to match standard Markdown convention
+        current_indent = "  " * indent_level
+
+        # Determine list type and starting number from list_data
+        list_data = getattr(node, "list_data", {})
+        is_ordered = list_data.get("type") == "ordered"
+        start_num = list_data.get("start", 1) if is_ordered else None
+        # Preserve original bullet character from AST
+        bullet_char = list_data.get("bullet_char", "-")
+
+        item_num = start_num if start_num else 1
+        item = node.first_child
+
+        while item:
+            if item.t == "item":
+                # Format the list item with proper prefix using original bullet char
+                if is_ordered:
+                    item_prefix = f"{item_num}. "
+                    item_num += 1
+                else:
+                    item_prefix = f"{bullet_char} "
+
+                # Format the content of this list item
+                item_content = self._format_list_item_content(
+                    item, max_width, indent_level, item_prefix
+                )
+
+                if item_content:
+                    # Apply current indentation to all lines
+                    item_lines = item_content.split("\n")
+                    for i, line in enumerate(item_lines):
+                        if i == 0:
+                            # First line gets current indent + formatted line
+                            list_items.append(f"{current_indent}{line}")
+                        elif line.strip():
+                            # Check if already properly indented from nesting
+                            if current_indent and line.startswith(current_indent):
+                                # Already has proper base indentation
+                                list_items.append(line)
+                            else:
+                                # Determine if we're inside a code block
+                                in_code_block = False
+                                for prev_idx in range(i):
+                                    prev_line = item_lines[prev_idx].strip()
+                                    if prev_line.startswith("```"):
+                                        in_code_block = not in_code_block
+
+                                stripped = line.strip()
+                                if stripped.startswith("```") or in_code_block:
+                                    # Code blocks get content alignment
+                                    continuation_indent = current_indent + (
+                                        " " * len(item_prefix)
+                                    )
+                                    list_items.append(f"{continuation_indent}{line}")
+                                else:
+                                    # Regular continuation line alignment
+                                    continuation_indent = current_indent + (
+                                        " " * len(item_prefix)
+                                    )
+                                    list_items.append(f"{continuation_indent}{line}")
+                        else:
+                            # Empty lines
+                            list_items.append("")
+
+            item = item.nxt
+
+        return "\n".join(list_items)
+
+    def _format_list_item_content(
+        self,
+        item_node,
+        max_width: int = 0,
+        indent_level: int = 0,
+        item_prefix: str = "",
+    ) -> str:
+        """Format the content of a single list item.
+
+        Args:
+            item_node: List item AST node
+            max_width: Maximum line width for wrapping
+            indent_level: Current indentation level
+            item_prefix: The list marker prefix ("- " or "1. " etc.)
+
+        Returns:
+            Formatted content for this list item
+        """
+        if not item_node.first_child:
+            return f"{item_prefix}"
+
+        content_parts = []
+        child = item_node.first_child
+
+        while child:
+            if child.t == "paragraph":
+                # Format paragraph content
+                # Adjust max_width to account for the indentation that will be added
+                # Base indentation (2 spaces per level) + list prefix alignment
+                base_indent = 2 * indent_level
+                # For continuation lines, we need space for prefix alignment
+                continuation_indent = base_indent + len(item_prefix)
+                # Ensure we don't exceed the target width when indented
+                adjusted_width = max_width - continuation_indent if max_width > 0 else 0
+                if adjusted_width <= 0 and max_width > 0:
+                    adjusted_width = max_width // 2  # Fallback for very deep nesting
+                formatted = self._format_ast_node(child, adjusted_width, indent_level)
+                if formatted:
+                    content_parts.append(formatted)
+            elif child.t == "list":
+                # Nested list - increase indentation level
+                formatted = self._format_ast_node(child, max_width, indent_level + 1)
+                if formatted:
+                    content_parts.append(formatted)
+            else:
+                # Other content (code blocks, etc.)
+                formatted = self._format_ast_node(child, max_width, indent_level)
+                if formatted:
+                    content_parts.append(formatted)
+
+            child = child.nxt
+
+        if not content_parts:
+            return f"{item_prefix}"
+
+        # Join content with proper line breaks
+        if len(content_parts) == 1 and "\n" not in content_parts[0]:
+            # Simple single-line content
+            return f"{item_prefix}{content_parts[0]}"
+        else:
+            # Multi-part or multi-line content
+            result_lines = []
+
+            # Add the first part with the item prefix
+            if content_parts:
+                if content_parts[0]:
+                    result_lines.append(f"{item_prefix}{content_parts[0]}")
+                else:
+                    result_lines.append(item_prefix)
+            else:
+                result_lines.append(item_prefix)
+
+            # Add remaining parts (like nested lists)
+            for part in content_parts[1:]:
+                if part:
+                    # Don't add blank line for nested lists - they should be connected
+                    part_lines = part.split("\n")
+                    result_lines.extend(part_lines)
+
+            return "\n".join(result_lines)
+
+    def _format_ast_node(self, node, max_width: int = 0, indent_level: int = 0) -> str:
+        """Format a single AST node based on its type with optional text wrapping.
+
+        Args:
+            node: CommonMark AST node
+            max_width: Maximum line width for text wrapping. If 0, no wrapping is done.
+            indent_level: Current indentation level for nested content
+
+        Returns:
+            Formatted text for this node
+        """
+        if node.t == "paragraph":
+            # For paragraphs, join inline content and convert softbreaks to spaces
+            text_parts = []
+            if node.first_child:
+                child = node.first_child
+                while child:
+                    if child.t == "text":
+                        text_parts.append(child.literal or "")
+                    elif child.t == "softbreak":
+                        # Single linebreaks become spaces
+                        text_parts.append(" ")
+                    elif child.t == "code":
+                        # Inline code - preserve as-is
+                        text_parts.append(f"`{child.literal or ''}`")
+                    elif child.t == "linebreak":
+                        # Hard line breaks (two spaces + newline) - preserve
+                        text_parts.append("\n")
+                    else:
+                        # Handle other inline elements as text
+                        text_parts.append(child.literal or "")
+                    child = child.nxt
+
+            # Join and clean up multiple spaces
+            result = "".join(text_parts)
+            cleaned_text = " ".join(result.split())
+
+            # Apply text wrapping if max_width is specified
+            if max_width > 0:
+                wrapped_lines = self._wrap_text_line(cleaned_text, max_width)
+                return "\n".join(wrapped_lines)
+            else:
+                return cleaned_text
+        elif node.t == "list":
+            # For lists, respect the AST list type and nesting
+            return self._format_list_node(node, max_width, indent_level)
+        elif node.t == "code_block":
+            # For code blocks, preserve content exactly including language info
+            # and preserve existing indentation in the code content
+            language_info = node.info or ""
+            code_content = node.literal or ""
+
+            # Split code into lines and preserve existing indentation
+            code_lines = code_content.rstrip().split("\n")
+
+            # Build the code block with proper formatting
+            result_lines = [f"```{language_info}"]
+            result_lines.extend(code_lines)
+            result_lines.append("```")
+
+            return "\n".join(result_lines)
+        elif node.t == "heading":
+            # For headings, format as plain text (shouldn't occur in descriptions)
+            text_parts = []
+            if node.first_child:
+                child = node.first_child
+                while child:
+                    if child.t == "text":
+                        text_parts.append(child.literal or "")
+                    elif child.t == "softbreak":
+                        text_parts.append(" ")
+                    elif child.t == "code":
+                        text_parts.append(f"`{child.literal or ''}`")
+                    elif child.t == "linebreak":
+                        text_parts.append("\n")
+                    else:
+                        text_parts.append(child.literal or "")
+                    child = child.nxt
+
+            result = "".join(text_parts)
+            cleaned_text = " ".join(result.split())
+
+            # Apply text wrapping if max_width is specified
+            if max_width > 0:
+                wrapped_lines = self._wrap_text_line(cleaned_text, max_width)
+                return "\n".join(wrapped_lines)
+            else:
+                return cleaned_text
+        else:
+            # For other block types, format as paragraph
+            text_parts = []
+            if node.first_child:
+                child = node.first_child
+                while child:
+                    if child.t == "text":
+                        text_parts.append(child.literal or "")
+                    elif child.t == "softbreak":
+                        text_parts.append(" ")
+                    elif child.t == "code":
+                        text_parts.append(f"`{child.literal or ''}`")
+                    elif child.t == "linebreak":
+                        text_parts.append("\n")
+                    else:
+                        text_parts.append(child.literal or "")
+                    child = child.nxt
+
+            result = "".join(text_parts)
+            cleaned_text = " ".join(result.split())
+
+            # Apply text wrapping if max_width is specified
+            if max_width > 0:
+                wrapped_lines = self._wrap_text_line(cleaned_text, max_width)
+                return "\n".join(wrapped_lines)
+            else:
+                return cleaned_text
 
     def _has_block_comment_above(self, result_lines: list[str]) -> bool:
         """Check if there's already a variable-specific block comment above."""
