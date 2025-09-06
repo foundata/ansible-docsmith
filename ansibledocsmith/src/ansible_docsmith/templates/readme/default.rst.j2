@@ -1,11 +1,14 @@
 
-{% macro render_nested_sections(options_dict, var_path, depth) -%}
+{% macro render_nested_sections(options_dict, var_path, depth, parent_var_name) -%}
 {% if options_dict %}
 {% for option_name, option_spec in options_dict.items() %}
 {% set underline_char = "~~~" if depth == 1 else "^^^" if depth == 2 else '"""' %}
 {% set anchor_id = var_path + "-sub-" + option_name %}
-``{{ option_name }}``
-{{ underline_char * (option_name | length + 4) }}
+{% set display_name = parent_var_name + "['" + option_name + "']" %}
+``{{ display_name }}``
+{{ underline_char * (display_name | length + 4) }}
+
+`⇑ Back to ToC  ⇑ <#top>`_
 
 {{ option_spec.description | format_description }}
 
@@ -22,7 +25,7 @@
 {% endif %}
 
 {% if depth < 3 and option_spec.options %}
-{{ render_nested_sections(option_spec.options, anchor_id, depth + 1) }}
+{{ render_nested_sections(option_spec.options, anchor_id, depth + 1, display_name) }}
 {% elif depth >= 3 and option_spec.options %}
 .. note::
    This option has more options but this README shows nested options up to level 3. Please refer to the argument_specs file for complete details.
@@ -51,6 +54,8 @@ The following variables can be configured for this role:
 ``{{ var_name }}``
 {{ '-' * (var_name | length + 4) }}
 
+`⇑ Back to ToC  ⇑ <#top>`_
+
 {{ var_spec.description | format_description }}
 
 :Type: ``{{ var_spec.type }}``
@@ -65,7 +70,7 @@ The following variables can be configured for this role:
 :List Elements: ``{{ var_spec.elements }}``
 {% endif %}
 
-{{ render_nested_sections(var_spec.options, "variable-" + var_name, 1) }}
+{{ render_nested_sections(var_spec.options, "variable-" + var_name, 1, var_name) }}
 
 {% endfor %}
 {% else %}
