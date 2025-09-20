@@ -14,7 +14,7 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
 <br>
 <br>
 
-**⭐ Found this useful? Support open-source and star this project.**
+**⭐ Found this useful? Support open-source and star this project:**
 
 [![GitHub repository](https://img.shields.io/github/stars/foundata/ansible-docsmith.svg)](https://github.com/foundata/ansible-docsmith)
 [![Codeberg repository](https://img.shields.io/gitea/stars/foundata/ansible-docsmith.svg?gitea_url=https%3A%2F%2Fcodeberg.org%2F&logo=codeberg)](https://codeberg.org/foundata/ansible-docsmith)
@@ -110,11 +110,14 @@ pipx install ansible-docsmith
    <!-- BEGIN ANSIBLE DOCSMITH TOC -->
    <!-- END ANSIBLE DOCSMITH TOC -->
    ```
-   for putting list entries for a table of contents (ToC) (optional).<br>Example files:
-     * Markdown: [`README.md`](./ansibledocsmith/tests/fixtures/example-role-simple-toc/README.md?plain=1)
-     * reStructuredText: [`README.rst`](./ansibledocsmith/tests/fixtures/example-role-simple-toc-rst/README.rst?plain=1) (`.. ` comments, `.. contents:: **Table of Contents**` directive)
+   for putting list entries for a table of contents (ToC) (optional).
 
 That's it. The entry-point variable files below the `/defaults` directory of your role do *not* need additional preparations. The tool will automatically (re)place formatted inline comment blocks above variables defined there.
+
+Example files:
+
+* Markdown: [`README.md`](./ansibledocsmith/tests/fixtures/example-role-simple-toc/README.md?plain=1)
+* reStructuredText: [`README.rst`](./ansibledocsmith/tests/fixtures/example-role-simple-toc-rst/README.rst?plain=1) (difference to Markdown: `.. ` comments, `.. contents:: **Table of Contents**` directive)
 
 
 ### Generate or update documentation<a id="usage-generate"></a>
