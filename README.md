@@ -1,16 +1,32 @@
-# DocSmith for Ansible: automating role documentation (using `argument_specs.yml`)
+# DocSmith for Ansible
 
-**This project is *not* associated with [Red Hat](https://www.redhat.com/) nor the [Ansible project](https://ansible.com/).** Please [report any bugs or suggestions to us](./CONTRIBUTING.md), do NOT use the official Red Hat or Ansible support channels.
+**Automating role documentation (using `argument_specs.yml`)**
 
----
+DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.yml`](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#specification-format) and produces up‑to‑date variable descriptions for the `README.md` as well as inline comment blocks for `defaults/main.yml` (or other role entry-point files). It works with roles in both [stand‑alone form](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html) and within [collections](https://docs.ansible.com/ansible/latest/collections_guide/index.html).
 
-DocSmith is a documentation generator for Ansible roles. It reads a role's [`meta/argument_specs.yml`](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#specification-format) and produces up‑to‑date variable descriptions for the `README.md` as well as inline comment blocks for `defaults/main.yml` (or other role entry-point files).
 
-DocSmith works with roles in both [stand‑alone form](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html) and within [collections](https://docs.ansible.com/ansible/latest/collections_guide/index.html).
+<div align="center" id="project-readme-header">
+<br>
+<br>
+
+<img src="./assets/images/logos/ansible-docsmith.svg" alt="Logo: DocSmith for Ansible" height="128" />
+
+<br>
+<br>
+
+**⭐ Found this useful? Support open-source and star this project.**
+
+[![GitHub repository](https://img.shields.io/github/stars/foundata/ansible-docsmith.svg)](https://github.com/foundata/ansible-docsmith)
+[![Codeberg repository](https://img.shields.io/gitea/stars/foundata/ansible-docsmith.svg?gitea_url=https%3A%2F%2Fcodeberg.org%2F&logo=codeberg)](https://codeberg.org/foundata/ansible-docsmith)
+[![openCode repository](https://img.shields.io/gitlab/stars/foundata/gitlab-profile?gitlab_url=https%3A%2F%2Fgitlab.opencode.de%2F&logo=gitlab)](https://gitlab.opencode.de/foundata/ansible-docsmith)
+
+<br>
+</div>
 
 
 ## Table of contents<a id="toc"></a>
 
+- [Demo and screenshots](#demo)
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -19,20 +35,49 @@ DocSmith works with roles in both [stand‑alone form](https://docs.ansible.com/
   - [Validate `argument_specs.yml` and `/defaults`](#usage-validate)
   - [Custom templates](#usage-custom-templates)
 - [Licensing, copyright](#licensing-copyright)
+  - [Trademarks](#trademarks)
 - [Author information](#author-information)
 
 
-### Features<a id="features"></a>
+### Demo and screenshots<a id="demo"></a>
 
+**Roles using DocSmith:**
+
+* Ansible role: `foundata.acmesh.run`:
+  1. [`README.md` with generated variable documentation](https://github.com/foundata/ansible-collection-acmesh/blob/main/roles/run/README.md#role-variables)
+  2. [`defaults/main.yml` entry point with generated YAML comments](https://github.com/foundata/ansible-collection-acmesh/blob/main/roles/run/defaults/main.yml)
+  3. [`argument_specs.yaml`](https://github.com/foundata/ansible-collection-acmesh/blob/main/roles/run/meta/argument_specs.yml) (source of truth)
+* Ansible role: `foundata.sshd.run`:
+  1. [`README.md` with generated variable documentation](https://github.com/foundata/ansible-collection-sshd/blob/main/roles/run/README.md#role-variables)
+  2. [`defaults/main.yml` entry point with generated YAML comments](https://github.com/foundata/ansible-collection-sshd/blob/main/roles/run/defaults/main.yml)
+  3. [`argument_specs.yaml`](https://github.com/foundata/ansible-collection-sshd/blob/main/roles/run/meta/argument_specs.yml) (source of truth)
+
+**Screenshots:**
+
+[<img src="./assets/images/screenshots/ansible-docsmith-cli-01-help.png" alt="Screenshot: DocSmith CLI, help" height="128" />](./assets/images/screenshots/ansible-docsmith-cli-01-help.png)
+&#160;
+[<img src="./assets/images/screenshots/ansible-docsmith-cli-sshd-01-validate.png" alt="Screenshot: DocSmith CLI, validate; Results for foundata.sshd.run" height="128" />](./assets/images/screenshots/ansible-docsmith-cli-sshd-01-validate.png)
+&#160;
+[<img src="./assets/images/screenshots/ansible-docsmith-cli-sshd-02-generate-dry-run.png" alt="Screenshot: DocSmith CLI, generate dry run; Results for foundata.sshd.run" height="128" />](./assets/images/screenshots/ansible-docsmith-cli-sshd-02-generate-dry-run.png)
+&#160;
+[<img src="./assets/images/screenshots/ansible-docsmith-cli-sshd-03-generate.png" alt="Screenshot: DocSmith CLI, generate; Results for foundata.sshd.run" height="128" />](./assets/images/screenshots/ansible-docsmith-cli-sshd-03-generate.png)
+&#160;
+[<img src="./assets/images/screenshots/ansible-docsmith-readme-sshd-01-toc.png" alt="Screenshot: Part of a README.md ToC, generated with DocSmith" height="128" />](./assets/images/screenshots/ansible-docsmith-readme-sshd-01-toc.png)
+&#160;
+[<img src="./assets/images/screenshots/ansible-docsmith-readme-sshd-02-main.png" alt="Screenshot: Part of a README.md's main content describing role variables, generated with DocSmith" height="128" />](./assets/images/screenshots/ansible-docsmith-readme-sshd-02-main.png)
+
+
+## Features<a id="features"></a>
 
 - **Efficient and simple:** Uses the `argument_specs.yml` from [Ansible's built‑in role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation) as the single source of truth, generating human‑readable documentation in multiple places while maintaining just one file.
 - **Built-in validation:** Verifies that argument specs are complete, correct, and in sync with entry-point `defaults/`.
 - **Automation‑friendly:** Works seamlessly in CI/CD pipelines and pre‑commit hooks.
+- **Supports Markdown and reStructuredText**.
 
 
 ## Installation<a id="installation"></a>
 
-[![PyPI version](https://badge.fury.io/py/ansible-docsmith.svg)](https://badge.fury.io/py/ansible-docsmith)
+[![PyPI package version](https://img.shields.io/pypi/v/ansible-docsmith.svg?logo=pypi)](https://pypi.org/project/ansible-docsmith)
 
 DocSmith needs Python ≥ v3.11. It is available on [PyPI](https://pypi.org/project/ansible-docsmith/) and can be installed with the package manager of your choice.
 
@@ -55,12 +100,19 @@ pipx install ansible-docsmith
 ### Preparations<a id="usage-preparations"></a>
 
 1. If not already existing, simply **create an `argument_specs.yml`** for [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation). Try to add `description:` to your variables. The more complete your specification, the better the argument validation and documentation.
-2. **Add simple markers in your role's `README.md`** where DocSmith shall maintain the human-readable documentation:
-   ```
+2. **Add simple markers in your role's `README.md`** where DocSmith shall maintain the human-readable documentation. All content between these markers will be removed and updated on each `ansible-docsmith generate` run:
+   ```markdown
    <!-- BEGIN ANSIBLE DOCSMITH MAIN -->
    <!-- END ANSIBLE DOCSMITH MAIN -->
    ```
-   All content between these markers will be removed and updated on each `ansible-docsmith generate` run.
+   where the variable descriptions shall be placed (mandatory) and
+   ```markdown
+   <!-- BEGIN ANSIBLE DOCSMITH TOC -->
+   <!-- END ANSIBLE DOCSMITH TOC -->
+   ```
+   for putting list entries for a table of contents (ToC) (optional).<br>Example files:
+     * Markdown: [`README.md`](./ansibledocsmith/tests/fixtures/example-role-simple-toc/README.md?plain=1)
+     * reStructuredText: [`README.rst`](./ansibledocsmith/tests/fixtures/example-role-simple-toc-rst/README.rst?plain=1) (`.. ` comments, `.. contents:: **Table of Contents**` directive)
 
 That's it. The entry-point variable files below the `/defaults` directory of your role do *not* need additional preparations. The tool will automatically (re)place formatted inline comment blocks above variables defined there.
 
@@ -198,14 +250,20 @@ If you are creative, you may even maintain non-obvious parts of your `README.md`
 <!--REUSE-IgnoreStart-->
 Copyright (c) 2025 foundata GmbH (https://foundata.com)
 
-This project is licensed under the GNU General Public License v3.0 or later (SPDX-License-Identifier: `GPL-3.0-or-later`), see [`LICENSES/GPL-3.0-or-later.txt`](LICENSES/GPL-3.0-or-later.txt) for the full text.
+This project is licensed under the GNU General Public License v3.0 or later (SPDX-License-Identifier: `GPL-3.0-or-later`), see [`LICENSES/GPL-3.0-or-later.txt`](./LICENSES/GPL-3.0-or-later.txt) for the full text.
 
-The [`REUSE.toml`](REUSE.toml) file provides detailed licensing and copyright information in a human- and machine-readable format. This includes parts that may be subject to different licensing or usage terms, such as third-party components. The repository conforms to the [REUSE specification](https://reuse.software/spec/). You can use [`reuse spdx`](https://reuse.readthedocs.io/en/latest/readme.html#cli) to create a [SPDX software bill of materials (SBOM)](https://en.wikipedia.org/wiki/Software_Package_Data_Exchange).
+The [`REUSE.toml`](./REUSE.toml) file provides detailed licensing and copyright information in a human- and machine-readable format. This includes parts that may be subject to different licensing or usage terms, such as third-party components. The repository conforms to the [REUSE specification](https://reuse.software/spec/). You can use [`reuse spdx`](https://reuse.readthedocs.io/en/latest/readme.html#cli) to create a [SPDX software bill of materials (SBOM)](https://en.wikipedia.org/wiki/Software_Package_Data_Exchange).
 <!--REUSE-IgnoreEnd-->
 
 [![REUSE status](https://api.reuse.software/badge/github.com/foundata/ansible-docsmith)](https://api.reuse.software/info/github.com/foundata/ansible-docsmith)
 
 
+### Trademarks<a id="trademarks"></a>
+
+* Red Hat® is a trademark of Red Hat, Inc., registered in the US and other countries.
+* Ansible® is a trademark of Red Hat, Inc., registered in the US and other countries.
+
+
 ## Author information<a id="author-information"></a>
 
-This project was created and is maintained by [foundata](https://foundata.com/).
+This project was created and is maintained by [foundata](https://foundata.com/). **DocSmith is *not* associated with [Red Hat](https://www.redhat.com/) nor the [Ansible project](https://ansible.com/).**
