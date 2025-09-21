@@ -42,9 +42,7 @@ This is a very big update, providing new features and improvements. Please note 
 
 ### Changed
 
-- **⚠ Breaking: `Rename "BEGIN|END ANSIBLE DOCSMITH"` to `"ANSIBLE DOCSMITH MAIN START|END"`** (2cb6f58):<br><br>As there may be more and more additional content sections in the future, it
-would be good to make a small change now - while the tool is still new and has
-few users - to avoid bigger breaking changes later. This is basically a switch to a format like:
+- **⚠ Breaking: `Rename "BEGIN|END ANSIBLE DOCSMITH"` to `"ANSIBLE DOCSMITH MAIN START|END"`** (4864fea, 2cb6f58):<br><br>As there may be more and more additional content sections in the future, it would be good to make a small change now - while the tool is still new and has few users - to avoid bigger breaking changes later. This is basically a switch to a format like:
   ```markdown
   <!-- ANSIBLE DOCSMITH [Type of content] START -->
   <!-- ANSIBLE DOCSMITH [Type of content] END -->
