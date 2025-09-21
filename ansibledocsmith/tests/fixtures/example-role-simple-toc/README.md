@@ -12,16 +12,16 @@ This README file is also a dummy file to show that existing content outside the 
 ## Table of contents
 
 - [This is an existing entry!](#table-of-contents)
-<!-- BEGIN ANSIBLE DOCSMITH TOC -->
+<!-- ANSIBLE DOCSMITH TOC START -->
 New ToC entries for variables will be placed here.
-<!-- END ANSIBLE DOCSMITH TOC -->
+<!-- ANSIBLE DOCSMITH TOC END -->
 - [License](#license)
 - [Author Information](#author-information)
 
 
-<!-- BEGIN ANSIBLE DOCSMITH MAIN -->
+<!-- ANSIBLE DOCSMITH MAIN START -->
 This line will be replaced as it is between the markers! Any content between them maintained is by `ansible-docsmith`.
-<!-- END ANSIBLE DOCSMITH MAIN -->
+<!-- ANSIBLE DOCSMITH MAIN END -->
 
 ## License
 

@@ -20,7 +20,7 @@ This is a very big update, providing new features and improvements. Please note 
     ```markdown
     ## Table of contents
 
-    - My 1st non DocSmith entry<!-- BEGIN ANSIBLE DOCSMITH TOC --><!-- END ANSIBLE DOCSMITH TOC -->
+    - My 1st non DocSmith entry<!-- ANSIBLE DOCSMITH TOC START --><!-- ANSIBLE DOCSMITH TOC END -->
     - My 2nd non DocSmith entry
     - [...]
     ```
@@ -31,9 +31,9 @@ This is a very big update, providing new features and improvements. Please note 
     ```
     If this directive is not available in your environment, you can use
     ```reStructuredText
-    .. BEGIN ANSIBLE DOCSMITH TOC
+    .. ANSIBLE DOCSMITH TOC START
 
-    .. END ANSIBLE DOCSMITH TOC
+    .. ANSIBLE DOCSMITH TOC END
     ```
     as fallback.
 - **Additional validations for `arguments_spec`.** The `validate` command now warns about additional issues (like mutally exclusive options).
@@ -42,12 +42,12 @@ This is a very big update, providing new features and improvements. Please note 
 
 ### Changed
 
-- **⚠ Breaking: `Rename "BEGIN|END ANSIBLE DOCSMITH"` to `"BEGIN|END ANSIBLE DOCSMITH MAIN"`** (2cb6f58):<br><br>As there may be more and more additional content sections in the future, it
+- **⚠ Breaking: `Rename "BEGIN|END ANSIBLE DOCSMITH"` to `"ANSIBLE DOCSMITH MAIN START|END"`** (2cb6f58):<br><br>As there may be more and more additional content sections in the future, it
 would be good to make a small change now - while the tool is still new and has
 few users - to avoid bigger breaking changes later. This is basically a switch to a format like:
   ```markdown
-  <!-- BEGIN ANSIBLE DOCSMITH [Type of content] -->
-  <!-- END ANSIBLE DOCSMITH [Type of content] -->
+  <!-- ANSIBLE DOCSMITH [Type of content] START -->
+  <!-- ANSIBLE DOCSMITH [Type of content] END -->
   ```
   What to do?<br><br>Replace
   ```markdown
@@ -57,9 +57,9 @@ few users - to avoid bigger breaking changes later. This is basically a switch t
   ```
   with
   ```markdown
-   <!-- BEGIN ANSIBLE DOCSMITH MAIN -->
+   <!-- ANSIBLE DOCSMITH MAIN START -->
    ...
-   <!-- END ANSIBLE DOCSMITH MAIN -->
+   <!-- ANSIBLE DOCSMITH MAIN END -->
   ```
   in your documents. That's it. See #8 for more reasoning.
 - **Formatting of YAML comments was improved.**

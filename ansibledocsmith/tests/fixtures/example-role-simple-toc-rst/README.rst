@@ -21,10 +21,10 @@ outside the ``ANSIBLE DOCSMITH`` markers will not be touched.
    :depth: 3
 
 
-.. BEGIN ANSIBLE DOCSMITH MAIN
+.. ANSIBLE DOCSMITH MAIN START
 This line will be replaced as it is between the markers! Any content
 between them maintained is by ``ansible-docsmith``.
-.. END ANSIBLE DOCSMITH MAIN
+.. ANSIBLE DOCSMITH MAIN END
 
 
 License

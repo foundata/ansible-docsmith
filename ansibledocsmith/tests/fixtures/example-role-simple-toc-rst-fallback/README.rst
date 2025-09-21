@@ -33,9 +33,9 @@ Table of contents (fallback)
 
 - `This is an existing entry! <#table-of-contents>`_
 
-.. BEGIN ANSIBLE DOCSMITH TOC
+.. ANSIBLE DOCSMITH TOC START
 New ToC entries for variables will be placed here.
-.. END ANSIBLE DOCSMITH TOC
+.. ANSIBLE DOCSMITH TOC END
 
 - `License <#license>`_
 - `Author information <#author-information>`_
@@ -43,10 +43,10 @@ New ToC entries for variables will be placed here.
 .. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-.. BEGIN ANSIBLE DOCSMITH MAIN
+.. ANSIBLE DOCSMITH MAIN START
 This line will be replaced as it is between the markers! Any content
 between them maintained is by ``ansible-docsmith``.
-.. END ANSIBLE DOCSMITH MAIN
+.. ANSIBLE DOCSMITH MAIN END
 
 
 License
