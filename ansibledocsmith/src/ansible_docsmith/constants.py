@@ -21,6 +21,7 @@ TABLE_DESCRIPTION_MAX_LENGTH = 250
 
 # CLI branding (please keep rendered length under 75 chars)
 CLI_HEADER = (
-    "Welcome to [link=https://github.com/foundata/ansible-docsmith]DocSmith[/link] "
+    "Welcome to "
+    "[link=https://foundata.com/en/projects/ansible-docsmith/]DocSmith[/link] "
     "for Ansible v{version} (developed by [link=https://foundata.com]foundata[/link])"
 )

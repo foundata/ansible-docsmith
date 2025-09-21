@@ -50,11 +50,11 @@ classifiers = [
 ansible-docsmith = "ansible_docsmith.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/foundata/ansible-docsmith"
-Documentation = "https://github.com/foundata/ansible-docsmith?tab=readme-ov-file"
-Repository = "https://github.com/foundata/ansible-docsmith.git"
-Issues = "https://github.com/foundata/ansible-docsmith/issues"
-Changelog = "https://github.com/foundata/ansible-docsmith/blob/main/CHANGELOG.md"
+Homepage = "https://foundata.com/en/projects/ansible-docsmith/"
+Documentation = "https://foundata.com/en/projects/ansible-docsmith/#doc"
+Repository = "https://foundata.com/en/projects/ansible-docsmith/#source"
+Issues = "https://foundata.com/en/projects/ansible-docsmith/#issues"
+Changelog = "https://foundata.com/en/projects/ansible-docsmith/#changelog"
 
 [build-system]
 requires = ["uv_build>=0.8.3,<0.9.0"]
