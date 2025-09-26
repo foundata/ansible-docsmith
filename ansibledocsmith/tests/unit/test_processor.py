@@ -943,3 +943,246 @@ More content.
             else detect_format_from_role(role_path)
         )
         assert detected_format == "markdown"
+
+    def test_validate_defaults_consistency_required_variables_excluded_from_notice(
+        self, temp_dir
+    ):
+        """Test that variables with required: true are excluded from the notice."""
+        processor = RoleProcessor()
+
+        # Create a role with required and optional variables
+        role_path = temp_dir / "test-role"
+        (role_path / "meta").mkdir(parents=True)
+        (role_path / "defaults").mkdir(parents=True)
+
+        # Create argument_specs.yml with required and optional variables
+        specs_content = """
+argument_specs:
+  main:
+    short_description: Test role for required variable validation
+    options:
+      required_var:
+        type: str
+        required: true
+        description: This is required and should not trigger notice
+      optional_var:
+        type: str
+        required: false
+        description: This is optional and should trigger notice
+      optional_with_default:
+        type: str
+        required: false
+        default: "default_value"
+        description: This has a default value
+"""
+        spec_file = role_path / "meta" / "argument_specs.yml"
+        spec_file.write_text(specs_content)
+
+        # Create defaults/main.yml with only the default variable
+        defaults_content = """
+optional_with_default: "default_value"
+"""
+        defaults_file = role_path / "defaults" / "main.yml"
+        defaults_file.write_text(defaults_content)
+
+        # Parse the specs
+        role_data = processor.parser.validate_structure(role_path)
+
+        # Test the consistency validation
+        errors, warnings, notices = processor._validate_defaults_consistency(
+            role_path, role_data["specs"], role_data["spec_file"]
+        )
+
+        # Should have no errors
+        assert len(errors) == 0
+
+        # Should have one notice about the optional variable only
+        assert len(notices) == 1
+        notice_message = notices[0]
+        assert "may be intentional" in notice_message
+        assert "optional_var" in notice_message
+        assert "required_var" not in notice_message  # Required var should be excluded
+        assert "optional_with_default" not in notice_message  # Present in defaults
+
+    def test_validate_defaults_consistency_all_required_variables_no_notice(
+        self, temp_dir
+    ):
+        """Test that when all missing variables are required, no notice is generated."""
+        processor = RoleProcessor()
+
+        # Create a role with only required variables missing from defaults
+        role_path = temp_dir / "test-role"
+        (role_path / "meta").mkdir(parents=True)
+        (role_path / "defaults").mkdir(parents=True)
+
+        # Create argument_specs.yml with only required variables
+        specs_content = """
+argument_specs:
+  main:
+    short_description: Test role with only required variables
+    options:
+      required_var1:
+        type: str
+        required: true
+        description: First required variable
+      required_var2:
+        type: str
+        required: true
+        description: Second required variable
+      optional_with_default:
+        type: str
+        required: false
+        default: "default_value"
+        description: This has a default value
+"""
+        spec_file = role_path / "meta" / "argument_specs.yml"
+        spec_file.write_text(specs_content)
+
+        # Create defaults/main.yml with only the variable that has a default
+        defaults_content = """
+optional_with_default: "default_value"
+"""
+        defaults_file = role_path / "defaults" / "main.yml"
+        defaults_file.write_text(defaults_content)
+
+        # Parse the specs
+        role_data = processor.parser.validate_structure(role_path)
+
+        # Test the consistency validation
+        errors, warnings, notices = processor._validate_defaults_consistency(
+            role_path, role_data["specs"], role_data["spec_file"]
+        )
+
+        # Should have no errors
+        assert len(errors) == 0
+
+        # Should have no notices since all missing variables are required
+        assert len(notices) == 0
+
+    def test_validate_defaults_consistency_mixed_required_optional_variables(
+        self, temp_dir
+    ):
+        """Test notice generation with mix of required and optional variables."""
+        processor = RoleProcessor()
+
+        # Create a role with mixed required/optional variables
+        role_path = temp_dir / "test-role"
+        (role_path / "meta").mkdir(parents=True)
+        (role_path / "defaults").mkdir(parents=True)
+
+        # Create argument_specs.yml with mix of variables
+        specs_content = """
+argument_specs:
+  main:
+    short_description: Test role with mixed variable types
+    options:
+      required_var1:
+        type: str
+        required: true
+        description: Required variable 1
+      required_var2:
+        type: str
+        required: true
+        description: Required variable 2
+      optional_var1:
+        type: str
+        required: false
+        description: Optional variable 1
+      optional_var2:
+        type: str
+        required: false
+        description: Optional variable 2
+      optional_with_default:
+        type: str
+        required: false
+        default: "default_value"
+        description: This has a default value
+"""
+        spec_file = role_path / "meta" / "argument_specs.yml"
+        spec_file.write_text(specs_content)
+
+        # Create defaults/main.yml with only the variable that has a default
+        defaults_content = """
+optional_with_default: "default_value"
+"""
+        defaults_file = role_path / "defaults" / "main.yml"
+        defaults_file.write_text(defaults_content)
+
+        # Parse the specs
+        role_data = processor.parser.validate_structure(role_path)
+
+        # Test the consistency validation
+        errors, warnings, notices = processor._validate_defaults_consistency(
+            role_path, role_data["specs"], role_data["spec_file"]
+        )
+
+        # Should have no errors
+        assert len(errors) == 0
+
+        # Should have one notice for optional variables only
+        assert len(notices) == 1
+        notice_message = notices[0]
+        assert "may be intentional" in notice_message
+        assert "optional_var1" in notice_message
+        assert "optional_var2" in notice_message
+        # Required variables should be excluded
+        assert "required_var1" not in notice_message
+        assert "required_var2" not in notice_message
+        # Variable with default should be excluded (it's in defaults)
+        assert "optional_with_default" not in notice_message
+
+    def test_validate_defaults_consistency_required_false_explicit(self, temp_dir):
+        """Test that variables with explicit required: false are included in notice."""
+        processor = RoleProcessor()
+
+        # Create a role with explicitly set required: false
+        role_path = temp_dir / "test-role"
+        (role_path / "meta").mkdir(parents=True)
+        (role_path / "defaults").mkdir(parents=True)
+
+        # Create argument_specs.yml with explicit required: false
+        specs_content = """
+argument_specs:
+  main:
+    short_description: Test role with explicit required false
+    options:
+      explicit_false_var:
+        type: str
+        required: false
+        description: Explicitly set to required false
+      no_required_key_var:
+        type: str
+        description: No required key (defaults to false)
+      dummy_var:
+        type: str
+        required: false
+        description: Dummy variable to ensure notice logic runs
+"""
+        spec_file = role_path / "meta" / "argument_specs.yml"
+        spec_file.write_text(specs_content)
+
+        # Create defaults/main.yml with one variable to trigger notice checking
+        defaults_content = """
+# Defaults file with one variable to ensure notice logic runs
+dummy_var: "dummy_value"
+"""
+        defaults_file = role_path / "defaults" / "main.yml"
+        defaults_file.write_text(defaults_content)
+
+        # Parse the specs
+        role_data = processor.parser.validate_structure(role_path)
+
+        # Test the consistency validation
+        errors, warnings, notices = processor._validate_defaults_consistency(
+            role_path, role_data["specs"], role_data["spec_file"]
+        )
+
+        # Should have no errors
+        assert len(errors) == 0
+
+        # Should have one notice for both optional variables
+        assert len(notices) == 1
+        notice_message = notices[0]
+        assert "may be intentional" in notice_message
+        assert "explicit_false_var" in notice_message
+        assert "no_required_key_var" in notice_message

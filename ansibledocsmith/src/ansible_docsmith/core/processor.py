@@ -466,14 +466,40 @@ class RoleProcessor:
                 )
 
             # NOTICE: Variables in specs but not in defaults (potential oversight)
+            # Skip variables that are required (no need for defaults)
             if defaults_vars:
                 missing_in_defaults = spec_vars - defaults_vars
                 if missing_in_defaults:
-                    notices.append(
-                        f"Entry point '{entry_point}': Variables in "
-                        f"argument_specs.yml but not in defaults/{entry_point}.yml "
-                        f"(may be intentional): {sorted(missing_in_defaults)}"
-                    )
+                    # Filter out required variables - they don't need defaults
+                    non_required_missing = set()
+                    if spec_file:
+                        original_specs = self._parse_original_specs(spec_file)
+                        original_options = original_specs.get(entry_point, {}).get(
+                            "options", {}
+                        )
+                        for var_name in missing_in_defaults:
+                            var_spec = original_options.get(var_name, {})
+                            if not (
+                                isinstance(var_spec, dict)
+                                and var_spec.get("required") is True
+                            ):
+                                non_required_missing.add(var_name)
+                    else:
+                        # Fallback: use processed specs
+                        for var_name in missing_in_defaults:
+                            var_spec = spec.get("options", {}).get(var_name, {})
+                            if not (
+                                isinstance(var_spec, dict)
+                                and var_spec.get("required") is True
+                            ):
+                                non_required_missing.add(var_name)
+
+                    if non_required_missing:
+                        notices.append(
+                            f"Entry point '{entry_point}': Variables in "
+                            f"argument_specs.yml but not in defaults/{entry_point}.yml "
+                            f"(may be intentional): {sorted(non_required_missing)}"
+                        )
 
                 # WARNING: Default value mismatches between specs and defaults files
                 if entry_point in defaults_files:
