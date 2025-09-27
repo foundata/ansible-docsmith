@@ -7,7 +7,7 @@ description = "DocSmith for Ansible: automating role documentation (using argume
 keywords = ["ansible", "documentation", "yaml", "cli", "automation"]
 license = "GPL-3.0-or-later"
 license-files = ["LICENSES/*.txt"]
-readme = {file = "../README.md", content-type = "text/markdown"}
+readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
   { name = "foundata GmbH" },
   { name = "Andreas Haerter", email = "ah@foundata.com" },

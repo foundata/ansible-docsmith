@@ -273,6 +273,6 @@ The [`REUSE.toml`](./REUSE.toml) file provides detailed licensing and copyright 
 
 ## Author information<a id="author-information"></a>
 
-This project was created and is maintained by [foundata](https://foundata.com/).
+This project was created and is maintained by [foundata](https://foundata.com/). If you like it, you might [buy us a coffee](https://buy-me-a.coffee/ansible-docsmith/).
 
-**DocSmith is *not* associated with [Red Hat](https://www.redhat.com/) nor the [Ansible project](https://ansible.com/).**
+The Ansible DocSmith project is *not* associated with [Red Hat](https://www.redhat.com/) nor the [Ansible project](https://ansible.com/).
