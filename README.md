@@ -1,6 +1,5 @@
 # DocSmith for Ansible
 
-<!-- HUGO IGNORE START -->
 **Automating role documentation (using `argument_specs.yml`)**
 
 DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.yml`](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#specification-format) and produces up‑to‑date variable descriptions for the `README.md` as well as inline comment blocks for `defaults/main.yml` (or other role entry-point files). It works with roles in both [stand‑alone form](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html) and within [collections](https://docs.ansible.com/ansible/latest/collections_guide/index.html).
@@ -38,7 +37,7 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
 - [Licensing, copyright](#licensing-copyright)
   - [Trademarks](#trademarks)
 - [Author information](#author-information)
-<!-- HUGO IGNORE END -->
+
 
 ## Demo<a id="demo"></a>
 
@@ -54,7 +53,6 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
   3. [`argument_specs.yaml`](https://github.com/foundata/ansible-collection-sshd/blob/main/roles/run/meta/argument_specs.yml) (source of truth)
 
 
-<!-- HUGO IGNORE START -->
 ### Screenshots<a id="demo-screenshots"></a>
 
 [<img src="./assets/images/screenshots/ansible-docsmith-cli-01-help.png" alt="Screenshot: DocSmith CLI, help" height="128" />](./assets/images/screenshots/ansible-docsmith-cli-01-help.png)
@@ -68,7 +66,6 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
 [<img src="./assets/images/screenshots/ansible-docsmith-readme-sshd-01-toc.png" alt="Screenshot: Part of a README.md ToC, generated with DocSmith" height="128" />](./assets/images/screenshots/ansible-docsmith-readme-sshd-01-toc.png)
 &#160;
 [<img src="./assets/images/screenshots/ansible-docsmith-readme-sshd-02-main.png" alt="Screenshot: Part of a README.md's main content describing role variables, generated with DocSmith" height="128" />](./assets/images/screenshots/ansible-docsmith-readme-sshd-02-main.png)
-<!-- HUGO IGNORE END -->
 
 
 ## Features<a id="features"></a>
