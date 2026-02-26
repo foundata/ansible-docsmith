@@ -1636,11 +1636,13 @@ See ``min_ansible_version`` in ``meta/main.yml``.
 Licensing, copyright
 ====================
 
+..REUSE-IgnoreStart
 Copyright (c) [FIXME YYYY Your Name]
 
 [FIXME Adapt license:
 This project is licensed under the GNU General Public License v3.0 or later
 (SPDX-License-Identifier: ``GPL-3.0-or-later``)].
+..REUSE-IgnoreEnd
 
 
 Author information
@@ -1671,11 +1673,13 @@ See `min_ansible_version` in [`meta/main.yml`](./meta/main.yml).
 
 ## Licensing, copyright<a id="licensing-copyright"></a>
 
+<!--REUSE-IgnoreStart-->
 Copyright (c) [FIXME YYYY Your Name]
 
 [FIXME Adapt license:
 This project is licensed under the GNU General Public License v3.0 or later
 (SPDX-License-Identifier: `GPL-3.0-or-later`)].
+<!--REUSE-IgnoreEnd-->
 
 
 ## Author information
