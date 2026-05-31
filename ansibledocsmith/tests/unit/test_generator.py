@@ -679,7 +679,7 @@ class TestDefaultsCommentGenerator:
         assert result is None
 
     def test_format_block_comment_formats_compound_default_as_yaml(self):
-        """Test issue #17 list-of-dicts defaults render as YAML comments."""
+        """Test issue #17 list-of-dicts defaults render as wrapped YAML comments."""
         generator = DefaultsCommentGenerator()
 
         comment_lines = generator._format_block_comment(
