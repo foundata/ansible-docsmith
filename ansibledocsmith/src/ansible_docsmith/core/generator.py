@@ -5,6 +5,7 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from html.parser import HTMLParser
+from io import StringIO
 from pathlib import Path
 from typing import Any
 
@@ -977,8 +978,7 @@ class DefaultsCommentGenerator:
         # Default value
         default = var_spec.get("default")
         if default is not None:
-            formatted_default = self._format_default_value(default)
-            details.append(f"# - Default: {formatted_default}")
+            details.extend(self._format_default_comment(default))
 
         # Choices
         choices = var_spec.get("choices")
@@ -993,6 +993,20 @@ class DefaultsCommentGenerator:
 
         return details
 
+    def _format_default_comment(self, default: Any) -> list[str]:
+        """Format a default value as one or more comment lines."""
+        formatted_default = self._format_default_value(default)
+        if "\n" not in formatted_default:
+            return [f"# - Default: {formatted_default}"]
+
+        return [
+            "# - Default:",
+            *(
+                f"#   {line}" if line else "#"
+                for line in formatted_default.splitlines()
+            ),
+        ]
+
     def _format_default_value(self, default: Any) -> str:
         """Format default value for display in comments."""
         if default is None:
@@ -1004,10 +1018,21 @@ class DefaultsCommentGenerator:
         elif isinstance(default, list | dict):
             if not default:  # Empty list or dict
                 return "{}" if isinstance(default, dict) else "[]"
-            else:
-                return str(default)
+            return self._format_yaml_default_value(default)
         else:
             return str(default)
+
+    def _format_yaml_default_value(self, default: list | dict) -> str:
+        """Format compound defaults as block-style YAML."""
+        yaml = YAML()
+        yaml.default_flow_style = False
+        yaml.explicit_start = False
+        yaml.indent(mapping=2, sequence=2, offset=0)
+        yaml.width = 120
+
+        output = StringIO()
+        yaml.dump(default, output)
+        return output.getvalue().strip()
 
     def _normalize_description(self, description: Any) -> str:
         """Normalize description to string format with improved formatting rules.

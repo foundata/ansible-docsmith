@@ -678,6 +678,63 @@ class TestDefaultsCommentGenerator:
 
         assert result is None
 
+    def test_format_block_comment_formats_compound_default_as_yaml(self):
+        """Test list/dict defaults are rendered as wrapped YAML comments."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Food defaults.",
+                "type": "list",
+                "elements": "dict",
+                "required": False,
+                "default": [
+                    {
+                        "myapp_food_kind": "meat",
+                        "myapp_food_boiling_required": True,
+                        "myapp_food_preparation_time": 60,
+                    },
+                    {
+                        "myapp_food_kind": "fruits",
+                        "myapp_food_preparation_time": 5,
+                    },
+                ],
+            }
+        )
+
+        assert "# - Default:" in comment_lines
+        assert "#   - myapp_food_kind: meat" in comment_lines
+        assert "#     myapp_food_boiling_required: true" in comment_lines
+        assert "#     myapp_food_preparation_time: 60" in comment_lines
+        assert "#   - myapp_food_kind: fruits" in comment_lines
+        assert "#     myapp_food_preparation_time: 5" in comment_lines
+        assert not any("[{" in line for line in comment_lines)
+        assert all(len(line) <= 160 for line in comment_lines)
+
+    def test_format_block_comment_keeps_empty_compound_defaults_inline(self):
+        """Test empty list/dict defaults stay compact."""
+        generator = DefaultsCommentGenerator()
+
+        dict_lines = generator._format_block_comment(
+            {
+                "description": "Empty dict default.",
+                "type": "dict",
+                "required": False,
+                "default": {},
+            }
+        )
+        list_lines = generator._format_block_comment(
+            {
+                "description": "Empty list default.",
+                "type": "list",
+                "required": False,
+                "default": [],
+            }
+        )
+
+        assert "# - Default: {}" in dict_lines
+        assert "# - Default: []" in list_lines
+
     def test_ast_aware_text_wrapping(self):
         """Test AST-aware text wrapping functionality."""
         generator = DefaultsCommentGenerator()
