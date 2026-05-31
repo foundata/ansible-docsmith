@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nothing worth mentioning yet.
 
 
+
+## [2.0.1] - 2026-05-31
+
+### Fixed
+
+- Keep slash-separated code spans intact (df742bd)
+- Keep punctuation attached to inline code (#16, 267f89e)
+- Render empty string defaults explicitly (#18, b22e3d5)
+- Wrap compound defaults in YAML comments (#17, e486a60)
+- Preserve Markdown links in defaults comments (#16, 917e575)
+- Preserve backslashes when updating README markers (#15, d47193b)
+
+
+
 ## [2.0.0] - 2025-09-27
 
 This is a very big update, providing new features and improvements. Please note the **small but breaking change in the marker syntax.**
@@ -75,6 +89,7 @@ This is a very big update, providing new features and improvements. Please note 
 - All functionality and files. I dedicate this tool and its release to the memory of my beloved father, who recently passed away. May he rest in peace.
 
 
-[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.0.0...HEAD
+[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.1
 [2.0.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.0
 [1.0.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v1.0.0
