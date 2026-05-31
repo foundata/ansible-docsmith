@@ -1688,6 +1688,35 @@ More content"""
         assert "new documentation" in content.lower()
         assert "old documentation" not in content.lower()
 
+    def test_update_readme_preserves_regex_backslashes(self, temp_dir):
+        """Test README replacement preserves regex escapes in generated content."""
+        updater = ReadmeUpdater()
+        readme_path = temp_dir / "README.md"
+
+        existing_content = f"""# My Role
+
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_START}{MARKER_COMMENT_MD_END}
+Old documentation
+{MARKER_COMMENT_MD_BEGIN}{MARKER_README_MAIN_END}{MARKER_COMMENT_MD_END}
+"""
+        readme_path.write_text(existing_content)
+
+        new_content = """## Role variables
+
+```yaml
+failregex: |-
+  ^[Bb]ad password attempt from <HOST>:\\d+$
+```
+"""
+
+        result = updater.update_readme(readme_path, new_content)
+
+        assert result is True
+
+        content = readme_path.read_text()
+        assert r"^[Bb]ad password attempt from <HOST>:\d+$" in content
+        assert "Old documentation" not in content
+
     def test_create_new_readme(self):
         """Test creating new README template."""
         updater = ReadmeUpdater()

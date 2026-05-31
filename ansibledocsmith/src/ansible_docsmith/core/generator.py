@@ -1547,8 +1547,12 @@ class ReadmeUpdater:
 
         # Replace content between existing markers
         pattern = f"({re.escape(start_marker)}).*?({re.escape(end_marker)})"
-        replacement = f"\\1\n{new_content}\n\\2"
-        return re.sub(pattern, replacement, content, flags=re.DOTALL)
+        return re.sub(
+            pattern,
+            lambda match: f"{match.group(1)}\n{new_content}\n{match.group(2)}",
+            content,
+            flags=re.DOTALL,
+        )
 
     def _update_toc_section(self, content: str) -> str:
         """Update TOC section if markers are present, using only main content."""
