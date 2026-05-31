@@ -19,7 +19,7 @@ This file provides information for maintainers and contributors to `ansible-docs
   - [Before making changes](#before-making-changes)
   - [Making changes](#making-changes)
   - [Before committing](#before-committing)
-- [Release process](#release-process)
+- [Releases](#releases)
 - [Troubleshooting](#troubleshooting)
   - [Common issues](#common-issues)
 
@@ -304,13 +304,39 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 2. Determine the next version number. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 3. Update several files to match the new release version:
    - [`CHANGELOG.md`](./CHANGELOG.md): Insert a section for the new release. Do not forget the comparison link at the end of the file.
+   - [`ansibledocsmith/uv.lock`](./ansibledocsmith/pyproject.toml): the `version` variable.
    - [`ansibledocsmith/pyproject.toml`](./ansibledocsmith/pyproject.toml): the `version` variable.
    - [`ansibledocsmith/src/ansible_docsmith/__init__.py`](./ansibledocsmith/src/ansible_docsmith/__init__.py): the `__version__` variable.
+   - The following snippet can help with the Python files (but double check `uv.lock` that only the package's own version gets replacedgdi)
+     ```bash
+     old_version="<FIXME version>" # FIXME major.minor.patch
+     new_version="<FIXME version>" # FIXME major.minor.patch
+
+     files=(
+      "./ansibledocsmith/uv.lock"
+      "./ansibledocsmith/pyproject.toml"
+      "./ansibledocsmith/src/ansible_docsmith/__init__.py"
+     )
+
+     old_version_regex="${old_version//./\\.}"
+     version_pattern="^([[:space:]]*(__version__|version)[[:space:]]*[:=][[:space:]]*)\"?${old_version_regex}\"?$"
+
+     for file in "${files[@]}"; do
+       echo "Before: $file"
+       grep -B 1 -E "$version_pattern" "$file" || true
+       sed -i -E "s@${version_pattern}@\1\"${new_version}\"@" "$file"
+       echo "After: $file"
+       grep -B 1 -E "^([[:space:]]*(__version__|version)[[:space:]]*[:=][[:space:]]*)\"?${new_version}\"?$" "$file" || true
+       echo
+     done
+     ```
+
 4. If everything is fine: commit the changes, tag the release and push:
    ```bash
-   version="<FIXME version>"
+   version="<FIXME version>" # FIXME major.minor.patch
    git add \
      "./CHANGELOG.md" \
+     "./ansibledocsmith/uv.lock" \
      "./ansibledocsmith/pyproject.toml" \
      "./ansibledocsmith/src/ansible_docsmith/__init__.py"
    git commit -m "Release preparations: v${version}"
