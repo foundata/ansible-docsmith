@@ -679,12 +679,12 @@ class TestDefaultsCommentGenerator:
         assert result is None
 
     def test_format_block_comment_formats_compound_default_as_yaml(self):
-        """Test list/dict defaults are rendered as wrapped YAML comments."""
+        """Test issue #17 list-of-dicts defaults render as YAML comments."""
         generator = DefaultsCommentGenerator()
 
         comment_lines = generator._format_block_comment(
             {
-                "description": "Food defaults.",
+                "description": "List of food preparation defaults.",
                 "type": "list",
                 "elements": "dict",
                 "required": False,
