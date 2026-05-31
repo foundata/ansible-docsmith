@@ -1095,7 +1095,7 @@ class DefaultsCommentGenerator:
         if max_width <= 0 or len(text) <= max_width:
             return [text] if text else [""]
 
-        words = text.split()
+        words = self._split_markdown_words(text)
         if not words:
             return [""]
 
@@ -1122,6 +1122,10 @@ class DefaultsCommentGenerator:
             lines.append(" ".join(current_line))
 
         return lines if lines else [""]
+
+    def _split_markdown_words(self, text: str) -> list[str]:
+        """Split text for wrapping without breaking Markdown links or code spans."""
+        return re.findall(r"\[[^\]]+\]\([^)]+\)|`[^`]+`|\S+", text)
 
     def _format_list_node(self, node, max_width: int = 0, indent_level: int = 0) -> str:
         """Format a list node with proper type recognition and nesting support.
@@ -1300,28 +1304,7 @@ class DefaultsCommentGenerator:
         """
         if node.t == "paragraph":
             # For paragraphs, join inline content and convert softbreaks to spaces
-            text_parts = []
-            if node.first_child:
-                child = node.first_child
-                while child:
-                    if child.t == "text":
-                        text_parts.append(child.literal or "")
-                    elif child.t == "softbreak":
-                        # Single linebreaks become spaces
-                        text_parts.append(" ")
-                    elif child.t == "code":
-                        # Inline code - preserve as-is
-                        text_parts.append(f"`{child.literal or ''}`")
-                    elif child.t == "linebreak":
-                        # Hard line breaks (two spaces + newline) - preserve
-                        text_parts.append("\n")
-                    else:
-                        # Handle other inline elements as text
-                        text_parts.append(child.literal or "")
-                    child = child.nxt
-
-            # Join and clean up multiple spaces
-            result = "".join(text_parts)
+            result = self._format_inline_content(node)
             cleaned_text = " ".join(result.split())
 
             # Apply text wrapping if max_width is specified
@@ -1350,23 +1333,7 @@ class DefaultsCommentGenerator:
             return "\n".join(result_lines)
         elif node.t == "heading":
             # For headings, format as plain text (shouldn't occur in descriptions)
-            text_parts = []
-            if node.first_child:
-                child = node.first_child
-                while child:
-                    if child.t == "text":
-                        text_parts.append(child.literal or "")
-                    elif child.t == "softbreak":
-                        text_parts.append(" ")
-                    elif child.t == "code":
-                        text_parts.append(f"`{child.literal or ''}`")
-                    elif child.t == "linebreak":
-                        text_parts.append("\n")
-                    else:
-                        text_parts.append(child.literal or "")
-                    child = child.nxt
-
-            result = "".join(text_parts)
+            result = self._format_inline_content(node)
             cleaned_text = " ".join(result.split())
 
             # Apply text wrapping if max_width is specified
@@ -1377,23 +1344,7 @@ class DefaultsCommentGenerator:
                 return cleaned_text
         else:
             # For other block types, format as paragraph
-            text_parts = []
-            if node.first_child:
-                child = node.first_child
-                while child:
-                    if child.t == "text":
-                        text_parts.append(child.literal or "")
-                    elif child.t == "softbreak":
-                        text_parts.append(" ")
-                    elif child.t == "code":
-                        text_parts.append(f"`{child.literal or ''}`")
-                    elif child.t == "linebreak":
-                        text_parts.append("\n")
-                    else:
-                        text_parts.append(child.literal or "")
-                    child = child.nxt
-
-            result = "".join(text_parts)
+            result = self._format_inline_content(node)
             cleaned_text = " ".join(result.split())
 
             # Apply text wrapping if max_width is specified
@@ -1402,6 +1353,38 @@ class DefaultsCommentGenerator:
                 return "\n".join(wrapped_lines)
             else:
                 return cleaned_text
+
+    def _format_inline_content(self, node) -> str:
+        """Format inline CommonMark nodes while preserving Markdown links."""
+        text_parts = []
+        child = node.first_child
+
+        while child:
+            if child.t == "text":
+                text_parts.append(child.literal or "")
+            elif child.t == "softbreak":
+                text_parts.append(" ")
+            elif child.t == "code":
+                text_parts.append(f"`{child.literal or ''}`")
+            elif child.t == "linebreak":
+                text_parts.append("\n")
+            elif child.t == "link":
+                label = self._format_inline_content(child)
+                destination = child.destination or ""
+                title = child.title or ""
+                escaped_title = title.replace('"', '\\"')
+                title_suffix = f' "{escaped_title}"' if title else ""
+                text_parts.append(f"[{label}]({destination}{title_suffix})")
+            elif child.t == "emph":
+                text_parts.append(f"*{self._format_inline_content(child)}*")
+            elif child.t == "strong":
+                text_parts.append(f"**{self._format_inline_content(child)}**")
+            else:
+                text_parts.append(child.literal or self._format_inline_content(child))
+
+            child = child.nxt
+
+        return "".join(text_parts)
 
     def _has_block_comment_above(self, result_lines: list[str]) -> bool:
         """Check if there's already a variable-specific block comment above."""

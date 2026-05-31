@@ -844,6 +844,42 @@ Regular paragraph after the list."""
         assert "Description with a list:\n\n- First list item" in result
         assert "- Third item\n\nRegular paragraph after the list." in result
 
+    def test_format_block_comment_preserves_markdown_links(self):
+        """Test named Markdown links are preserved in defaults comments."""
+        generator = DefaultsCommentGenerator()
+
+        description = (
+            "The official documentation provides general configuration guidance:\n\n"
+            "- [`man jail.conf`](https://manpages.debian.org/testing/fail2ban/"
+            "jail.conf.5.en.html)\n"
+            "- [`man fail2ban-regex`](https://manpages.debian.org/testing/fail2ban/"
+            "fail2ban-regex.1.en.html)\n"
+            "- https://github.com/fail2ban/fail2ban/wiki/Best-practice"
+        )
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": description,
+                "type": "dict",
+                "required": False,
+                "default": {},
+            }
+        )
+
+        assert (
+            "# - [`man jail.conf`](https://manpages.debian.org/testing/fail2ban/"
+            "jail.conf.5.en.html)" in comment_lines
+        )
+        assert (
+            "# - [`man fail2ban-regex`](https://manpages.debian.org/testing/fail2ban/"
+            "fail2ban-regex.1.en.html)" in comment_lines
+        )
+        assert (
+            "# - https://github.com/fail2ban/fail2ban/wiki/Best-practice"
+            in comment_lines
+        )
+        assert "# - " not in comment_lines
+
     def test_parse_and_format_description_mixed_content(self):
         """Test complex mixed content with paragraphs, lists, and code blocks."""
         generator = DefaultsCommentGenerator()
