@@ -307,7 +307,7 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    - [`ansibledocsmith/uv.lock`](./ansibledocsmith/pyproject.toml): the `version` variable.
    - [`ansibledocsmith/pyproject.toml`](./ansibledocsmith/pyproject.toml): the `version` variable.
    - [`ansibledocsmith/src/ansible_docsmith/__init__.py`](./ansibledocsmith/src/ansible_docsmith/__init__.py): the `__version__` variable.
-   - The following snippet can help with the Python files (but double check `uv.lock` that only the package's own version gets replacedgdi)
+   - The following snippet can help with the Python files (but double check `uv.lock` that only the package's own version gets replaced)
      ```bash
      old_version="<FIXME version>" # FIXME major.minor.patch
      new_version="<FIXME version>" # FIXME major.minor.patch
