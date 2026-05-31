@@ -1012,6 +1012,8 @@ class DefaultsCommentGenerator:
         if default is None:
             return "N/A"
         elif isinstance(default, str):
+            if default == "":
+                return '""'
             return default
         elif isinstance(default, bool):
             return str(default).lower()

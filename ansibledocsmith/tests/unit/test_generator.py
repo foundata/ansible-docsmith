@@ -735,6 +735,22 @@ class TestDefaultsCommentGenerator:
         assert "# - Default: {}" in dict_lines
         assert "# - Default: []" in list_lines
 
+    def test_format_block_comment_empty_string_default_has_no_trailing_space(self):
+        """Test empty string defaults are explicit and do not add trailing space."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Notification email address.",
+                "type": "str",
+                "required": False,
+                "default": "",
+            }
+        )
+
+        assert '# - Default: ""' in comment_lines
+        assert all(line == line.rstrip() for line in comment_lines)
+
     def test_ast_aware_text_wrapping(self):
         """Test AST-aware text wrapping functionality."""
         generator = DefaultsCommentGenerator()
