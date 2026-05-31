@@ -775,6 +775,31 @@ class TestDefaultsCommentGenerator:
         result = generator._parse_and_format_description("", max_width=50)
         assert result == ""
 
+    def test_wrapping_preserves_punctuation_after_inline_code(self):
+        """Test wrapping does not add spaces before punctuation after code spans."""
+        generator = DefaultsCommentGenerator()
+
+        # real example text taken from foundata.acmesh.run
+        input_text = (
+            "If set to `true`, all managed packages will be upgraded during each "
+            "Ansible run. DNS API credentials (e.g., `HETZNER_Token`, `INWX_User`, "
+            "`INWX_Password`). The role uses `git ls-remote`. The service user "
+            "defined (see `run_acmesh_user`). Each item must specify a `server` "
+            "(same value used in `run_acmesh_certs[].server`) and `account_key`."
+        )
+
+        result = generator._parse_and_format_description(input_text, max_width=78)
+        normalized = " ".join(result.split())
+
+        assert "`true`, all managed packages" in normalized
+        assert "`HETZNER_Token`, `INWX_User`, `INWX_Password`)." in normalized
+        assert "`git ls-remote`." in normalized
+        assert "`run_acmesh_user`)." in normalized
+        assert "`run_acmesh_certs[].server`) and `account_key`." in normalized
+        assert "`true` ," not in normalized
+        assert "`git ls-remote` ." not in normalized
+        assert "`run_acmesh_user` )" not in normalized
+
     def test_complex_list_formatting_with_nesting(self):
         """Test complex list formatting with proper nesting and list types."""
         generator = DefaultsCommentGenerator()

@@ -1152,7 +1152,7 @@ class DefaultsCommentGenerator:
 
     def _split_markdown_words(self, text: str) -> list[str]:
         """Split text for wrapping without breaking Markdown links or code spans."""
-        return re.findall(r"\[[^\]]+\]\([^)]+\)|`[^`]+`|\S+", text)
+        return re.findall(r"\[[^\]]+\]\([^)]+\)[.,;:!?)]*|`[^`]+`[.,;:!?)]*|\S+", text)
 
     def _format_list_node(self, node, max_width: int = 0, indent_level: int = 0) -> str:
         """Format a list node with proper type recognition and nesting support.
