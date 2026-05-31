@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nothing worth mentioning yet.
 
 
+## [2.0.2] - 2026-05-31
+
+This release contains no functional changes from 2.0.1. It only improves the README rendering for PyPI and the documentation.
+
+### Fixed
+
+- SVG logo contained text instead of paths (#14, 04d0347)
+
+
 
 ## [2.0.1] - 2026-05-31
 
@@ -89,7 +98,8 @@ This is a very big update, providing new features and improvements. Please note 
 - All functionality and files. I dedicate this tool and its release to the memory of my beloved father, who recently passed away. May he rest in peace.
 
 
-[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.0.1...HEAD
+[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.1
 [2.0.1]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.1
 [2.0.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.0
 [1.0.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v1.0.0
