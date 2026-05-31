@@ -781,6 +781,8 @@ class TestDefaultsCommentGenerator:
 
         # real example text taken from foundata.acmesh.run
         input_text = (
+            "For boolean values, use `true`/`false` (these will be converted to "
+            "yes/no by configuration tasks as needed). "
             "If set to `true`, all managed packages will be upgraded during each "
             "Ansible run. DNS API credentials (e.g., `HETZNER_Token`, `INWX_User`, "
             "`INWX_Password`). The role uses `git ls-remote`. The service user "
@@ -791,11 +793,13 @@ class TestDefaultsCommentGenerator:
         result = generator._parse_and_format_description(input_text, max_width=78)
         normalized = " ".join(result.split())
 
+        assert "use `true`/`false` (these will be converted" in normalized
         assert "`true`, all managed packages" in normalized
         assert "`HETZNER_Token`, `INWX_User`, `INWX_Password`)." in normalized
         assert "`git ls-remote`." in normalized
         assert "`run_acmesh_user`)." in normalized
         assert "`run_acmesh_certs[].server`) and `account_key`." in normalized
+        assert "`true` /`false`" not in normalized
         assert "`true` ," not in normalized
         assert "`git ls-remote` ." not in normalized
         assert "`run_acmesh_user` )" not in normalized
