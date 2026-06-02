@@ -98,7 +98,12 @@ class RoleProcessor:
                 format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
             )
 
-    def validate_role(self, role_path: Path) -> dict:
+    def validate_role(
+        self,
+        role_path: Path,
+        validate_readme: bool = True,
+        validate_argument_specs: bool = True,
+    ) -> dict:
         """
         Validate role structure and return metadata with further check results
         (like consistency, unknown keys).
@@ -113,32 +118,34 @@ class RoleProcessor:
             role_data.setdefault("warnings", [])
             role_data.setdefault("notices", [])
 
-            # Add consistency validation
-            errors, warnings, notices = self._validate_defaults_consistency(
-                role_path, role_data["specs"], role_data["spec_file"]
-            )
-            role_data["errors"].extend(errors)
-            role_data["warnings"].extend(warnings)
-            role_data["notices"].extend(notices)
+            if validate_argument_specs:
+                # Add consistency validation
+                errors, warnings, notices = self._validate_defaults_consistency(
+                    role_path, role_data["specs"], role_data["spec_file"]
+                )
+                role_data["errors"].extend(errors)
+                role_data["warnings"].extend(warnings)
+                role_data["notices"].extend(notices)
 
-            # Add unknown keys validation
-            warnings = self._validate_unknown_keys(role_data["spec_file"])
-            role_data["warnings"].extend(warnings)
+                # Add unknown keys validation
+                warnings = self._validate_unknown_keys(role_data["spec_file"])
+                role_data["warnings"].extend(warnings)
 
-            # Add mutually exclusive keys validation
-            exclusive_errors = self._validate_mutually_exclusive_keys(
-                role_data["spec_file"]
-            )
-            role_data["errors"].extend(exclusive_errors)
+                # Add mutually exclusive keys validation
+                exclusive_errors = self._validate_mutually_exclusive_keys(
+                    role_data["spec_file"]
+                )
+                role_data["errors"].extend(exclusive_errors)
 
-            # Add README marker validation
-            readme_errors = self._validate_readme_markers(role_path)
-            role_data["errors"].extend(readme_errors)
+            if validate_readme:
+                # Add README marker validation
+                readme_errors = self._validate_readme_markers(role_path)
+                role_data["errors"].extend(readme_errors)
 
-            # Add TOC marker validation
-            toc_errors, toc_notices = self._validate_readme_toc_markers(role_path)
-            role_data["errors"].extend(toc_errors)
-            role_data["notices"].extend(toc_notices)
+                # Add TOC marker validation
+                toc_errors, toc_notices = self._validate_readme_toc_markers(role_path)
+                role_data["errors"].extend(toc_errors)
+                role_data["notices"].extend(toc_notices)
 
             # Fail validation if errors found
             if role_data.get("errors"):
@@ -168,7 +175,7 @@ class RoleProcessor:
 
         try:
             # Validate and parse role
-            role_data = self.validate_role(role_path)
+            role_data = self.validate_role(role_path, validate_readme=generate_readme)
             specs = role_data["specs"]
             role_name = role_data["role_name"]
 

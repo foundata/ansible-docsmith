@@ -69,6 +69,26 @@ class TestRoleProcessor:
         defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
         assert len(defaults_ops) == 1
 
+    def test_process_role_defaults_only_bad_readme(self):
+        """Test processing role with defaults update only with an invalid README."""
+        processor = RoleProcessor(dry_run=True)
+
+        from pathlib import Path
+        fixture_path = Path("tests/fixtures/example-role-missing-readme-markers")
+        result = processor.process_role(
+            fixture_path,
+            generate_readme=False,
+            update_defaults=True,
+        )
+
+        assert len(result.operations) >= 1
+        # We should have no errors even though the README is invalid because we are only updating defaults
+        assert len(result.errors) == 0
+        # Check that defaults operation exists
+        defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
+        assert len(defaults_ops) == 1
+
+
     def test_process_role_both_operations(self, sample_role_with_specs_and_defaults):
         """Test processing role with both README and defaults."""
         processor = RoleProcessor(dry_run=True)
@@ -188,6 +208,55 @@ class TestRoleProcessor:
             "Default value mismatch for variable 'install_version'" in warning_messages
         )
         assert "Default value mismatch for variable 'install_force'" in warning_messages
+
+    def test_validate_only_readme(self):
+        """
+        Test only validating the README file, not the argument_specs file.
+        """
+        processor = RoleProcessor()
+
+        from pathlib import Path
+
+        fixture_path = Path("tests/fixtures/example-role-mismatch-spec-defaults")
+
+        result = processor.validate_role(
+            fixture_path,
+            validate_readme=True,
+            validate_argument_specs=False,
+        )
+
+        # example-role-mismatch-spec-defaults warnings should not be present because we are skipping argument_spec validation
+        warning_messages = "\n".join(result["warnings"])
+        assert (
+            "Default value mismatch for variable 'main_state'" not in warning_messages
+        )
+        assert "argument_specs.yml defines 'present'" not in warning_messages
+        assert "defaults/main.yml defines 'absent'" not in warning_messages
+        assert (
+            "Default value mismatch for variable 'install_version'"
+            not in warning_messages
+        )
+        assert (
+            "Default value mismatch for variable 'install_force'"
+            not in warning_messages
+        )
+
+    def test_validate_only_argument_specs(self):
+        """
+        Test only validating the argument_specs file, not the README file.
+        """
+        processor = RoleProcessor()
+
+        from pathlib import Path
+
+        fixture_path = Path("tests/fixtures/example-role-missing-readme-markers")
+
+        # Should not throw ValidationError even though there are errors in the README file, because we are not validating the README
+        processor.validate_role(
+            fixture_path,
+            validate_readme=False,
+            validate_argument_specs=True,
+        )
 
     def test_validate_defaults_value_mismatch_detection(self, temp_dir):
         """Test detection of default value mismatches between specs and defaults."""
