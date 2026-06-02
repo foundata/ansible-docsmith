@@ -193,6 +193,14 @@ def validate(
     verbose: bool = typer.Option(
         False, "-v", "--verbose", help="Enable verbose logging"
     ),
+    validate_readme: bool = typer.Option(
+        True, "--readme/--no-readme", help="Validate README documentation"
+    ),
+    validate_argument_specs: bool = typer.Option(
+        True,
+        "--argument_specs/--no-argument-specs",
+        help="Validate argument_specs file",
+    ),
 ):
     """Validate argument_specs.yml structure and content."""
 
@@ -213,7 +221,11 @@ def validate(
         processor = RoleProcessor(format_type=format_type, role_path=role_path)
 
         # Validate the role
-        role_data = processor.validate_role(role_path)
+        role_data = processor.validate_role(
+            role_path,
+            validate_readme=validate_readme,
+            validate_argument_specs=validate_argument_specs,
+        )
 
         # Display validation results
         _display_validation_results(role_data)
