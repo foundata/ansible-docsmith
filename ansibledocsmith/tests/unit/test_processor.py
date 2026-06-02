@@ -73,6 +73,26 @@ class TestRoleProcessor:
         defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
         assert len(defaults_ops) == 1
 
+    def test_process_role_defaults_only_bad_readme(self):
+        """Test processing role with defaults update only with an invalid README."""
+        processor = RoleProcessor(dry_run=True)
+
+        from pathlib import Path
+        fixture_path = Path("tests/fixtures/example-role-missing-readme-markers")
+        result = processor.process_role(
+            fixture_path,
+            generate_readme=False,
+            update_defaults=True,
+        )
+
+        assert len(result.operations) >= 1
+        # We should have no errors even though the README is invalid because we are only updating defaults
+        assert len(result.errors) == 0
+        # Check that defaults operation exists
+        defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
+        assert len(defaults_ops) == 1
+
+
     def test_process_role_both_operations(self, sample_role_with_specs_and_defaults):
         """Test processing role with both README and defaults."""
         processor = RoleProcessor(dry_run=True)
