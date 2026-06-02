@@ -189,6 +189,55 @@ class TestRoleProcessor:
         )
         assert "Default value mismatch for variable 'install_force'" in warning_messages
 
+    def test_validate_only_readme(self):
+        """
+        Test only validating the README file, not the argument_specs file.
+        """
+        processor = RoleProcessor()
+
+        from pathlib import Path
+
+        fixture_path = Path("tests/fixtures/example-role-mismatch-spec-defaults")
+
+        result = processor.validate_role(
+            fixture_path,
+            validate_readme=True,
+            validate_argument_specs=False,
+        )
+
+        # example-role-mismatch-spec-defaults warnings should not be present because we are skipping argument_spec validation
+        warning_messages = "\n".join(result["warnings"])
+        assert (
+            "Default value mismatch for variable 'main_state'" not in warning_messages
+        )
+        assert "argument_specs.yml defines 'present'" not in warning_messages
+        assert "defaults/main.yml defines 'absent'" not in warning_messages
+        assert (
+            "Default value mismatch for variable 'install_version'"
+            not in warning_messages
+        )
+        assert (
+            "Default value mismatch for variable 'install_force'"
+            not in warning_messages
+        )
+
+    def test_validate_only_argument_specs(self):
+        """
+        Test only validating the argument_specs file, not the README file.
+        """
+        processor = RoleProcessor()
+
+        from pathlib import Path
+
+        fixture_path = Path("tests/fixtures/example-role-missing-readme-markers")
+
+        # Should not throw ValidationError even though there are errors in the README file, because we are not validating the README
+        processor.validate_role(
+            fixture_path,
+            validate_readme=False,
+            validate_argument_specs=True,
+        )
+
     def test_validate_defaults_value_mismatch_detection(self, temp_dir):
         """Test detection of default value mismatches between specs and defaults."""
         processor = RoleProcessor()
