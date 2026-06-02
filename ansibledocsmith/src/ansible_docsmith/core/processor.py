@@ -101,7 +101,12 @@ class RoleProcessor:
                 format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
             )
 
-    def validate_role(self, role_path: Path) -> dict:
+    def validate_role(
+        self,
+        role_path: Path,
+        validate_readme: bool = True,
+        validate_argument_specs: bool = True,
+    ) -> dict:
         """
         Validate role structure and return metadata with further check results
         (like consistency, unknown keys).
@@ -116,35 +121,39 @@ class RoleProcessor:
             role_data.setdefault("warnings", [])
             role_data.setdefault("notices", [])
 
-            # Parse the raw (unnormalized) specs once; several validators
-            # need this view to distinguish explicitly set keys from
-            # normalization artifacts
-            original_specs = self._parse_original_specs(role_data["spec_file"])
+            if validate_argument_specs:
+                # Parse the raw (unnormalized) specs once; several validators
+                # need this view to distinguish explicitly set keys from
+                # normalization artifacts
+                original_specs = self._parse_original_specs(role_data["spec_file"])
 
-            # Add consistency validation
-            errors, warnings, notices = self._validate_defaults_consistency(
-                role_path, role_data["specs"], original_specs
-            )
-            role_data["errors"].extend(errors)
-            role_data["warnings"].extend(warnings)
-            role_data["notices"].extend(notices)
+                # Add consistency validation
+                errors, warnings, notices = self._validate_defaults_consistency(
+                    role_path, role_data["specs"], original_specs
+                )
+                role_data["errors"].extend(errors)
+                role_data["warnings"].extend(warnings)
+                role_data["notices"].extend(notices)
 
-            # Add unknown keys validation
-            warnings = self._validate_unknown_keys(original_specs)
-            role_data["warnings"].extend(warnings)
+                # Add unknown keys validation
+                warnings = self._validate_unknown_keys(original_specs)
+                role_data["warnings"].extend(warnings)
 
-            # Add mutually exclusive keys validation
-            exclusive_errors = self._validate_mutually_exclusive_keys(original_specs)
-            role_data["errors"].extend(exclusive_errors)
+                # Add mutually exclusive keys validation
+                exclusive_errors = self._validate_mutually_exclusive_keys(
+                    original_specs
+                )
+                role_data["errors"].extend(exclusive_errors)
 
-            # Add README marker validation
-            readme_errors = self._validate_readme_markers(role_path)
-            role_data["errors"].extend(readme_errors)
+            if validate_readme:
+                # Add README marker validation
+                readme_errors = self._validate_readme_markers(role_path)
+                role_data["errors"].extend(readme_errors)
 
-            # Add TOC marker validation
-            toc_errors, toc_notices = self._validate_readme_toc_markers(role_path)
-            role_data["errors"].extend(toc_errors)
-            role_data["notices"].extend(toc_notices)
+                # Add TOC marker validation
+                toc_errors, toc_notices = self._validate_readme_toc_markers(role_path)
+                role_data["errors"].extend(toc_errors)
+                role_data["notices"].extend(toc_notices)
 
             # Fail validation if errors found
             if role_data.get("errors"):
