@@ -183,7 +183,7 @@ class RoleProcessor:
 
         try:
             # Validate and parse role
-            role_data = self.validate_role(role_path)
+            role_data = self.validate_role(role_path, validate_readme=generate_readme)
             specs = role_data["specs"]
             role_name = role_data["role_name"]
 
