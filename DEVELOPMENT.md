@@ -86,9 +86,11 @@ ansible-docsmith/
     │   ├── constants.py        # Global constants
     │   ├── core/               # Core functionality
     │   │   ├── __init__.py
+    │   │   ├── collection.py   # Collection detection and processing
     │   │   ├── defaults_comments.py # Comment blocks for entry-point files
     │   │   ├── doc_generators.py    # README documentation generators (MD, RST)
     │   │   ├── exceptions.py   # Custom exceptions
+    │   │   ├── markdown_ast.py # Shared Markdown parsing (markdown-it-py)
     │   │   ├── markup.py       # Ansible markup conversion
     │   │   ├── parser.py       # YAML parsing
     │   │   ├── processor.py    # Main processing logic
