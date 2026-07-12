@@ -4,6 +4,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any
 
+from .markdown_ast import parse_markdown
+
 
 class BaseTocGenerator(ABC):
     """Abstract base class for Table of Contents generators."""
@@ -74,7 +76,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
         return "markdown"
 
     def _extract_headings(self, content: str) -> list[dict[str, Any]]:
-        """Extract headings from markdown content using CommonMark AST.
+        """Extract headings from markdown content using the Markdown AST.
 
         Uses AST parsing to avoid false positives from code blocks or other
         contexts where '#' characters might appear but aren't actually headings.
@@ -86,37 +88,27 @@ class MarkdownTocGenerator(BaseTocGenerator):
             return []
 
         try:
-            from commonmark import Parser
-
             headings = []
-            parser = Parser()
-            ast = parser.parse(content)
+            root = parse_markdown(content)
 
-            # Walk through all nodes in the AST
-            walker = ast.walker()
-            event = walker.nxt()
+            for node in root.walk():
+                if node.type != "heading":
+                    continue
 
-            while event is not None:
-                node, entering = event["node"], event["entering"]
+                # The tag is "h1".."h6" for both ATX and setext headings
+                level = int(node.tag[1])
+                text = self._extract_text_from_node(node)
 
-                # Process heading nodes when entering them
-                if entering and node.t == "heading":
-                    level = node.level
-                    # Extract   text content from all child nodes
-                    text = self._extract_text_from_node(node)
+                # Check for existing anchor in the heading text
+                anchor_match = re.search(r'<a\s+id="([^"]+)"></a>', text)
+                if anchor_match:
+                    anchor = anchor_match.group(1)
+                    # Remove the anchor tag from the text
+                    text = re.sub(r'<a\s+id="[^"]+"></a>', "", text).strip()
+                else:
+                    anchor = self._create_anchor_link(text)
 
-                    # Check for existing anchor in the heading text
-                    anchor_match = re.search(r'<a\s+id="([^"]+)"></a>', text)
-                    if anchor_match:
-                        anchor = anchor_match.group(1)
-                        # Remove the anchor tag from the text
-                        text = re.sub(r'<a\s+id="[^"]+"></a>', "", text).strip()
-                    else:
-                        anchor = self._create_anchor_link(text)
-
-                    headings.append({"text": text, "level": level, "anchor": anchor})
-
-                event = walker.nxt()
+                headings.append({"text": text, "level": level, "anchor": anchor})
 
             return headings
 
@@ -125,31 +117,27 @@ class MarkdownTocGenerator(BaseTocGenerator):
             return self._extract_headings_fallback(content)
 
     def _extract_text_from_node(self, node) -> str:
-        """Extract text from a CommonMark AST node preserving inline formatting.
+        """Extract text from a Markdown AST node preserving inline formatting.
 
-        This method preserves inline code formatting by adding backticks around
-        code nodes to maintain the original heading text appearance.
+        Inline code keeps its backticks to maintain the original heading
+        text appearance. Inline HTML (like the ``<a id="..."></a>`` anchors
+        DocSmith generates) is emitted verbatim so that the caller can
+        detect existing anchors.
 
         Args:
-            node: CommonMark AST node
+            node: Markdown AST node (SyntaxTreeNode)
 
         Returns:
             Text content with inline formatting preserved
         """
         text_parts = []
-        walker = node.walker()
-        event = walker.nxt()
 
-        while event is not None:
-            current_node, entering = event["node"], event["entering"]
-
-            if entering and current_node.t == "code":
+        for current_node in node.walk():
+            if current_node.type == "code_inline":
                 # For inline code, add backticks to preserve formatting
-                text_parts.append(f"`{current_node.literal}`")
-            elif entering and current_node.literal:
-                text_parts.append(current_node.literal)
-
-            event = walker.nxt()
+                text_parts.append(f"`{current_node.content}`")
+            elif current_node.type in ("text", "html_inline"):
+                text_parts.append(current_node.content)
 
         return "".join(text_parts).strip()
 

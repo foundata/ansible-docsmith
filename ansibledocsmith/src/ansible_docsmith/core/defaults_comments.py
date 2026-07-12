@@ -10,6 +10,7 @@ from ruamel.yaml.error import YAMLError
 
 from ..constants import COMMENT_MAX_NESTED_DEPTH
 from .exceptions import FileOperationError
+from .markdown_ast import parse_markdown
 from .markup import convert_ansible_markup
 from .text import normalize_description
 
@@ -284,7 +285,7 @@ class DefaultsCommentGenerator:
         return self._parse_and_format_description(text)
 
     def _parse_and_format_description(self, text: str, max_width: int = 0) -> str:
-        """Parse description using commonmark and apply enhanced formatting rules.
+        """Parse description as Markdown and apply enhanced formatting rules.
 
         Uses a proper markdown parser to handle complex structures like lists
         and code blocks correctly.
@@ -305,23 +306,12 @@ class DefaultsCommentGenerator:
         if not text.strip():
             return ""
 
-        from commonmark import Parser
-
-        # Parse the markdown text into an AST
-        parser = Parser()
-        ast = parser.parse(text)
-
-        # Convert the AST back to formatted text
+        # Parse the markdown text and convert the AST back to formatted text
         result_parts = []
-        if ast.first_child:
-            child = ast.first_child
-            while child:
-                formatted_block = self._format_ast_node(
-                    child, max_width, indent_level=0
-                )
-                if formatted_block:
-                    result_parts.append(formatted_block)
-                child = child.nxt
+        for child in parse_markdown(text).children:
+            formatted_block = self._format_ast_node(child, max_width, indent_level=0)
+            if formatted_block:
+                result_parts.append(formatted_block)
 
         # Join blocks with double newlines (paragraph separation)
         return "\n\n".join(result_parts).strip()
@@ -388,25 +378,24 @@ class DefaultsCommentGenerator:
         Returns:
             Properly formatted list with correct numbering and indentation
         """
-        if not node.first_child:
+        if not node.children:
             return ""
 
         list_items = []
         # Use 2 spaces per indentation level to match standard Markdown convention
         current_indent = "  " * indent_level
 
-        # Determine list type and starting number from list_data
-        list_data = getattr(node, "list_data", {})
-        is_ordered = list_data.get("type") == "ordered"
-        start_num = list_data.get("start", 1) if is_ordered else None
-        # Preserve original bullet character from AST
-        bullet_char = list_data.get("bullet_char", "-")
+        # Determine list type and starting number. The "start" attribute is
+        # only present when the list does not start at 1.
+        is_ordered = node.type == "ordered_list"
+        start_num = node.attrs.get("start", 1) if is_ordered else None
+        # Preserve original bullet character from the AST
+        bullet_char = node.markup or "-"
 
         item_num = start_num if start_num else 1
-        item = node.first_child
 
-        while item:
-            if item.t == "item":
+        for item in node.children:
+            if item.type == "list_item":
                 # Format the list item with proper prefix using original bullet char
                 if is_ordered:
                     item_prefix = f"{item_num}. "
@@ -456,8 +445,6 @@ class DefaultsCommentGenerator:
                             # Empty lines
                             list_items.append("")
 
-            item = item.nxt
-
         return "\n".join(list_items)
 
     def _format_list_item_content(
@@ -478,14 +465,13 @@ class DefaultsCommentGenerator:
         Returns:
             Formatted content for this list item
         """
-        if not item_node.first_child:
+        if not item_node.children:
             return f"{item_prefix}"
 
         content_parts = []
-        child = item_node.first_child
 
-        while child:
-            if child.t == "paragraph":
+        for child in item_node.children:
+            if child.type == "paragraph":
                 # Format paragraph content
                 # Adjust max_width to account for the indentation that will be added
                 # Base indentation (2 spaces per level) + list prefix alignment
@@ -499,7 +485,7 @@ class DefaultsCommentGenerator:
                 formatted = self._format_ast_node(child, adjusted_width, indent_level)
                 if formatted:
                     content_parts.append(formatted)
-            elif child.t == "list":
+            elif child.type in ("bullet_list", "ordered_list"):
                 # Nested list - increase indentation level
                 formatted = self._format_ast_node(child, max_width, indent_level + 1)
                 if formatted:
@@ -509,8 +495,6 @@ class DefaultsCommentGenerator:
                 formatted = self._format_ast_node(child, max_width, indent_level)
                 if formatted:
                     content_parts.append(formatted)
-
-            child = child.nxt
 
         if not content_parts:
             return f"{item_prefix}"
@@ -552,7 +536,7 @@ class DefaultsCommentGenerator:
         Returns:
             Formatted text for this node
         """
-        if node.t == "paragraph":
+        if node.type == "paragraph":
             # For paragraphs, join inline content and convert softbreaks to spaces
             result = self._format_inline_content(node)
             cleaned_text = " ".join(result.split())
@@ -563,14 +547,15 @@ class DefaultsCommentGenerator:
                 return "\n".join(wrapped_lines)
             else:
                 return cleaned_text
-        elif node.t == "list":
+        elif node.type in ("bullet_list", "ordered_list"):
             # For lists, respect the AST list type and nesting
             return self._format_list_node(node, max_width, indent_level)
-        elif node.t == "code_block":
-            # For code blocks, preserve content exactly including language info
-            # and preserve existing indentation in the code content
+        elif node.type in ("fence", "code_block"):
+            # For code blocks (fenced or indented), preserve content exactly
+            # including language info and existing indentation; always
+            # re-emit as a fenced block
             language_info = node.info or ""
-            code_content = node.literal or ""
+            code_content = node.content or ""
 
             # Split code into lines and preserve existing indentation
             code_lines = code_content.rstrip().split("\n")
@@ -581,7 +566,7 @@ class DefaultsCommentGenerator:
             result_lines.append("```")
 
             return "\n".join(result_lines)
-        elif node.t == "heading":
+        elif node.type == "heading":
             # For headings, format as plain text (shouldn't occur in descriptions)
             result = self._format_inline_content(node)
             cleaned_text = " ".join(result.split())
@@ -593,7 +578,8 @@ class DefaultsCommentGenerator:
             else:
                 return cleaned_text
         else:
-            # For other block types, format as paragraph
+            # For other block types (blockquotes, HTML blocks, ...), flatten
+            # to the inline text of their children
             result = self._format_inline_content(node)
             cleaned_text = " ".join(result.split())
 
@@ -605,23 +591,26 @@ class DefaultsCommentGenerator:
                 return cleaned_text
 
     def _format_inline_content(self, node) -> str:
-        """Format inline CommonMark nodes while preserving Markdown links."""
+        """Format inline Markdown nodes while preserving Markdown links."""
         text_parts = []
-        child = node.first_child
 
-        while child:
-            if child.t == "text":
-                text_parts.append(child.literal or "")
-            elif child.t == "softbreak":
+        for child in node.children:
+            if child.type == "inline":
+                # Container for the actual inline parts (paragraphs and
+                # headings wrap their content in one of these)
+                text_parts.append(self._format_inline_content(child))
+            elif child.type == "text":
+                text_parts.append(child.content)
+            elif child.type == "softbreak":
                 text_parts.append(" ")
-            elif child.t == "code":
-                text_parts.append(f"`{child.literal or ''}`")
-            elif child.t == "linebreak":
+            elif child.type == "code_inline":
+                text_parts.append(f"`{child.content}`")
+            elif child.type == "hardbreak":
                 text_parts.append("\n")
-            elif child.t == "link":
+            elif child.type == "link":
                 label = self._format_inline_content(child)
-                destination = child.destination or ""
-                title = child.title or ""
+                destination = str(child.attrs.get("href", ""))
+                title = str(child.attrs.get("title") or "")
                 if label == destination and not title:
                     # Autolink (<url> or bare URL): keep it a plain URL
                     # instead of a noisy [url](url) construct
@@ -630,14 +619,14 @@ class DefaultsCommentGenerator:
                     escaped_title = title.replace('"', '\\"')
                     title_suffix = f' "{escaped_title}"' if title else ""
                     text_parts.append(f"[{label}]({destination}{title_suffix})")
-            elif child.t == "emph":
+            elif child.type == "em":
                 text_parts.append(f"*{self._format_inline_content(child)}*")
-            elif child.t == "strong":
+            elif child.type == "strong":
                 text_parts.append(f"**{self._format_inline_content(child)}**")
             else:
-                text_parts.append(child.literal or self._format_inline_content(child))
-
-            child = child.nxt
+                # Unknown inline content (inline HTML, images, ...): emit its
+                # raw content, or flatten its children if it has no content
+                text_parts.append(child.content or self._format_inline_content(child))
 
         return "".join(text_parts)
 

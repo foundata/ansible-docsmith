@@ -1383,15 +1383,11 @@ Text after list."""
         """Test AST paragraph node formatting."""
         generator = DefaultsCommentGenerator()
 
-        # Test with actual CommonMark AST node
-        from commonmark import Parser
+        # Test with an actual Markdown AST node
+        from ansible_docsmith.core.markdown_ast import parse_markdown
 
-        parser = Parser()
-        ast = parser.parse("First line\nwith softbreak")
-
-        # Get the paragraph node
-        paragraph_node = ast.first_child
-        assert paragraph_node.t == "paragraph"
+        paragraph_node = parse_markdown("First line\nwith softbreak").children[0]
+        assert paragraph_node.type == "paragraph"
 
         result = generator._format_ast_node(paragraph_node)
         assert result == "First line with softbreak"
@@ -1400,32 +1396,33 @@ Text after list."""
         """Test AST code block node formatting."""
         generator = DefaultsCommentGenerator()
 
-        from commonmark import Parser
+        from ansible_docsmith.core.markdown_ast import parse_markdown
 
-        parser = Parser()
-        ast = parser.parse("```yaml\nkey: value\n```")
-
-        # Get the code block node
-        code_block_node = ast.first_child
-        assert code_block_node.t == "code_block"
+        # Fenced code blocks parse as "fence" nodes
+        code_block_node = parse_markdown("```yaml\nkey: value\n```").children[0]
+        assert code_block_node.type == "fence"
 
         result = generator._format_ast_node(code_block_node)
         assert result.startswith("```")
         assert "key: value" in result
         assert result.endswith("```")
 
+        # Indented code blocks parse as "code_block" nodes and are
+        # re-emitted as fenced blocks as well
+        indented_node = parse_markdown("    key: value").children[0]
+        assert indented_node.type == "code_block"
+
+        result = generator._format_ast_node(indented_node)
+        assert result == "```\nkey: value\n```"
+
     def test_format_ast_node_list(self):
         """Test AST list node formatting."""
         generator = DefaultsCommentGenerator()
 
-        from commonmark import Parser
+        from ansible_docsmith.core.markdown_ast import parse_markdown
 
-        parser = Parser()
-        ast = parser.parse("- First item\n- Second item")
-
-        # Get the list node
-        list_node = ast.first_child
-        assert list_node.t == "list"
+        list_node = parse_markdown("- First item\n- Second item").children[0]
+        assert list_node.type == "bullet_list"
 
         result = generator._format_ast_node(list_node)
         assert "- First item" in result
@@ -2476,12 +2473,13 @@ Answer here.
         """Test fallback to regex extraction when AST parsing fails."""
         generator = MarkdownTocGenerator()
 
-        # Mock the Parser to raise an exception
+        # Mock the parser seam to raise an exception
         import unittest.mock
 
-        with unittest.mock.patch("commonmark.Parser") as mock_parser:
-            mock_parser.side_effect = Exception("Parser error")
-
+        with unittest.mock.patch(
+            "ansible_docsmith.core.toc.parse_markdown",
+            side_effect=Exception("Parser error"),
+        ):
             content = """# Test Heading
 ## Second Heading"""
 
@@ -2513,20 +2511,17 @@ but no headings at all."""
 
     def test_ast_extract_text_from_node(self):
         """Test the helper method for extracting text from AST nodes."""
-        from commonmark import Parser
+        from ansible_docsmith.core.markdown_ast import parse_markdown
 
         generator = MarkdownTocGenerator()
-        parser = Parser()
 
         # Test with simple heading
-        ast = parser.parse("# Simple Heading")
-        heading_node = ast.first_child
+        heading_node = parse_markdown("# Simple Heading").children[0]
         text = generator._extract_text_from_node(heading_node)
         assert text == "Simple Heading"
 
         # Test with heading containing inline code
-        ast = parser.parse("# Configure `nginx` Settings")
-        heading_node = ast.first_child
+        heading_node = parse_markdown("# Configure `nginx` Settings").children[0]
         text = generator._extract_text_from_node(heading_node)
         assert text == "Configure `nginx` Settings"
 

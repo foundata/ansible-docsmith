@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replaced the `commonmark` library (archived upstream, CommonMark spec 0.29) with `markdown-it-py` (maintained, spec 0.30) for all internal Markdown parsing. No output changes intended.
 - Removed the unused `pydantic` dependency.
 
 ### Fixed
