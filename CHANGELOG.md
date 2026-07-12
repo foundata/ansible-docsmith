@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Nothing worth mentioning yet.
+### Fixed
+
+- Comment blocks in `defaults/` files are no longer injected above indented (nested) keys that share a top-level variable's name, and hand-written comments above such nested keys are no longer deleted during comment cleanup.
+- `README.*` and `defaults/` files are now always written with LF line endings on all platforms.
+- The processing results now report "Created" for a newly generated README (previously always "Updated") and "Skipped (no variables found)" instead of "Comments added" for defaults files without variables.
 
 
 ## [2.0.2] - 2026-05-31

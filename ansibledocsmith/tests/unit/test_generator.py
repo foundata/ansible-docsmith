@@ -678,6 +678,46 @@ class TestDefaultsCommentGenerator:
 
         assert result is None
 
+    def test_add_comments_ignores_nested_keys(self, sample_role_path):
+        """Nested keys sharing a managed variable's name get no comment block."""
+        generator = DefaultsCommentGenerator()
+
+        defaults_path = sample_role_path / "defaults" / "main.yml"
+        defaults_path.write_text(
+            "---\nfoo_config:\n  foo_manage: true\nfoo_manage: false\n",
+            encoding="utf-8",
+        )
+
+        specs = {
+            "main": {
+                "options": {
+                    "foo_config": {"description": "Config mapping.", "type": "dict"},
+                    "foo_manage": {"description": "Manage foo.", "type": "bool"},
+                }
+            }
+        }
+
+        result = generator.add_comments(defaults_path, specs)
+        lines = result.splitlines()
+
+        # The nested key must remain directly below its parent mapping,
+        # without an injected comment block in between.
+        nested_idx = lines.index("  foo_manage: true")
+        assert lines[nested_idx - 1] == "foo_config:"
+        # The description comment appears exactly once (top-level variable only)
+        assert result.count("# Manage foo.") == 1
+
+    def test_remove_existing_comments_keeps_nested_key_comments(self):
+        """Hand-written comments above nested keys must survive cleaning."""
+        generator = DefaultsCommentGenerator()
+
+        content = "---\nfoo_config:\n  # keep this comment\n  foo_manage: true\n"
+        options = {"foo_manage": {"description": "Manage foo."}}
+
+        cleaned = generator._remove_existing_variable_comments(content, options)
+
+        assert "# keep this comment" in cleaned
+
     def test_format_block_comment_formats_compound_default_as_yaml(self):
         """Test issue #17 list-of-dicts defaults render as wrapped YAML comments."""
         generator = DefaultsCommentGenerator()

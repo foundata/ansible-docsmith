@@ -13,7 +13,11 @@ from ansible_docsmith import (
     MARKER_README_TOC_START,
 )
 from ansible_docsmith.core.exceptions import ValidationError
-from ansible_docsmith.core.processor import RoleProcessor, detect_format_from_role
+from ansible_docsmith.core.processor import (
+    ProcessingResults,
+    RoleProcessor,
+    detect_format_from_role,
+)
 
 
 class TestRoleProcessor:
@@ -93,6 +97,43 @@ class TestRoleProcessor:
         # Should have an error about validation failing (because of consistency)
         assert len(result.errors) >= 1
         assert any("validation failed" in error.lower() for error in result.errors)
+
+    def test_process_readme_reports_created_then_updated(
+        self, sample_role_with_specs_and_defaults
+    ):
+        """A new README is reported as 'Created', an existing one as 'Updated'."""
+        processor = RoleProcessor()
+        role_path = sample_role_with_specs_and_defaults
+        assert not (role_path / "README.md").exists()
+
+        result = processor.process_role(
+            role_path, generate_readme=True, update_defaults=False
+        )
+        assert result.errors == []
+        readme_ops = [op for op in result.operations if "README" in str(op[0])]
+        assert readme_ops[0][1] == "Created"
+
+        result = processor.process_role(
+            role_path, generate_readme=True, update_defaults=False
+        )
+        readme_ops = [op for op in result.operations if "README" in str(op[0])]
+        assert readme_ops[0][1] == "Updated"
+
+    def test_process_defaults_reports_skip_for_empty_file(self, sample_role_with_specs):
+        """A defaults file without variables is reported as skipped."""
+        processor = RoleProcessor()
+        defaults_path = sample_role_with_specs / "defaults" / "main.yml"
+        defaults_path.write_text("---\n# no variables here\n", encoding="utf-8")
+
+        results = ProcessingResults(
+            operations=[], errors=[], warnings=[], file_diffs=[]
+        )
+        processor._process_defaults(
+            sample_role_with_specs, {"main": {"options": {}}}, results
+        )
+
+        assert not any(op[1] == "Comments added" for op in results.operations)
+        assert any("Skipped" in op[1] for op in results.operations)
 
     def test_find_defaults_files_main_yml(self, sample_role_path):
         """Test finding defaults files for main entry point."""

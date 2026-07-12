@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .exceptions import ProcessingError, ValidationError
 from .generator import (
@@ -50,7 +51,7 @@ class RoleProcessor:
     def __init__(
         self,
         dry_run: bool = False,
-        template_readme: Path = None,
+        template_readme: Path | None = None,
         toc_bullet_style: str | None = None,
         format_type: str = "auto",
         role_path: Path | None = None,
@@ -203,8 +204,9 @@ class RoleProcessor:
             )
 
             # Read original content for diff comparison
+            existed_before = readme_path.exists()
             original_content = ""
-            if readme_path.exists():
+            if existed_before:
                 original_content = readme_path.read_text(encoding="utf-8")
 
             # Get the new content that would be written
@@ -218,7 +220,7 @@ class RoleProcessor:
                 # Update README
                 self.readme_updater.update_readme(readme_path, doc_content)
 
-            action = "Updated" if readme_path.exists() else "Created"
+            action = "Updated" if existed_before else "Created"
             results.operations.append((readme_path, action, "✅"))
 
         except Exception as e:
@@ -260,9 +262,15 @@ class RoleProcessor:
                         )
                     else:
                         # Write updated content directly (no backup)
-                        defaults_path.write_text(updated_content, encoding="utf-8")
+                        defaults_path.write_text(
+                            updated_content, encoding="utf-8", newline="\n"
+                        )
 
-                results.operations.append((defaults_path, "Comments added", "✅"))
+                    results.operations.append((defaults_path, "Comments added", "✅"))
+                else:
+                    results.operations.append(
+                        (defaults_path, "Skipped (no variables found)", "⚠️")
+                    )
 
             except Exception as e:
                 results.errors.append(f"Defaults update failed for {entry_point}: {e}")
@@ -283,7 +291,7 @@ class RoleProcessor:
     def _extract_variables_from_defaults(self, defaults_path: Path) -> set[str]:
         """Extract variable names from a defaults YAML file."""
         try:
-            with open(defaults_path) as file:
+            with open(defaults_path, encoding="utf-8") as file:
                 data = self.parser.yaml.load(file)
                 if data and isinstance(data, dict):
                     return set(data.keys())
@@ -291,10 +299,10 @@ class RoleProcessor:
             pass  # Ignore parsing errors, handled elsewhere
         return set()
 
-    def _extract_defaults_values_from_file(self, defaults_path: Path) -> dict[str, any]:
+    def _extract_defaults_values_from_file(self, defaults_path: Path) -> dict[str, Any]:
         """Extract variable names and their values from a defaults YAML file."""
         try:
-            with open(defaults_path) as file:
+            with open(defaults_path, encoding="utf-8") as file:
                 data = self.parser.yaml.load(file)
                 if data and isinstance(data, dict):
                     return data
@@ -364,7 +372,7 @@ class RoleProcessor:
         default keys.
         """
         try:
-            with open(spec_file) as file:
+            with open(spec_file, encoding="utf-8") as file:
                 data = self.parser.yaml.load(file)
                 return data.get("argument_specs", {})
         except Exception:

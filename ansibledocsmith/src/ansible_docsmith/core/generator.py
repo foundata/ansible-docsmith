@@ -928,9 +928,13 @@ class DefaultsCommentGenerator:
             raise FileOperationError(f"Failed to add comments: {e}")
 
     def _get_variable_from_line(self, line: str) -> str | None:
-        """Extract variable name from a YAML line."""
-        # Match lines like "var_name:" or "var_name: value"
-        match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*:", line.strip())
+        """Extract a top-level variable name from a YAML line.
+
+        Only matches keys starting at column 0. Indented keys belong to
+        nested structures and must not be treated as role variables, even
+        if they share a name with one.
+        """
+        match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*:", line)
         return match.group(1) if match else None
 
     def _format_block_comment(self, var_spec: dict[str, Any]) -> list[str]:
@@ -1531,7 +1535,7 @@ class ReadmeUpdater:
 
         try:
             updated_content = self._get_updated_content(readme_path, new_content)
-            readme_path.write_text(updated_content, encoding="utf-8")
+            readme_path.write_text(updated_content, encoding="utf-8", newline="\n")
             return True
 
         except Exception as e:
