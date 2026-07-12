@@ -183,9 +183,13 @@ ansible-docsmith generate /path/to/role --verbose
 
 <!-- ANSIBLE DOCSMITH TOC-FULL bar START -->
 <!-- ANSIBLE DOCSMITH TOC-FULL bar END -->
+
+<!-- ANSIBLE DOCSMITH MAIN bar START -->
+<!-- ANSIBLE DOCSMITH MAIN bar END -->
 ```
 
 - `TOC <role>` lists the role's variable documentation, `TOC-FULL <role>` lists *all* headings of the role's README. Both link into `roles/<role>/README.*` using relative paths.
+- `MAIN <role>` embeds the role's complete variable documentation directly in the collection README. All anchors get a `<role>-` prefix so several embedded roles cannot collide on variable names. If a `TOC <role>` section exists in the same (Markdown) document, it links to the embedded documentation instead of the role's README.
 - Role-named sections are opt-in per role: roles without markers are simply not referenced in the collection README (`validate` emits a notice listing them). Markers referencing an unknown role produce a warning.
 
 ```bash

@@ -78,14 +78,14 @@ class TestCollectionValidation:
         readme = collection / "README.md"
         readme.write_text(
             readme.read_text(encoding="utf-8")
-            + "\n<!-- ANSIBLE DOCSMITH MAIN first START -->\n",
+            + "\n<!-- ANSIBLE DOCSMITH MAIN second START -->\n",
             encoding="utf-8",
         )
 
         processor = CollectionProcessor(collection_path=collection)
         summary = processor.validate_collection()
 
-        assert any("ANSIBLE DOCSMITH MAIN first END" in e for e in summary["errors"])
+        assert any("ANSIBLE DOCSMITH MAIN second END" in e for e in summary["errors"])
 
     def test_unreferenced_roles_produce_notice(self, temp_dir):
         import shutil
@@ -95,8 +95,11 @@ class TestCollectionValidation:
         readme = collection / "README.md"
         # Remove all markers for role "second"
         content = readme.read_text(encoding="utf-8")
-        content = content.replace("TOC-FULL second START", "X").replace(
-            "TOC-FULL second END", "X"
+        content = (
+            content.replace("TOC-FULL second START", "X")
+            .replace("TOC-FULL second END", "X")
+            .replace("TOC second START", "X")
+            .replace("TOC second END", "X")
         )
         readme.write_text(content, encoding="utf-8")
 

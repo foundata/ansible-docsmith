@@ -126,6 +126,39 @@ class CollectionProcessor:
 
         return combined
 
+    def _has_named_section(
+        self, content: str, marker_type: str, role_name: str
+    ) -> bool:
+        """Check whether both named markers of a section are present."""
+        start = marker_comment(marker_type, role_name, format_type=self.format_type)
+        end = marker_comment(
+            marker_type, role_name, end=True, format_type=self.format_type
+        )
+        return start in content and end in content
+
+    def _generate_embed_content(self, role_name: str) -> str:
+        """Generate a role's variable documentation for embedding.
+
+        The content is rendered in the COLLECTION README's format with
+        all anchors prefixed by "<role>-", so several embedded roles
+        cannot collide on variable names.
+        """
+        from .doc_generators import create_documentation_generator
+
+        role_path = self.roles[role_name]
+        processor = self._role_processor(role_path, dry_run=True)
+        role_data = processor.validate_role(role_path)
+
+        doc_generator = create_documentation_generator(
+            format_type=self.format_type, template_file=self.template_readme
+        )
+        return doc_generator.generate_role_documentation(
+            role_data["specs"],
+            role_name,
+            role_path,
+            anchor_namespace=f"{role_name}-",
+        )
+
     def _find_collection_readme(self) -> Path | None:
         readme_ext = "rst" if self.format_type == "rst" else "md"
         readme_path = self.collection_path / f"README.{readme_ext}"
@@ -162,13 +195,31 @@ class CollectionProcessor:
                     self.collection_path
                 ).as_posix()
 
-                # TOC <role>: variables documentation only
-                role_updater = ReadmeUpdater(format_type=role_format)
-                main_content = role_updater._extract_main_content(role_content)
+                # MAIN <role>: embed the role's variable documentation with
+                # role-prefixed anchors (avoids collisions between roles)
+                embed_content = None
+                updated = None
+                if self._has_named_section(content, "MAIN", role_name):
+                    embed_content = self._generate_embed_content(role_name)
+                    updated = updater.replace_named_section(
+                        content, embed_content, "MAIN", role_name
+                    )
+                if updated is not None:
+                    content = updated
+
+                # TOC <role>: variables documentation only. When a MAIN
+                # embed exists in this (Markdown) document, link to it
+                # internally; otherwise link into the role's README.
+                if embed_content is not None and self.format_type != "rst":
+                    toc_headings = collection_toc._extract_headings(embed_content)
+                    toc_link_prefix = ""
+                else:
+                    role_updater = ReadmeUpdater(format_type=role_format)
+                    main_content = role_updater._extract_main_content(role_content)
+                    toc_headings = role_toc._extract_headings(main_content)
+                    toc_link_prefix = link_prefix
                 toc_lines = collection_toc._generate_toc_lines(
-                    role_toc._extract_headings(main_content),
-                    bullet_style,
-                    link_prefix,
+                    toc_headings, bullet_style, toc_link_prefix
                 )
                 updated = updater.replace_named_section(
                     content, toc_lines, "TOC", role_name
@@ -176,7 +227,8 @@ class CollectionProcessor:
                 if updated is not None:
                     content = updated
 
-                # TOC-FULL <role>: all headings of the role README
+                # TOC-FULL <role>: all headings of the role README (always
+                # links into the role README, which is what it indexes)
                 tocfull_lines = collection_toc._generate_toc_lines(
                     role_toc._extract_headings(role_content),
                     bullet_style,

@@ -32,16 +32,17 @@
 {% endif %}
 {%- endmacro %}
 
+{% set anchor_ns = anchor_ns | default("") %}
 {% set multiple_entry_points = specs | length > 1 %}
 {% for entry_point, entry_spec in specs.items() %}
 {% set entry_options = entry_spec.options or {} %}
 {% set short_anchors = (not multiple_entry_points) or entry_point == "main" %}
-{% set var_anchor_prefix = "variable-" if short_anchors else entry_point ~ "-variable-" %}
-{% set section_anchor = "variables" if short_anchors else entry_point ~ "-variables" %}
+{% set var_anchor_prefix = anchor_ns ~ ("variable-" if short_anchors else entry_point ~ "-variable-") %}
+{% set section_anchor = anchor_ns ~ ("variables" if short_anchors else entry_point ~ "-variables") %}
 {% if multiple_entry_points %}
 ## Role variables: `{{ entry_point }}` entry point<a id="{{ section_anchor }}"></a>
 {% else %}
-## Role variables<a id="variables"></a>
+## Role variables<a id="{{ section_anchor }}"></a>
 {% endif %}
 
 {% if entry_spec.short_description %}

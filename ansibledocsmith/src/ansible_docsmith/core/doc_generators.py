@@ -34,24 +34,32 @@ def entry_point_anchor_prefix(specs: dict[str, Any], entry_point: str) -> str:
     return f"{entry_point}-variable-"
 
 
-def build_option_anchors(specs: dict[str, Any]) -> dict[str, "str | None"]:
+def build_option_anchors(
+    specs: dict[str, Any], anchor_namespace: str = ""
+) -> dict[str, "str | None"]:
     """Map top-level option names of all entry points to README anchors.
 
     Used to resolve O(name) markup references. Names defined by several
     entry points resolve to the 'main' entry point; without a 'main'
     definition they are ambiguous and map to None (not linked).
+
+    Args:
+        specs: Normalized argument specs
+        anchor_namespace: Prefix for all anchors, used when the content
+            is embedded into another document (like "<role>-" for MAIN
+            embeds in collection READMEs)
     """
     anchors: dict[str, str | None] = {}
     for entry_point, entry_spec in specs.items():
-        prefix = entry_point_anchor_prefix(specs, entry_point)
+        prefix = anchor_namespace + entry_point_anchor_prefix(specs, entry_point)
         for option_name in entry_spec.get("options") or {}:
             anchor = f"{prefix}{option_name}"
             if option_name not in anchors:
                 anchors[option_name] = anchor
-            elif prefix == "variable-":
+            elif prefix == f"{anchor_namespace}variable-":
                 # 'main' wins over other entry points
                 anchors[option_name] = anchor
-            elif anchors[option_name] != f"variable-{option_name}":
+            elif anchors[option_name] != f"{anchor_namespace}variable-{option_name}":
                 # Defined by several non-'main' entry points: ambiguous
                 anchors[option_name] = None
     return anchors
@@ -106,9 +114,23 @@ class BaseDocumentationGenerator(ABC):
         pass
 
     def generate_role_documentation(
-        self, specs: dict[str, Any], role_name: str, role_path: Path
+        self,
+        specs: dict[str, Any],
+        role_name: str,
+        role_path: Path,
+        anchor_namespace: str = "",
     ) -> str:
-        """Generate complete role documentation."""
+        """Generate complete role documentation.
+
+        Args:
+            specs: Normalized argument specs
+            role_name: Name of the role
+            role_path: Path to the role directory
+            anchor_namespace: Prefix for all generated anchors and
+                internal links; used when the content is embedded into
+                another document (like "<role>-" for MAIN embeds in
+                collection READMEs)
+        """
 
         try:
             # The templates render all entry points; the first one is kept
@@ -118,12 +140,13 @@ class BaseDocumentationGenerator(ABC):
             primary_spec = specs[primary_entry_point]
 
             # Known top-level options for O(name) anchor linking in filters
-            self._role_options = build_option_anchors(specs)
+            self._role_options = build_option_anchors(specs, anchor_namespace)
 
             context = {
                 "role_name": role_name,
                 "role_path": role_path,
                 "specs": specs,
+                "anchor_ns": anchor_namespace,
                 "primary_entry_point": primary_entry_point,
                 "primary_spec": primary_spec,
                 "entry_points": list(specs.keys()),

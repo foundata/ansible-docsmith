@@ -184,12 +184,20 @@ class TestEndToEnd:
         ).read_text(encoding="utf-8")
         assert "# - Type: str" in first_defaults
 
-        # Collection README: named TOC links into the role README
         readme = (collection / "README.md").read_text(encoding="utf-8")
-        assert "[`first_state`](roles/first/README.md#variable-first_state)" in readme
+
+        # MAIN embed: role documentation with role-prefixed anchors
+        assert '<a id="first-variables"></a>' in readme
+        assert '<a id="first-variable-first_state"></a>' in readme
+        assert "| `first_state` |" in readme
+
+        # TOC of an embedded role links internally to the embed
+        assert "[`first_state`](#first-variable-first_state)" in readme
+
+        # TOC of a non-embedded role links into the role README
+        assert "[`second_port`](roles/second/README.md#variable-second_port)" in readme
         # Named TOC-FULL lists hand-written headings of the role README
         assert "[Usage](roles/second/README.md#usage)" in readme
-        assert "[`second_port`](roles/second/README.md#variable-second_port)" in readme
 
         # Idempotence and check mode
         result = runner.invoke(app, ["generate", str(collection), "--check"])
