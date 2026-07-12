@@ -36,7 +36,7 @@ class TestTemplateManager:
         content = tm.get_template("default", "readme")
         assert isinstance(content, str)
         assert "## Role variables" in content
-        assert "{% for var_name, var_spec in options.items() %}" in content
+        assert "{% for entry_point, entry_spec in specs.items() %}" in content
 
     def test_render_template(self):
         """Test rendering template with context."""
@@ -47,24 +47,34 @@ class TestTemplateManager:
         tm.add_filter(
             "format_default", lambda x, table=False: str(x) if x is not None else "N/A"
         )
-        tm.add_filter("format_table_description", lambda x, y=None: x)
+        tm.add_filter(
+            "format_table_description", lambda x, y=None, anchor_prefix="variable-": x
+        )
         tm.add_filter("format_description", lambda x: x)
         tm.add_filter("code_escape", lambda x: f"`{x}`")
 
+        test_options = {
+            "test_var": {
+                "type": "str",
+                "required": True,
+                "default": None,
+                "description": "A test variable",
+                "choices": [],
+                "options": {},
+            }
+        }
         context = {
             "role_name": "test-role",
-            "primary_spec": {"author": ["Test Author"]},
-            "main_spec": {"author": ["Test Author"]},  # Backward compatibility
-            "options": {
-                "test_var": {
-                    "type": "str",
-                    "required": True,
-                    "default": None,
-                    "description": "A test variable",
-                    "choices": [],
-                    "options": {},
+            "specs": {
+                "main": {
+                    "short_description": "",
+                    "description": "",
+                    "author": ["Test Author"],
+                    "options": test_options,
                 }
             },
+            "primary_spec": {"author": ["Test Author"]},
+            "options": test_options,
             "has_options": True,
         }
 
@@ -84,14 +94,23 @@ class TestTemplateManager:
         tm.add_filter(
             "format_default", lambda x, table=False: str(x) if x is not None else "N/A"
         )
-        tm.add_filter("format_table_description", lambda x, y=None: x)
+        tm.add_filter(
+            "format_table_description", lambda x, y=None, anchor_prefix="variable-": x
+        )
         tm.add_filter("format_description", lambda x: x)
         tm.add_filter("code_escape", lambda x: f"`{x}`")
 
         context = {
             "role_name": "empty-role",
+            "specs": {
+                "main": {
+                    "short_description": "",
+                    "description": "",
+                    "author": [],
+                    "options": {},
+                }
+            },
             "primary_spec": {"author": []},
-            "main_spec": {"author": []},  # Backward compatibility
             "options": {},
             "has_options": False,
         }

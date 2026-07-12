@@ -62,9 +62,13 @@ class ArgumentSpecParser:
         return normalized
 
     def _normalize_description(self, description: Any) -> str:
-        """Normalize description to string format."""
+        """Normalize description to string format.
+
+        List items are joined as paragraphs (blank line separated), the
+        same convention used for option descriptions.
+        """
         if isinstance(description, list):
-            return "\n".join(str(item) for item in description)
+            return "\n\n".join(str(item) for item in description)
         return str(description) if description else ""
 
     def _normalize_author(self, author: Any) -> list[str]:

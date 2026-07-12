@@ -19,6 +19,44 @@ from .text import (
 )
 
 
+def entry_point_anchor_prefix(specs: dict[str, Any], entry_point: str) -> str:
+    """Return the variable anchor prefix for an entry point.
+
+    The 'main' entry point - and the only entry point of a single-entry-
+    point role, whatever its name - keeps the short historical scheme
+    "variable-<name>" so existing links stay valid. Variables of other
+    entry points are anchored as "<entry point>-variable-<name>", which
+    cannot collide with the short scheme because entry point names may
+    not contain hyphens.
+    """
+    if len(specs) == 1 or entry_point == "main":
+        return "variable-"
+    return f"{entry_point}-variable-"
+
+
+def build_option_anchors(specs: dict[str, Any]) -> dict[str, "str | None"]:
+    """Map top-level option names of all entry points to README anchors.
+
+    Used to resolve O(name) markup references. Names defined by several
+    entry points resolve to the 'main' entry point; without a 'main'
+    definition they are ambiguous and map to None (not linked).
+    """
+    anchors: dict[str, str | None] = {}
+    for entry_point, entry_spec in specs.items():
+        prefix = entry_point_anchor_prefix(specs, entry_point)
+        for option_name in entry_spec.get("options") or {}:
+            anchor = f"{prefix}{option_name}"
+            if option_name not in anchors:
+                anchors[option_name] = anchor
+            elif prefix == "variable-":
+                # 'main' wins over other entry points
+                anchors[option_name] = anchor
+            elif anchors[option_name] != f"variable-{option_name}":
+                # Defined by several non-'main' entry points: ambiguous
+                anchors[option_name] = None
+    return anchors
+
+
 class BaseDocumentationGenerator(ABC):
     """Abstract base class for documentation generators."""
 
@@ -38,10 +76,11 @@ class BaseDocumentationGenerator(ABC):
         self.template_manager = TemplateManager(template_dir, template_file)
         self.template_name = template_name
 
-        # Top-level option names of the role being rendered; used to turn
-        # O(name) markup into intra-README anchor links. Set per render in
+        # Top-level option names of the role being rendered, mapped to
+        # their README anchors; used to turn O(name) markup into
+        # intra-README anchor links. Set per render in
         # generate_role_documentation().
-        self._role_options: set[str] = set()
+        self._role_options: dict[str, str | None] = {}
 
         # Add format-specific filters to the Jinja environment
         self._setup_filters()
@@ -72,14 +111,14 @@ class BaseDocumentationGenerator(ABC):
         """Generate complete role documentation."""
 
         try:
-            # For multiple entry points, focus on the first one for primary
-            # documentation
-            # but make all entry points available to templates
+            # The templates render all entry points; the first one is kept
+            # available as "primary" for backwards-compatible custom
+            # templates
             primary_entry_point = next(iter(specs.keys()))
             primary_spec = specs[primary_entry_point]
 
             # Known top-level options for O(name) anchor linking in filters
-            self._role_options = set(primary_spec.get("options", {}).keys())
+            self._role_options = build_option_anchors(specs)
 
             context = {
                 "role_name": role_name,
@@ -152,6 +191,7 @@ class BaseDocumentationGenerator(ABC):
         description: Any,
         variable_name: str | None = None,
         max_length: int = TABLE_DESCRIPTION_MAX_LENGTH,
+        anchor_prefix: str = "variable-",
     ) -> str:
         """Format description for table display, handling multiline strings properly.
 
@@ -159,6 +199,8 @@ class BaseDocumentationGenerator(ABC):
             description: The description content to format
             variable_name: Optional variable name for creating anchor links
             max_length: Maximum length before truncation. Use 0 to disable.
+            anchor_prefix: Prefix for the truncation anchor link target
+                (entry points other than 'main' use a scoped prefix).
         """
         pass
 
@@ -202,6 +244,7 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         description: Any,
         variable_name: str | None = None,
         max_length: int = TABLE_DESCRIPTION_MAX_LENGTH,
+        anchor_prefix: str = "variable-",
     ) -> str:
         """Format description for Markdown table display with HTML stripping.
 
@@ -209,6 +252,7 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
             description: The description content to format
             variable_name: Optional variable name for creating anchor links
             max_length: Maximum length before truncation. Use 0 to disable.
+            anchor_prefix: Prefix for the truncation anchor link target
         """
         text = normalize_description(description)
         if not text:
@@ -247,7 +291,7 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
 
             # Add ellipses with link
             if variable_name:
-                link_target = f"variable-{variable_name}"
+                link_target = f"{anchor_prefix}{variable_name}"
                 result = f"{truncated} […](#{link_target})"
             else:
                 result = f"{truncated} […]"
@@ -298,6 +342,7 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         description: Any,
         variable_name: str | None = None,
         max_length: int = TABLE_DESCRIPTION_MAX_LENGTH,
+        anchor_prefix: str = "variable-",
     ) -> str:
         """Format description for reStructuredText table display with HTML stripping.
 
@@ -345,7 +390,7 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
 
             # Add ellipses with link (RST format)
             if variable_name:
-                link_target = f"variable-{variable_name}"
+                link_target = f"{anchor_prefix}{variable_name}"
                 result = f"{truncated} `[…] <#{link_target}>`__"
             else:
                 result = f"{truncated} […]"

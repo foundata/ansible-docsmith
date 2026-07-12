@@ -125,7 +125,8 @@ argument_specs:
         description = ["Line 1", "Line 2", "Line 3"]
         result = parser._normalize_description(description)
 
-        assert result == "Line 1\nLine 2\nLine 3"
+        # List items become paragraphs, like in option descriptions
+        assert result == "Line 1\n\nLine 2\n\nLine 3"
 
     def test_normalize_description_string(self):
         """Test description normalization from string."""

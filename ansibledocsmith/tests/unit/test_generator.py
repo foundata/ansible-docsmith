@@ -11,6 +11,7 @@ from ansible_docsmith.core.defaults_comments import DefaultsCommentGenerator
 from ansible_docsmith.core.doc_generators import (
     MarkdownDocumentationGenerator,
     RSTDocumentationGenerator,
+    build_option_anchors,
     create_documentation_generator,
 )
 from ansible_docsmith.core.readme_updater import ReadmeUpdater
@@ -20,6 +21,50 @@ from ansible_docsmith.core.toc import (
     RSTTocGenerator,
     create_toc_generator,
 )
+
+
+class TestOptionAnchors:
+    """Anchor scheme for O(name) links across entry points."""
+
+    def test_single_entry_point_uses_short_scheme(self):
+        anchors = build_option_anchors(
+            {"install": {"options": {"inst_prefix": {}, "inst_state": {}}}}
+        )
+        # A sole entry point keeps short anchors, whatever its name
+        assert anchors == {
+            "inst_prefix": "variable-inst_prefix",
+            "inst_state": "variable-inst_state",
+        }
+
+    def test_main_keeps_short_scheme_others_are_prefixed(self):
+        anchors = build_option_anchors(
+            {
+                "main": {"options": {"foo_state": {}}},
+                "install": {"options": {"inst_prefix": {}}},
+            }
+        )
+        assert anchors == {
+            "foo_state": "variable-foo_state",
+            "inst_prefix": "install-variable-inst_prefix",
+        }
+
+    def test_name_in_main_and_other_entry_point_resolves_to_main(self):
+        anchors = build_option_anchors(
+            {
+                "install": {"options": {"shared_var": {}}},
+                "main": {"options": {"shared_var": {}}},
+            }
+        )
+        assert anchors["shared_var"] == "variable-shared_var"
+
+    def test_name_in_several_non_main_entry_points_is_ambiguous(self):
+        anchors = build_option_anchors(
+            {
+                "install": {"options": {"shared_var": {}}},
+                "configure": {"options": {"shared_var": {}}},
+            }
+        )
+        assert anchors["shared_var"] is None
 
 
 class TestDocumentationGenerator:

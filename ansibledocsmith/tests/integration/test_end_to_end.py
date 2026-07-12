@@ -127,6 +127,90 @@ class TestEndToEnd:
         assert "✅ Validation passed!" in result.stdout
         assert "test-role" in result.stdout
 
+    def test_generate_documents_all_entry_points(self, temp_dir):
+        """Multi-entry-point roles get one README section per entry point."""
+        runner = CliRunner()
+
+        fixture = (
+            Path(__file__).parent.parent
+            / "fixtures"
+            / "example-role-multiple-entry-points"
+        )
+        role_path = temp_dir / "example-role-multiple-entry-points"
+        shutil.copytree(fixture, role_path)
+
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+
+        readme = (role_path / "README.md").read_text(encoding="utf-8")
+
+        # One section per entry point, in spec file order
+        install_pos = readme.find("## Role variables: `install` entry point")
+        configure_pos = readme.find("## Role variables: `configure` entry point")
+        assert install_pos != -1
+        assert configure_pos != -1
+        assert install_pos < configure_pos
+
+        # No 'main' entry point: all anchors are entry-point scoped
+        assert '<a id="install-variables"></a>' in readme
+        assert '<a id="install-variable-install_path"></a>' in readme
+        assert '<a id="configure-variable-config_file"></a>' in readme
+
+        # Idempotence
+        before = readme
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+        assert (role_path / "README.md").read_text(encoding="utf-8") == before
+
+    def test_generate_mixed_main_and_other_entry_points(self, temp_dir):
+        """'main' keeps short anchors; other entry points get prefixed ones."""
+        runner = CliRunner()
+
+        fixture = (
+            Path(__file__).parent.parent
+            / "fixtures"
+            / "example-role-mixed-entry-points"
+        )
+        role_path = temp_dir / "example-role-mixed-entry-points"
+        shutil.copytree(fixture, role_path)
+
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+
+        readme = (role_path / "README.md").read_text(encoding="utf-8")
+
+        # 'main' keeps the short, historical anchor scheme
+        assert '## Role variables: `main` entry point<a id="variables"></a>' in readme
+        assert '<a id="variable-foo_conf"></a>' in readme
+        # The other entry point gets prefixed anchors
+        assert (
+            '## Role variables: `install` entry point<a id="install-variables"></a>'
+        ) in readme
+        assert '<a id="install-variable-install_prefix"></a>' in readme
+
+        # O() cross-references resolve across entry points
+        assert "[`install_prefix`](#install-variable-install_prefix)" in readme
+        assert "[`foo_conf`](#variable-foo_conf)" in readme
+        # foo_state exists in both entry points; both sections keep their anchor
+        assert '<a id="variable-foo_state"></a>' in readme
+        assert '<a id="install-variable-foo_state"></a>' in readme
+
+    def test_generate_single_entry_point_keeps_layout(self, temp_dir):
+        """Single-entry-point roles keep the historical heading and anchors."""
+        runner = CliRunner()
+
+        fixture = Path(__file__).parent.parent / "fixtures" / "example-role-simple"
+        role_path = temp_dir / "example-role-simple"
+        shutil.copytree(fixture, role_path)
+
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+
+        readme = (role_path / "README.md").read_text(encoding="utf-8")
+        assert '## Role variables<a id="variables"></a>' in readme
+        assert '<a id="variable-acmesh_domain"></a>' in readme
+        assert "entry point<a id=" not in readme
+
     def test_generate_check_mode(self, temp_dir):
         """--check reports outdated documentation without writing files."""
         runner = CliRunner()

@@ -32,19 +32,37 @@
 {% endif %}
 {%- endmacro %}
 
+{% set multiple_entry_points = specs | length > 1 %}
+{% for entry_point, entry_spec in specs.items() %}
+{% set entry_options = entry_spec.options or {} %}
+{% set short_anchors = (not multiple_entry_points) or entry_point == "main" %}
+{% set var_anchor_prefix = "variable-" if short_anchors else entry_point ~ "-variable-" %}
+{% set section_anchor = "variables" if short_anchors else entry_point ~ "-variables" %}
+{% if multiple_entry_points %}
+## Role variables: `{{ entry_point }}` entry point<a id="{{ section_anchor }}"></a>
+{% else %}
 ## Role variables<a id="variables"></a>
+{% endif %}
 
-{% if has_options %}
-The following variables can be configured for this role:
+{% if entry_spec.short_description %}
+{{ entry_spec.short_description | format_description }}
+
+{% endif %}
+{% if entry_spec.description %}
+{{ entry_spec.description | format_description }}
+
+{% endif %}
+{% if entry_options %}
+The following variables can be configured for this {{ "entry point" if multiple_entry_points else "role" }}:
 
 | Variable | Type | Required | Default | Description (abstract) |
 |----------|------|----------|---------|------------------------|
-{% for var_name, var_spec in options.items() %}
-| `{{ var_name | ansible_escape }}` | `{{ var_spec.type }}` | {{ 'Yes' if var_spec.required else 'No' }} | {{ var_spec.default | format_default(true) }} | {{ var_spec.description | format_table_description(var_name) }} |
+{% for var_name, var_spec in entry_options.items() %}
+| `{{ var_name | ansible_escape }}` | `{{ var_spec.type }}` | {{ 'Yes' if var_spec.required else 'No' }} | {{ var_spec.default | format_default(true) }} | {{ var_spec.description | format_table_description(var_name, anchor_prefix=var_anchor_prefix) }} |
 {% endfor %}
 
-{% for var_name, var_spec in options.items() %}
-### `{{ var_name }}`<a id="variable-{{ var_name }}"></a>
+{% for var_name, var_spec in entry_options.items() %}
+### `{{ var_name }}`<a id="{{ var_anchor_prefix }}{{ var_name }}"></a>
 
 [*⇑ Back to ToC ⇑*](#toc)
 
@@ -62,9 +80,10 @@ The following variables can be configured for this role:
 - **List Elements**: `{{ var_spec.elements }}`
 {% endif %}
 
-{{ render_nested_sections(var_spec.options, "variable-" + var_name, 1, var_name) }}
+{{ render_nested_sections(var_spec.options, var_anchor_prefix ~ var_name, 1, var_name) }}
 
 {% endfor %}
 {% else %}
-No variables are defined for this role.
+No variables are defined for this {{ "entry point" if multiple_entry_points else "role" }}.
 {% endif %}
+{% endfor %}

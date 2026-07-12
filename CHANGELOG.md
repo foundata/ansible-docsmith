@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `validate` command accepts `--no-readme` and `--no-argument-specs` to validate only parts of a role (#19, #20, thanks to @Adam-SCP for the issue and pull request).
 - The `validate` command accepts `--strict` to treat warnings as errors (exit code 1), for use in CI/CD pipelines and pre-commit hooks.
 - The `generate` command accepts `--check` to verify the documentation is up to date without writing files (exit code 1 plus a diff when a run would change anything), for use in CI/CD pipelines and pre-commit hooks.
+- The README now documents *all* entry points instead of only the first one. Roles with multiple entry points get one "Role variables: `<entry point>` entry point" section each (in spec file order). Anchor links stay stable: variables of the `main` entry point (and of the sole entry point of single-entry-point roles) keep the historical `variable-<name>` anchors; other entry points use `<entry point>-variable-<name>`. `O(variable)` references resolve across all entry points.
+- The README sections now include the entry point's `short_description` and `description` from `argument_specs.yml`. Note: this means most roles get a small README diff on the next `generate` run; remove these keys from the spec if you do not want the text in your README.
 - The `validate` command now lints [Ansible markup](https://docs.ansible.com/projects/ansible/latest/dev_guide/ansible_markup.html) in all descriptions and warns about invalid constructs (like `M()` without a FQCN or an unclosed `C(`), which the generators leave verbatim.
 
 ### Changed

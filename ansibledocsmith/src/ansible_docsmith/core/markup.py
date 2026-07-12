@@ -14,10 +14,16 @@ Text without any markup is returned unchanged (byte-identical).
 """
 
 import re
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Mapping
 
 from antsibull_docs_parser import dom
 from antsibull_docs_parser.parser import Context, Whitespace, parse
+
+# Role options for O(...) anchor linking: either a plain collection of
+# top-level option names (anchor scheme "variable-<name>") or a mapping
+# of option names to explicit anchors (None marks ambiguous names that
+# must not be linked).
+RoleOptions = Collection[str] | Mapping[str, "str | None"]
 
 # Fast gate: only text matching this can contain Ansible markup. Chunks
 # without a match are passed through without invoking the parser at all,
@@ -75,7 +81,14 @@ def _option_display(part: dom.OptionNamePart) -> str:
     return f"{part.name}={part.value}" if part.value is not None else part.name
 
 
-def _render_md_part(part: dom.AnyPart, role_options: Collection[str]) -> str:
+def _option_anchor(role_options: RoleOptions, name: str) -> str | None:
+    """Resolve the README anchor for an option name, if any."""
+    if isinstance(role_options, Mapping):
+        return role_options.get(name)
+    return f"variable-{name}" if name in role_options else None
+
+
+def _render_md_part(part: dom.AnyPart, role_options: RoleOptions) -> str:
     """Render one DOM part as Markdown, passing plain text through verbatim."""
     if part.type == dom.PartType.TEXT:
         return part.text
@@ -91,13 +104,11 @@ def _render_md_part(part: dom.AnyPart, role_options: Collection[str]) -> str:
     if part.type == dom.PartType.OPTION_NAME:
         display = md_code_span(_option_display(part))
         # Link only plain top-level options of this role; DocSmith's README
-        # sections provide a matching "variable-<name>" anchor for those.
-        if (
-            part.plugin is None
-            and part.link == [part.name]
-            and (part.name in role_options)
-        ):
-            return f"[{display}](#variable-{part.name})"
+        # sections provide a matching anchor for those.
+        if part.plugin is None and part.link == [part.name]:
+            anchor = _option_anchor(role_options, part.name)
+            if anchor:
+                return f"[{display}](#{anchor})"
         return display
     if part.type == dom.PartType.OPTION_VALUE:
         return md_code_span(part.value)
@@ -123,7 +134,7 @@ def _render_md_part(part: dom.AnyPart, role_options: Collection[str]) -> str:
     return part.source or ""
 
 
-def _render_rst_part(part: dom.AnyPart, role_options: Collection[str]) -> str:
+def _render_rst_part(part: dom.AnyPart, role_options: RoleOptions) -> str:
     """Render one DOM part as reStructuredText (plain, no Sphinx roles)."""
     _ = role_options  # anchors are not linked in RST output
     if part.type == dom.PartType.TEXT:
@@ -163,7 +174,7 @@ def _render_rst_part(part: dom.AnyPart, role_options: Collection[str]) -> str:
     return part.source or ""
 
 
-_RENDERERS: dict[str, Callable[[dom.AnyPart, Collection[str]], str]] = {
+_RENDERERS: dict[str, Callable[[dom.AnyPart, RoleOptions], str]] = {
     "markdown": _render_md_part,
     "rst": _render_rst_part,
 }
@@ -184,7 +195,7 @@ def _looks_like_code_block(chunk: str) -> bool:
     return bool(lines) and all(line.startswith("    ") for line in lines)
 
 
-def _convert_chunk(chunk: str, target: str, role_options: Collection[str]) -> str:
+def _convert_chunk(chunk: str, target: str, role_options: RoleOptions) -> str:
     """Convert one blank-line-free chunk of text."""
     paragraphs = parse(
         chunk,
@@ -232,7 +243,7 @@ def lint_ansible_markup(text: str) -> list[str]:
 def convert_ansible_markup(
     text: str,
     target: str,
-    role_options: Collection[str] | None = None,
+    role_options: RoleOptions | None = None,
 ) -> str:
     """Convert Ansible markup in text to the target documentation format.
 
@@ -241,7 +252,9 @@ def convert_ansible_markup(
         target: Output format, "markdown" or "rst".
         role_options: Top-level option names of the current role. When
             given (Markdown only), ``O(name)`` references to these options
-            become links to DocSmith's ``#variable-<name>`` README anchors.
+            become links to DocSmith's README anchors: either a collection
+            of names (anchor scheme ``variable-<name>``) or a mapping of
+            names to explicit anchors (``None`` values are not linked).
 
     Returns:
         Text with Ansible markup rewritten. Text without markup is
