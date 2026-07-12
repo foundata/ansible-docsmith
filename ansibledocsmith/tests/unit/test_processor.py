@@ -185,7 +185,9 @@ class TestRoleProcessor:
 
         # Test the consistency validation
         errors, warnings, notices = processor._validate_defaults_consistency(
-            fixture_path, role_data["specs"], role_data["spec_file"]
+            fixture_path,
+            role_data["specs"],
+            processor._parse_original_specs(role_data["spec_file"]),
         )
 
         # Should have no errors for this fixture
@@ -214,7 +216,9 @@ class TestRoleProcessor:
 
         # Test the consistency validation
         errors, warnings, notices = processor._validate_defaults_consistency(
-            fixture_path, role_data["specs"], role_data["spec_file"]
+            fixture_path,
+            role_data["specs"],
+            processor._parse_original_specs(role_data["spec_file"]),
         )
 
         # Should have no errors now (fixed the mismatch fixture)
@@ -268,7 +272,9 @@ test_number: 99
         # Run validation
         role_data = processor.parser.validate_structure(temp_dir)
         errors, warnings, notices = processor._validate_defaults_consistency(
-            temp_dir, role_data["specs"], role_data["spec_file"]
+            temp_dir,
+            role_data["specs"],
+            processor._parse_original_specs(role_data["spec_file"]),
         )
 
         # Should have no errors but three mismatch warnings
@@ -332,7 +338,9 @@ argument_specs:
 """)
 
         # Test the mutually exclusive validation directly
-        errors = processor._validate_mutually_exclusive_keys(spec_file)
+        errors = processor._validate_mutually_exclusive_keys(
+            processor._parse_original_specs(spec_file)
+        )
 
         # Should have exactly 2 errors (one for each conflicting variable)
         assert len(errors) == 2
@@ -378,7 +386,9 @@ argument_specs:
         invalid_option_key: "bad"  # This should also trigger a warning
 """)
 
-        warnings = processor._validate_unknown_keys(spec_file)
+        warnings = processor._validate_unknown_keys(
+            processor._parse_original_specs(spec_file)
+        )
 
         assert len(warnings) == 2
         assert any("unknown_key" in w for w in warnings)
@@ -420,7 +430,9 @@ argument_specs:
             mutually_exclusive: []
 """)
 
-        warnings = processor._validate_unknown_keys(spec_file)
+        warnings = processor._validate_unknown_keys(
+            processor._parse_original_specs(spec_file)
+        )
 
         assert warnings == []
 
@@ -444,7 +456,9 @@ argument_specs:
             tpyo_key: "oops"
 """)
 
-        warnings = processor._validate_unknown_keys(spec_file)
+        warnings = processor._validate_unknown_keys(
+            processor._parse_original_specs(spec_file)
+        )
 
         assert len(warnings) == 1
         assert "test_dict.inner" in warnings[0]
@@ -561,7 +575,9 @@ var3:
         # This fixture has validation errors, so we expect an exception
         # But we can check that the unknown key warning would be included
         warnings = processor._validate_unknown_keys(
-            fixture_path / "meta" / "argument_specs.yml",
+            processor._parse_original_specs(
+                fixture_path / "meta" / "argument_specs.yml"
+            )
         )
 
         assert len(warnings) == 1
@@ -1096,7 +1112,9 @@ optional_with_default: "default_value"
 
         # Test the consistency validation
         errors, warnings, notices = processor._validate_defaults_consistency(
-            role_path, role_data["specs"], role_data["spec_file"]
+            role_path,
+            role_data["specs"],
+            processor._parse_original_specs(role_data["spec_file"]),
         )
 
         # Should have no errors
@@ -1156,7 +1174,9 @@ optional_with_default: "default_value"
 
         # Test the consistency validation
         errors, warnings, notices = processor._validate_defaults_consistency(
-            role_path, role_data["specs"], role_data["spec_file"]
+            role_path,
+            role_data["specs"],
+            processor._parse_original_specs(role_data["spec_file"]),
         )
 
         # Should have no errors
@@ -1219,7 +1239,9 @@ optional_with_default: "default_value"
 
         # Test the consistency validation
         errors, warnings, notices = processor._validate_defaults_consistency(
-            role_path, role_data["specs"], role_data["spec_file"]
+            role_path,
+            role_data["specs"],
+            processor._parse_original_specs(role_data["spec_file"]),
         )
 
         # Should have no errors
@@ -1280,7 +1302,9 @@ dummy_var: "dummy_value"
 
         # Test the consistency validation
         errors, warnings, notices = processor._validate_defaults_consistency(
-            role_path, role_data["specs"], role_data["spec_file"]
+            role_path,
+            role_data["specs"],
+            processor._parse_original_specs(role_data["spec_file"]),
         )
 
         # Should have no errors

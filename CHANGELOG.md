@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `M(ns.col.module)` and `P(ns.col.plugin#type)` become links to the official documentation on docs.ansible.com.
   - Invalid markup (e.g. `M()` without a FQCN) is left verbatim; existing Markdown in descriptions is never touched. Descriptions without Ansible markup remain byte-identical.
 
+### Changed
+
+- Removed the unused `pydantic` dependency.
+
 ### Fixed
 
 - Validation no longer emits false "Unknown keys" warnings for valid argument-spec keys such as `no_log`, `aliases`, `seealso`, `notes`, `apply_defaults` or `mutually_exclusive`. Unknown-key checking also covers nested options now.

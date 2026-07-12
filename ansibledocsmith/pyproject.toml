@@ -20,7 +20,6 @@ dependencies = [
     "antsibull-docs-parser>=1.2.0,<2.0.0",
     "commonmark>=0.9.1",
     "jinja2>=3.1.6",
-    "pydantic>=2.11.7",
     "rich>=14.1.0",
     "ruamel-yaml>=0.18.14",
     "typer>=0.16.0",

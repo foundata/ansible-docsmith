@@ -118,22 +118,25 @@ class RoleProcessor:
             role_data.setdefault("warnings", [])
             role_data.setdefault("notices", [])
 
+            # Parse the raw (unnormalized) specs once; several validators
+            # need this view to distinguish explicitly set keys from
+            # normalization artifacts
+            original_specs = self._parse_original_specs(role_data["spec_file"])
+
             # Add consistency validation
             errors, warnings, notices = self._validate_defaults_consistency(
-                role_path, role_data["specs"], role_data["spec_file"]
+                role_path, role_data["specs"], original_specs
             )
             role_data["errors"].extend(errors)
             role_data["warnings"].extend(warnings)
             role_data["notices"].extend(notices)
 
             # Add unknown keys validation
-            warnings = self._validate_unknown_keys(role_data["spec_file"])
+            warnings = self._validate_unknown_keys(original_specs)
             role_data["warnings"].extend(warnings)
 
             # Add mutually exclusive keys validation
-            exclusive_errors = self._validate_mutually_exclusive_keys(
-                role_data["spec_file"]
-            )
+            exclusive_errors = self._validate_mutually_exclusive_keys(original_specs)
             role_data["errors"].extend(exclusive_errors)
 
             # Add README marker validation
@@ -314,12 +317,14 @@ class RoleProcessor:
             pass  # Ignore parsing errors, handled elsewhere
         return {}
 
-    def _validate_unknown_keys(self, spec_file: Path) -> list[str]:
-        """Validate that only known keys are used in argument_specs."""
-        warnings = []
+    def _validate_unknown_keys(self, original_specs: dict) -> list[str]:
+        """Validate that only known keys are used in argument_specs.
 
-        # Parse original specs to preserve unknown keys
-        original_specs = self._parse_original_specs(spec_file)
+        Args:
+            original_specs: Raw (unnormalized) argument specs as returned
+                by _parse_original_specs(), which preserve unknown keys.
+        """
+        warnings = []
         if not original_specs:
             return warnings
 
@@ -381,12 +386,14 @@ class RoleProcessor:
         except Exception:
             return {}
 
-    def _validate_mutually_exclusive_keys(self, spec_file: Path) -> list[str]:
-        """Validate that default and required: true are not used together."""
-        errors = []
+    def _validate_mutually_exclusive_keys(self, original_specs: dict) -> list[str]:
+        """Validate that default and required: true are not used together.
 
-        # Parse original specs to preserve structure
-        original_specs = self._parse_original_specs(spec_file)
+        Args:
+            original_specs: Raw (unnormalized) argument specs as returned
+                by _parse_original_specs().
+        """
+        errors = []
         if not original_specs:
             return errors
 
@@ -417,9 +424,21 @@ class RoleProcessor:
         return errors
 
     def _validate_defaults_consistency(
-        self, role_path: Path, specs: dict, spec_file: Path = None
+        self,
+        role_path: Path,
+        specs: dict,
+        original_specs: dict | None = None,
     ) -> tuple[list[str], list[str], list[str]]:
-        """Validate consistency between defaults files and argument_specs."""
+        """Validate consistency between defaults files and argument_specs.
+
+        Args:
+            role_path: Path to the role directory
+            specs: Normalized argument specs
+            original_specs: Raw (unnormalized) argument specs. Used to
+                distinguish explicitly set keys (like "default") from
+                normalization artifacts; the normalized specs are used as
+                fallback when not provided.
+        """
         errors = []
         warnings = []
         notices = []
@@ -429,6 +448,13 @@ class RoleProcessor:
         for entry_point, spec in specs.items():
             spec_vars = set(spec.get("options", {}).keys())
             defaults_vars = set()
+
+            # Raw option specs preserve which keys were explicitly set
+            original_options = None
+            if original_specs:
+                entry = original_specs.get(entry_point, {})
+                if isinstance(entry, dict):
+                    original_options = entry.get("options", {}) or {}
 
             if entry_point in defaults_files:
                 # Parse defaults file to get variables
@@ -449,11 +475,7 @@ class RoleProcessor:
             # Check which variables have explicit defaults (not
             # parser-added None)
             spec_with_defaults = set()
-            if spec_file:
-                original_specs = self._parse_original_specs(spec_file)
-                original_options = original_specs.get(entry_point, {}).get(
-                    "options", {}
-                )
+            if original_options is not None:
                 for name, var_spec in original_options.items():
                     if isinstance(var_spec, dict) and "default" in var_spec:
                         spec_with_defaults.add(name)
@@ -483,27 +505,18 @@ class RoleProcessor:
                 if missing_in_defaults:
                     # Filter out required variables - they don't need defaults
                     non_required_missing = set()
-                    if spec_file:
-                        original_specs = self._parse_original_specs(spec_file)
-                        original_options = original_specs.get(entry_point, {}).get(
-                            "options", {}
-                        )
-                        for var_name in missing_in_defaults:
-                            var_spec = original_options.get(var_name, {})
-                            if not (
-                                isinstance(var_spec, dict)
-                                and var_spec.get("required") is True
-                            ):
-                                non_required_missing.add(var_name)
-                    else:
-                        # Fallback: use processed specs
-                        for var_name in missing_in_defaults:
-                            var_spec = spec.get("options", {}).get(var_name, {})
-                            if not (
-                                isinstance(var_spec, dict)
-                                and var_spec.get("required") is True
-                            ):
-                                non_required_missing.add(var_name)
+                    source_options = (
+                        original_options
+                        if original_options is not None
+                        else spec.get("options", {})
+                    )
+                    for var_name in missing_in_defaults:
+                        var_spec = source_options.get(var_name, {})
+                        if not (
+                            isinstance(var_spec, dict)
+                            and var_spec.get("required") is True
+                        ):
+                            non_required_missing.add(var_name)
 
                     if non_required_missing:
                         notices.append(
@@ -520,11 +533,7 @@ class RoleProcessor:
 
                     # Get spec defaults from original file (not normalized)
                     spec_defaults = {}
-                    if spec_file:
-                        original_specs = self._parse_original_specs(spec_file)
-                        original_options = original_specs.get(entry_point, {}).get(
-                            "options", {}
-                        )
+                    if original_options is not None:
                         for name, var_spec in original_options.items():
                             if isinstance(var_spec, dict) and "default" in var_spec:
                                 spec_defaults[name] = var_spec["default"]
