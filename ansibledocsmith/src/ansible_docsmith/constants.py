@@ -24,6 +24,55 @@ TABLE_DESCRIPTION_MAX_LENGTH = 250
 # README templates.
 COMMENT_MAX_NESTED_DEPTH = 3
 
+# Valid keys in role argument specs, used to warn about unknown (likely
+# misspelled) keys. Based on the role argument spec documentation schema
+# maintained by the Ansible community (antsibull-docs, role.py /
+# OptionsSchema) plus keys accepted and honored by ansible-core's runtime
+# argument validation. If DocSmith seems outdated, compare with
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html
+SPEC_VALID_ENTRYPOINT_KEYS = frozenset(
+    {
+        "author",
+        "attributes",
+        "deprecated",
+        "description",
+        "examples",
+        "notes",
+        "options",
+        "requirements",
+        "seealso",
+        "short_description",
+        "todo",
+        "version_added",
+    }
+)
+SPEC_VALID_OPTION_KEYS = frozenset(
+    {
+        "aliases",
+        "apply_defaults",
+        "choices",
+        "context",
+        "default",
+        "deprecated_aliases",
+        "description",
+        "elements",
+        "mutually_exclusive",
+        "no_log",
+        "options",
+        "removed_at_date",
+        "removed_from_collection",
+        "removed_in_version",
+        "required",
+        "required_by",
+        "required_if",
+        "required_one_of",
+        "required_together",
+        "type",
+        "version_added",
+        "version_added_collection",
+    }
+)
+
 # CLI branding (please keep rendered length under 75 chars)
 CLI_HEADER = (
     "Welcome to "

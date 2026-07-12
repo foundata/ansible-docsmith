@@ -385,6 +385,71 @@ argument_specs:
         assert any("invalid_option_key" in w for w in warnings)
         assert any("This might be an error in your role" in w for w in warnings)
 
+    def test_validate_unknown_keys_accepts_valid_spec_keys(self, temp_dir):
+        """Valid argument-spec keys like no_log or aliases must not warn."""
+        processor = RoleProcessor()
+
+        spec_file = temp_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    short_description: "Short"
+    description: "Valid description"
+    author: ["Jane Doe"]
+    version_added: "1.0.0"
+    seealso:
+      - module: ansible.builtin.copy
+    notes:
+      - "A note."
+    options:
+      test_secret:
+        type: "str"
+        description: "A secret value."
+        no_log: true
+        aliases: ["test_password"]
+        version_added: "1.2.0"
+      test_choice:
+        type: "dict"
+        description: "Some grouped settings."
+        apply_defaults: true
+        options:
+          mode:
+            type: "str"
+            description: "Mode of operation."
+            choices: ["a", "b"]
+            mutually_exclusive: []
+""")
+
+        warnings = processor._validate_unknown_keys(spec_file)
+
+        assert warnings == []
+
+    def test_validate_unknown_keys_checks_nested_options(self, temp_dir):
+        """Unknown keys in nested option specs warn with a dotted path."""
+        processor = RoleProcessor()
+
+        spec_file = temp_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    description: "Valid description"
+    options:
+      test_dict:
+        type: "dict"
+        description: "A dict."
+        options:
+          inner:
+            type: "str"
+            description: "Inner option."
+            tpyo_key: "oops"
+""")
+
+        warnings = processor._validate_unknown_keys(spec_file)
+
+        assert len(warnings) == 1
+        assert "test_dict.inner" in warnings[0]
+        assert "tpyo_key" in warnings[0]
+
     def test_extract_variables_from_defaults(self, temp_dir):
         """Test extracting variable names from defaults files."""
         processor = RoleProcessor()

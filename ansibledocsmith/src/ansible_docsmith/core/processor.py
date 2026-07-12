@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ..constants import SPEC_VALID_ENTRYPOINT_KEYS, SPEC_VALID_OPTION_KEYS
 from .exceptions import ProcessingError, ValidationError
 from .generator import (
     DefaultsCommentGenerator,
@@ -316,39 +317,21 @@ class RoleProcessor:
     def _validate_unknown_keys(self, spec_file: Path) -> list[str]:
         """Validate that only known keys are used in argument_specs."""
         warnings = []
-        valid_role_keys = {
-            "short_description",
-            "description",
-            "version_added",
-            "author",
-            "options",
-        }
-        valid_option_keys = {
-            "description",
-            "version_added",
-            "type",
-            "required",
-            "default",
-            "choices",
-            "elements",
-            "options",
-        }
 
         # Parse original specs to preserve unknown keys
         original_specs = self._parse_original_specs(spec_file)
         if not original_specs:
             return warnings
 
-        # Warnings might also indicate DocSmith is outdated of the official format
-        # spec was extended (even though it was stable for years). In doubt, check
-        # https://docs.ansible.com/ansible/latest/playbook_guide/ where all valid
-        # keys are listed
+        # Warnings might also indicate DocSmith is outdated if the official
+        # format spec was extended (even though it was stable for years). In
+        # doubt, check the sources named at the constant definitions.
         for entry_point, spec in original_specs.items():
             if not isinstance(spec, dict):
                 continue
 
             # Check role-level keys
-            unknown_role_keys = set(spec.keys()) - valid_role_keys
+            unknown_role_keys = set(spec.keys()) - SPEC_VALID_ENTRYPOINT_KEYS
             if unknown_role_keys:
                 warnings.append(
                     f"Entry point '{entry_point}': Unknown keys in argument_specs: "
@@ -356,18 +339,35 @@ class RoleProcessor:
                     f"role."
                 )
 
-            # Check option-level keys
-            for var_name, var_spec in spec.get("options", {}).items():
-                if isinstance(var_spec, dict):
-                    unknown_var_keys = set(var_spec.keys()) - valid_option_keys
-                    if unknown_var_keys:
-                        warnings.append(
-                            f"Entry point '{entry_point}', variable '{var_name}': "
-                            f"Unknown keys: {sorted(unknown_var_keys)}. This might "
-                            f"be an error in your role."
-                        )
+            # Check option-level keys (including nested options)
+            options = spec.get("options", {})
+            if isinstance(options, dict):
+                self._check_unknown_option_keys(entry_point, options, warnings, path="")
 
         return warnings
+
+    def _check_unknown_option_keys(
+        self, entry_point: str, options: dict, warnings: list[str], path: str
+    ) -> None:
+        """Recursively warn about unknown keys in (nested) option specs."""
+        for var_name, var_spec in options.items():
+            if not isinstance(var_spec, dict):
+                continue
+
+            display_name = f"{path}{var_name}"
+            unknown_var_keys = set(var_spec.keys()) - SPEC_VALID_OPTION_KEYS
+            if unknown_var_keys:
+                warnings.append(
+                    f"Entry point '{entry_point}', variable '{display_name}': "
+                    f"Unknown keys: {sorted(unknown_var_keys)}. This might "
+                    f"be an error in your role."
+                )
+
+            nested = var_spec.get("options")
+            if isinstance(nested, dict):
+                self._check_unknown_option_keys(
+                    entry_point, nested, warnings, path=f"{display_name}."
+                )
 
     def _parse_original_specs(self, spec_file: Path) -> dict:
         """
