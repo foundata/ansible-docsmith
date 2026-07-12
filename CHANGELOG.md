@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `O(variable)` references to variables of the same role become links to the matching README section.
   - `M(ns.col.module)` and `P(ns.col.plugin#type)` become links to the official documentation on docs.ansible.com.
   - Invalid markup (e.g. `M()` without a FQCN) is left verbatim; existing Markdown in descriptions is never touched. Descriptions without Ansible markup remain byte-identical.
+- The `validate` command accepts `--no-readme` and `--no-argument-specs` to validate only parts of a role (#19, #20, thanks to @Adam-SCP for the issue and pull request).
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `generate --no-readme` no longer fails when the role's README is invalid (e.g. missing markers); README validation is skipped when the README is not being generated (#20, thanks to @Adam-SCP).
 - Validation no longer emits false "Unknown keys" warnings for valid argument-spec keys such as `no_log`, `aliases`, `seealso`, `notes`, `apply_defaults` or `mutually_exclusive`. Unknown-key checking also covers nested options now.
 - Table-cell truncation in the README variable overview no longer cuts through Markdown links or inline code (whole tokens are dropped instead).
 - Autolinks (`<https://...>`) in variable descriptions are rendered as bare URLs in `defaults/` YAML comments instead of a redundant `[url](url)` construct.

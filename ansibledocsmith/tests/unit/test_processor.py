@@ -78,6 +78,7 @@ class TestRoleProcessor:
         processor = RoleProcessor(dry_run=True)
 
         from pathlib import Path
+
         fixture_path = Path("tests/fixtures/example-role-missing-readme-markers")
         result = processor.process_role(
             fixture_path,
@@ -86,12 +87,12 @@ class TestRoleProcessor:
         )
 
         assert len(result.operations) >= 1
-        # We should have no errors even though the README is invalid because we are only updating defaults
+        # We should have no errors even though the README is invalid
+        # because we are only updating defaults
         assert len(result.errors) == 0
         # Check that defaults operation exists
         defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
         assert len(defaults_ops) == 1
-
 
     def test_process_role_both_operations(self, sample_role_with_specs_and_defaults):
         """Test processing role with both README and defaults."""
@@ -270,7 +271,8 @@ class TestRoleProcessor:
             validate_argument_specs=False,
         )
 
-        # example-role-mismatch-spec-defaults warnings should not be present because we are skipping argument_spec validation
+        # example-role-mismatch-spec-defaults warnings should not be
+        # present because we are skipping argument_spec validation
         warning_messages = "\n".join(result["warnings"])
         assert (
             "Default value mismatch for variable 'main_state'" not in warning_messages
@@ -296,7 +298,8 @@ class TestRoleProcessor:
 
         fixture_path = Path("tests/fixtures/example-role-missing-readme-markers")
 
-        # Should not throw ValidationError even though there are errors in the README file, because we are not validating the README
+        # Should not throw ValidationError even though there are errors in
+        # the README file, because we are not validating the README
         processor.validate_role(
             fixture_path,
             validate_readme=False,

@@ -172,6 +172,15 @@ ansible-docsmith generate /path/to/role --verbose
 #            but not in "defaults/", for user awareness.
 ansible-docsmith validate /path/to/role
 
+# Validate only parts of a role:
+#
+# Skip the README checks (markers and ToC). Useful when only maintaining
+# comments in entry-point files.
+ansible-docsmith validate /path/to/role --no-readme
+# Skip the argument_specs.yml checks (consistency, unknown keys, ...).
+# The file must still be parseable YAML.
+ansible-docsmith validate /path/to/role --no-argument-specs
+
 # Show help
 ansible-docsmith --help
 ansible-docsmith validate --help

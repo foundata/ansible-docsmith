@@ -204,7 +204,7 @@ def validate(
     ),
     validate_argument_specs: bool = typer.Option(
         True,
-        "--argument_specs/--no-argument-specs",
+        "--argument-specs/--no-argument-specs",
         help="Validate argument_specs file",
     ),
 ):
