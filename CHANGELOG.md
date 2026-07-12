@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Nothing worth mentioning yet.
+
+
+## [2.1.0] - 2026-07-12
+
 ### Added
 
 - Nested options ("dict attributes") are now documented in the comments of entry-point files like `defaults/main.yml` (#21, thanks to @Adam-SCP for the suggestion and issue). Each attribute is rendered as a compact, indented bullet with its description, type, required flag, default and choices, up to three nesting levels (matching the README templates). Use `--no-defaults-comments-nested` to restore the old behavior.
@@ -132,8 +137,9 @@ This is a very big update, providing new features and improvements. Please note 
 - All functionality and files. I dedicate this tool and its release to the memory of my beloved father, who recently passed away. May he rest in peace.
 
 
-[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.0.2...HEAD
-[2.0.2]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.1
+[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.1.0
+[2.0.2]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.2
 [2.0.1]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.1
 [2.0.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.0.0
 [1.0.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v1.0.0
