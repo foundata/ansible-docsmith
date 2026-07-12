@@ -130,6 +130,11 @@ Basic usage:
 # Safely preview changes without writing to files. No modifications are made.
 ansible-docsmith generate /path/to/role --dry-run
 
+# Check whether the documentation is up to date without writing files:
+# exit code 1 (and a diff) if a run would change anything, 0 otherwise.
+# Useful for CI/CD pipelines and pre-commit hooks.
+ansible-docsmith generate /path/to/role --check
+
 # Generate / update README.md and comments in entry-point files (like defaults/main.yml)
 ansible-docsmith generate /path/to/role
 

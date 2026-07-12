@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Invalid markup (e.g. `M()` without a FQCN) is left verbatim; existing Markdown in descriptions is never touched. Descriptions without Ansible markup remain byte-identical.
 - The `validate` command accepts `--no-readme` and `--no-argument-specs` to validate only parts of a role (#19, #20, thanks to @Adam-SCP for the issue and pull request).
 - The `validate` command accepts `--strict` to treat warnings as errors (exit code 1), for use in CI/CD pipelines and pre-commit hooks.
+- The `generate` command accepts `--check` to verify the documentation is up to date without writing files (exit code 1 plus a diff when a run would change anything), for use in CI/CD pipelines and pre-commit hooks.
 - The `validate` command now lints [Ansible markup](https://docs.ansible.com/projects/ansible/latest/dev_guide/ansible_markup.html) in all descriptions and warns about invalid constructs (like `M()` without a FQCN or an unclosed `C(`), which the generators leave verbatim.
 
 ### Changed

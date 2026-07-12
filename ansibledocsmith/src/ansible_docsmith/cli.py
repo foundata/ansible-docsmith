@@ -83,6 +83,13 @@ def generate(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview changes without writing files"
     ),
+    check: bool = typer.Option(
+        False,
+        "--check",
+        help="Check whether the documentation is up to date without writing "
+        "files (implies --dry-run): exit code 1 if changes would be made. "
+        "Useful for CI/CD pipelines and pre-commit hooks.",
+    ),
     verbose: bool = typer.Option(
         False, "-v", "--verbose", help="Enable verbose logging"
     ),
@@ -106,6 +113,10 @@ def generate(
 
     logger = setup_logging(verbose)
     _display_header()
+
+    # Check mode never writes files
+    if check:
+        dry_run = True
 
     # Validate format type
     if format_type.lower() not in ["auto", "markdown", "rst"]:
@@ -163,6 +174,21 @@ def generate(
             console.print("\n[red]❌ Processing completed with errors[/red]")
             console.print()  # Trailing newline
             raise typer.Exit(1)
+        elif check:
+            changed_files = [
+                file_path
+                for file_path, old_content, new_content in results.file_diffs
+                if old_content != new_content
+            ]
+            if changed_files:
+                console.print(
+                    f"\n[red]❌ Documentation is not up to date "
+                    f"({len(changed_files)} file(s) would change)[/red]"
+                )
+                console.print()  # Trailing newline
+                raise typer.Exit(1)
+            console.print("\n[green]✅ Documentation is up to date![/green]")
+            console.print()  # Trailing newline
         else:
             console.print("\n[green]✅ Documentation generation complete![/green]")
             console.print()  # Trailing newline

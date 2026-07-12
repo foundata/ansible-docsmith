@@ -127,6 +127,52 @@ class TestEndToEnd:
         assert "✅ Validation passed!" in result.stdout
         assert "test-role" in result.stdout
 
+    def test_generate_check_mode(self, temp_dir):
+        """--check reports outdated documentation without writing files."""
+        runner = CliRunner()
+
+        fixture = Path(__file__).parent.parent / "fixtures" / "example-role-simple"
+        role_path = temp_dir / "example-role-simple"
+        shutil.copytree(fixture, role_path)
+
+        # Bring the copy fully up to date first
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+
+        # Up-to-date role: --check passes
+        result = runner.invoke(app, ["generate", str(role_path), "--check"])
+        assert result.exit_code == 0
+        assert "up to date" in result.stdout
+
+        # Outdate the documentation by changing a description in the spec
+        spec_file = role_path / "meta" / "argument_specs.yml"
+        content = spec_file.read_text(encoding="utf-8")
+        spec_file.write_text(
+            content.replace("Primary domain name", "CHANGED domain name"),
+            encoding="utf-8",
+        )
+
+        readme_before = (role_path / "README.md").read_text(encoding="utf-8")
+        defaults_before = (role_path / "defaults" / "main.yml").read_text(
+            encoding="utf-8"
+        )
+
+        result = runner.invoke(app, ["generate", str(role_path), "--check"])
+        assert result.exit_code == 1
+        assert "not up to date" in result.stdout
+
+        # --check must never write anything
+        assert (role_path / "README.md").read_text(encoding="utf-8") == readme_before
+        assert (role_path / "defaults" / "main.yml").read_text(
+            encoding="utf-8"
+        ) == defaults_before
+
+        # A real generate run brings it back in sync
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+        result = runner.invoke(app, ["generate", str(role_path), "--check"])
+        assert result.exit_code == 0
+
     def test_validate_strict_fails_on_warnings(self):
         """--strict turns warnings into a non-zero exit code."""
         runner = CliRunner()
