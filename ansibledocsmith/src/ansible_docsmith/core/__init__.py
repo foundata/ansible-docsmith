@@ -1,5 +1,6 @@
 """Core functionality for ansible-docsmith."""
 
+from .defaults_comments import DefaultsCommentGenerator
 from .exceptions import (
     AnsibleDocSmithError,
     FileOperationError,
@@ -8,7 +9,6 @@ from .exceptions import (
     TemplateError,
     ValidationError,
 )
-from .generator import DefaultsCommentGenerator
 from .parser import ArgumentSpecParser
 from .processor import RoleProcessor
 

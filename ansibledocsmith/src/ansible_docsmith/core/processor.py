@@ -5,13 +5,11 @@ from pathlib import Path
 from typing import Any
 
 from ..constants import SPEC_VALID_ENTRYPOINT_KEYS, SPEC_VALID_OPTION_KEYS
+from .defaults_comments import DefaultsCommentGenerator
+from .doc_generators import create_documentation_generator
 from .exceptions import ProcessingError, ValidationError
-from .generator import (
-    DefaultsCommentGenerator,
-    ReadmeUpdater,
-    create_documentation_generator,
-)
 from .parser import ArgumentSpecParser
+from .readme_updater import ReadmeUpdater
 
 
 def detect_format_from_role(role_path: Path) -> str:

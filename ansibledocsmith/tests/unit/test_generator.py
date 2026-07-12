@@ -6,16 +6,18 @@ from ansible_docsmith import (
     MARKER_README_MAIN_END,
     MARKER_README_MAIN_START,
 )
-from ansible_docsmith.core.generator import (
-    TABLE_DESCRIPTION_MAX_LENGTH,
-    DefaultsCommentGenerator,
-    HTMLStripper,
+from ansible_docsmith.constants import TABLE_DESCRIPTION_MAX_LENGTH
+from ansible_docsmith.core.defaults_comments import DefaultsCommentGenerator
+from ansible_docsmith.core.doc_generators import (
     MarkdownDocumentationGenerator,
-    MarkdownTocGenerator,
-    ReadmeUpdater,
     RSTDocumentationGenerator,
-    RSTTocGenerator,
     create_documentation_generator,
+)
+from ansible_docsmith.core.readme_updater import ReadmeUpdater
+from ansible_docsmith.core.text import HTMLStripper
+from ansible_docsmith.core.toc import (
+    MarkdownTocGenerator,
+    RSTTocGenerator,
     create_toc_generator,
 )
 

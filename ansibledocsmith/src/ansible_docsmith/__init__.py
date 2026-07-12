@@ -14,6 +14,8 @@ from .constants import (
     MARKER_README_TOC_END,
     MARKER_README_TOC_START,
 )
+from .core.defaults_comments import DefaultsCommentGenerator
+from .core.doc_generators import RSTDocumentationGenerator
 from .core.exceptions import (
     AnsibleDocSmithError,
     FileOperationError,
@@ -22,17 +24,15 @@ from .core.exceptions import (
     TemplateError,
     ValidationError,
 )
-from .core.generator import (
+from .core.parser import ArgumentSpecParser
+from .core.processor import RoleProcessor
+from .core.readme_updater import ReadmeUpdater
+from .core.toc import (
     BaseTocGenerator,
-    DefaultsCommentGenerator,
     MarkdownTocGenerator,
-    ReadmeUpdater,
-    RSTDocumentationGenerator,
     RSTTocGenerator,
     create_toc_generator,
 )
-from .core.parser import ArgumentSpecParser
-from .core.processor import RoleProcessor
 
 __all__ = [
     "__version__",

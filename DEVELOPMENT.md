@@ -86,10 +86,15 @@ ansible-docsmith/
     │   ├── constants.py        # Global constants
     │   ├── core/               # Core functionality
     │   │   ├── __init__.py
+    │   │   ├── defaults_comments.py # Comment blocks for entry-point files
+    │   │   ├── doc_generators.py    # README documentation generators (MD, RST)
     │   │   ├── exceptions.py   # Custom exceptions
-    │   │   ├── generator.py    # Documentation generators
+    │   │   ├── markup.py       # Ansible markup conversion
     │   │   ├── parser.py       # YAML parsing
-    │   │   └── processor.py    # Main processing logic
+    │   │   ├── processor.py    # Main processing logic
+    │   │   ├── readme_updater.py # Managed README sections
+    │   │   ├── text.py         # Shared text utilities
+    │   │   └── toc.py          # Table of Contents generators
     │   ├── templates/          # Jinja2 templates & manager
     │   │   ├── __init__.py     # Template manager
     │   │   └── readme/

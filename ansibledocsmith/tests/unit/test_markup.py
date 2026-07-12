@@ -2,8 +2,8 @@
 
 import pytest
 
-from ansible_docsmith.core.generator import (
-    DefaultsCommentGenerator,
+from ansible_docsmith.core.defaults_comments import DefaultsCommentGenerator
+from ansible_docsmith.core.doc_generators import (
     MarkdownDocumentationGenerator,
     RSTDocumentationGenerator,
 )
