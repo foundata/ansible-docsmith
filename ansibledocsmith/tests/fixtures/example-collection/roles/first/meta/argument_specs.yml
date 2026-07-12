@@ -1,0 +1,19 @@
+# Please note: This file is just a dummy for testing.
+
+---
+
+argument_specs:
+  main:
+    short_description: "First example role"
+    options:
+      first_state:
+        type: "str"
+        default: "present"
+        choices:
+          - "present"
+          - "absent"
+        description: "Whether the first thing shall be present."
+      first_conf:
+        type: "path"
+        default: "/etc/first.conf"
+        description: "Path of the configuration file."

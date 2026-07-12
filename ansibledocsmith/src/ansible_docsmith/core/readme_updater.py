@@ -18,6 +18,42 @@ from ..constants import (
 from .exceptions import FileOperationError
 from .toc import create_toc_generator
 
+# Matches any DocSmith marker, capturing type, optional role name and
+# START/END. Role names are identifiers, so this cannot misfire on the
+# START/END keywords themselves.
+MARKER_PATTERN = re.compile(
+    r"ANSIBLE DOCSMITH (?P<type>MAIN|TOC-FULL|TOC)"
+    r"(?: (?P<role>[a-z0-9_]+))? (?P<kind>START|END)"
+)
+
+
+def marker_comment(
+    marker_type: str,
+    role_name: str | None = None,
+    *,
+    end: bool = False,
+    format_type: str = "markdown",
+) -> str:
+    """Build a full marker comment like '<!-- ANSIBLE DOCSMITH TOC foo START -->'.
+
+    Args:
+        marker_type: Content type ("MAIN", "TOC" or "TOC-FULL")
+        role_name: Optional role name for role-scoped markers in
+            collection READMEs
+        end: Build the END marker instead of the START marker
+        format_type: "markdown" or "rst" (selects the comment syntax)
+    """
+    if format_type.lower() == "rst":
+        comment_begin, comment_end = MARKER_COMMENT_RST_BEGIN, MARKER_COMMENT_RST_END
+    else:
+        comment_begin, comment_end = MARKER_COMMENT_MD_BEGIN, MARKER_COMMENT_MD_END
+
+    name_part = f" {role_name}" if role_name else ""
+    kind = "END" if end else "START"
+    return (
+        f"{comment_begin}ANSIBLE DOCSMITH {marker_type}{name_part} {kind}{comment_end}"
+    )
+
 
 class ReadmeUpdater:
     """Update README files with generated content."""
@@ -203,6 +239,30 @@ class ReadmeUpdater:
             content = re.sub(pattern, "", content, flags=re.DOTALL)
 
         return content.strip()
+
+    def replace_named_section(
+        self,
+        content: str,
+        new_section_content: str,
+        marker_type: str,
+        role_name: str,
+    ) -> str | None:
+        """Replace a role-named marker section, if present.
+
+        Unlike _replace_between_markers(), missing markers do NOT append
+        anything: role-named sections in collection READMEs are strictly
+        opt-in per role.
+
+        Returns:
+            The updated content, or None if the marker pair is not present.
+        """
+        start = marker_comment(marker_type, role_name, format_type=self.format_type)
+        end = marker_comment(
+            marker_type, role_name, end=True, format_type=self.format_type
+        )
+        if start not in content or end not in content:
+            return None
+        return self._replace_between_markers(content, new_section_content, start, end)
 
     def _create_new_readme(self, role_content: str, role_name: str) -> str:
         """Create a new README with basic template."""

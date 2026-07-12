@@ -13,6 +13,7 @@ from rich.table import Table
 
 from . import __version__
 from .constants import CLI_HEADER
+from .core.collection import CollectionProcessor, detect_project_type
 from .core.exceptions import ProcessingError, ValidationError
 from .core.processor import RoleProcessor
 from .utils.logging import setup_logging
@@ -56,7 +57,7 @@ def main(
 def generate(
     role_path: Path = typer.Argument(
         ...,
-        help="Path to Ansible role directory",
+        help="Path to an Ansible role or collection directory",
         exists=True,
         file_okay=False,
         dir_okay=True,
@@ -147,25 +148,48 @@ def generate(
 
     try:
         # Initialize processor
-        try:
-            processor = RoleProcessor(
-                dry_run=dry_run,
-                template_readme=template_readme,
-                toc_bullet_style=readme_toc_list_bulletpoints,
-                format_type=format_type,
-                role_path=role_path,
-                defaults_comments_nested=defaults_comments_nested,
+        is_collection = detect_project_type(role_path) == "collection"
+        if is_collection:
+            console.print(
+                f"[blue]Detected collection layout[/blue] "
+                f"(roles below {role_path / 'roles'})"
             )
+
+        try:
+            if is_collection:
+                collection_processor = CollectionProcessor(
+                    collection_path=role_path,
+                    dry_run=dry_run,
+                    template_readme=template_readme,
+                    toc_bullet_style=readme_toc_list_bulletpoints,
+                    format_type=format_type,
+                    defaults_comments_nested=defaults_comments_nested,
+                )
+            else:
+                processor = RoleProcessor(
+                    dry_run=dry_run,
+                    template_readme=template_readme,
+                    toc_bullet_style=readme_toc_list_bulletpoints,
+                    format_type=format_type,
+                    role_path=role_path,
+                    defaults_comments_nested=defaults_comments_nested,
+                )
         except ValueError as e:
             logger.error(f"Template error: {e}")
             raise typer.Exit(1)
 
-        # Process the role
-        results = processor.process_role(
-            role_path=role_path,
-            generate_readme=output_readme,
-            update_defaults=update_defaults,
-        )
+        # Process the collection or role
+        if is_collection:
+            results = collection_processor.process_collection(
+                generate_readme=output_readme,
+                update_defaults=update_defaults,
+            )
+        else:
+            results = processor.process_role(
+                role_path=role_path,
+                generate_readme=output_readme,
+                update_defaults=update_defaults,
+            )
 
         # Display results
         _display_results(results, dry_run)
@@ -214,7 +238,7 @@ def generate(
 def validate(
     role_path: Path = typer.Argument(
         ...,
-        help="Path to Ansible role directory",
+        help="Path to an Ansible role or collection directory",
         exists=True,
         file_okay=False,
         dir_okay=True,
@@ -258,6 +282,16 @@ def validate(
             )
             raise typer.Exit(1)
 
+        if detect_project_type(role_path) == "collection":
+            _validate_collection(
+                role_path,
+                format_type=format_type,
+                validate_readme=validate_readme,
+                validate_argument_specs=validate_argument_specs,
+                strict=strict,
+            )
+            return
+
         # Initialize processor
         processor = RoleProcessor(format_type=format_type, role_path=role_path)
 
@@ -297,6 +331,63 @@ def validate(
             traceback.print_exc()
         console.print()  # Trailing newline
         raise typer.Exit(1)
+
+
+def _validate_collection(
+    collection_path: Path,
+    format_type: str,
+    validate_readme: bool,
+    validate_argument_specs: bool,
+    strict: bool,
+):
+    """Validate all roles of a collection plus the collection README."""
+    processor = CollectionProcessor(
+        collection_path=collection_path, format_type=format_type
+    )
+    console.print(
+        f"[blue]Detected collection layout[/blue] "
+        f"({len(processor.roles)} role(s) below {collection_path / 'roles'})"
+    )
+
+    summary = processor.validate_collection(
+        validate_readme=validate_readme,
+        validate_argument_specs=validate_argument_specs,
+    )
+
+    has_warnings = bool(summary["warnings"])
+    for role_name, role_data in summary["roles"].items():
+        console.print(f"\n[bold]Role: {role_name}[/bold]")
+        _display_validation_results(role_data)
+        has_warnings = has_warnings or bool(role_data.get("warnings"))
+
+    if summary["warnings"]:
+        console.print("\n[yellow]Collection warnings:[/yellow]")
+        for warning in summary["warnings"]:
+            console.print(f"  [yellow]⚠[/yellow] {warning}")
+
+    if summary["notices"]:
+        console.print("\n[blue]Collection notices:[/blue]")
+        for notice in summary["notices"]:
+            console.print(f"  [blue]ℹ[/blue] {notice}")
+
+    if summary["errors"]:
+        console.print("\n[red]Errors:[/red]")
+        for error in summary["errors"]:
+            console.print(f"  • {error}", style="red")
+        console.print("\n[red]❌ Validation failed[/red]")
+        console.print()  # Trailing newline
+        raise typer.Exit(1)
+
+    if strict and has_warnings:
+        console.print(
+            "\n[red]❌ Validation failed (--strict): "
+            "warnings are treated as errors[/red]"
+        )
+        console.print()  # Trailing newline
+        raise typer.Exit(1)
+
+    console.print("\n[green]✅ Validation passed![/green]")
+    console.print()  # Trailing newline
 
 
 def _display_results(results, dry_run: bool):

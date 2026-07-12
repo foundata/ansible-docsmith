@@ -44,16 +44,29 @@ class BaseTocGenerator(ABC):
 
     @abstractmethod
     def _generate_toc_lines(
-        self, headings: list[dict[str, Any]], bullet_style: str
+        self,
+        headings: list[dict[str, Any]],
+        bullet_style: str,
+        link_prefix: str = "",
     ) -> str:
-        """Generate TOC lines from headings."""
+        """Generate TOC lines from headings.
+
+        Args:
+            headings: List of heading dictionaries
+            bullet_style: Bullet style to use
+            link_prefix: Prepended to every link target, before the "#".
+                Used for ToCs pointing into another document (e.g.
+                "roles/foo/README.md" in a collection README).
+        """
         pass
 
-    def generate_toc(self, content: str) -> str:
+    def generate_toc(self, content: str, link_prefix: str = "") -> str:
         """Generate Table of Contents from content.
 
         Args:
             content: Content to analyze
+            link_prefix: Prepended to every link target, before the "#"
+                (for ToCs pointing into another document)
 
         Returns:
             Generated TOC as string
@@ -65,7 +78,7 @@ class BaseTocGenerator(ABC):
         # Auto-detect bullet style if not specified
         bullet_style = self.bullet_style or self._detect_bullet_style(content)
 
-        return self._generate_toc_lines(headings, bullet_style)
+        return self._generate_toc_lines(headings, bullet_style, link_prefix)
 
 
 class MarkdownTocGenerator(BaseTocGenerator):
@@ -198,13 +211,17 @@ class MarkdownTocGenerator(BaseTocGenerator):
         return anchor.strip("-")
 
     def _generate_toc_lines(
-        self, headings: list[dict[str, Any]], bullet_style: str
+        self,
+        headings: list[dict[str, Any]],
+        bullet_style: str,
+        link_prefix: str = "",
     ) -> str:
         """Generate TOC lines from headings.
 
         Args:
             headings: List of heading dictionaries
             bullet_style: Bullet style to use
+            link_prefix: Prepended to every link target, before the "#"
 
         Returns:
             Generated TOC lines as string
@@ -221,7 +238,10 @@ class MarkdownTocGenerator(BaseTocGenerator):
             indent = "  " * indent_level
 
             # Create TOC line
-            line = f"{indent}{bullet_style} [{heading['text']}](#{heading['anchor']})"
+            line = (
+                f"{indent}{bullet_style} "
+                f"[{heading['text']}]({link_prefix}#{heading['anchor']})"
+            )
             lines.append(line)
 
         return "\n".join(lines)
@@ -325,13 +345,17 @@ class RSTTocGenerator(BaseTocGenerator):
         return anchor.strip("-")
 
     def _generate_toc_lines(
-        self, headings: list[dict[str, Any]], bullet_style: str
+        self,
+        headings: list[dict[str, Any]],
+        bullet_style: str,
+        link_prefix: str = "",
     ) -> str:
         """Generate TOC lines from headings for RST.
 
         Args:
             headings: List of heading dictionaries
             bullet_style: Bullet style to use
+            link_prefix: Prepended to every link target, before the "#"
 
         Returns:
             Generated TOC lines as RST string
@@ -353,9 +377,10 @@ class RSTTocGenerator(BaseTocGenerator):
             if i > 0 and prev_level is not None and heading["level"] != prev_level:
                 lines.append("")
 
-            # Create TOC line with RST-style internal link
+            # Create TOC line with RST-style link
             line = (
-                f"{indent}{bullet_style} `{heading['text']} <#{heading['anchor']}>`__"
+                f"{indent}{bullet_style} "
+                f"`{heading['text']} <{link_prefix}#{heading['anchor']}>`__"
             )
             lines.append(line)
             prev_level = heading["level"]

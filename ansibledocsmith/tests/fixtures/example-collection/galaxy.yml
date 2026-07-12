@@ -1,0 +1,10 @@
+# Please note: This file is just a dummy for testing.
+
+---
+
+namespace: "foundata"
+name: "example"
+version: "1.0.0"
+readme: "README.md"
+authors:
+  - "foundata GmbH"

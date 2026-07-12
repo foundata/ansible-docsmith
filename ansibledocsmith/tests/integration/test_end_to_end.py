@@ -162,6 +162,81 @@ class TestEndToEnd:
         assert result.exit_code == 0
         assert (role_path / "README.md").read_text(encoding="utf-8") == before
 
+    def test_generate_collection(self, temp_dir):
+        """A collection path processes all roles plus the collection README."""
+        runner = CliRunner()
+
+        fixture = Path(__file__).parent.parent / "fixtures" / "example-collection"
+        collection = temp_dir / "example-collection"
+        shutil.copytree(fixture, collection)
+
+        result = runner.invoke(app, ["generate", str(collection)])
+        assert result.exit_code == 0
+        assert "Detected collection layout" in result.stdout
+
+        # Role documentation is generated as usual
+        first_readme = (collection / "roles" / "first" / "README.md").read_text(
+            encoding="utf-8"
+        )
+        assert '<a id="variable-first_state"></a>' in first_readme
+        first_defaults = (
+            collection / "roles" / "first" / "defaults" / "main.yml"
+        ).read_text(encoding="utf-8")
+        assert "# - Type: str" in first_defaults
+
+        # Collection README: named TOC links into the role README
+        readme = (collection / "README.md").read_text(encoding="utf-8")
+        assert "[`first_state`](roles/first/README.md#variable-first_state)" in readme
+        # Named TOC-FULL lists hand-written headings of the role README
+        assert "[Usage](roles/second/README.md#usage)" in readme
+        assert "[`second_port`](roles/second/README.md#variable-second_port)" in readme
+
+        # Idempotence and check mode
+        result = runner.invoke(app, ["generate", str(collection), "--check"])
+        assert result.exit_code == 0
+
+        # Outdating a role spec makes --check fail without writing
+        spec = collection / "roles" / "first" / "meta" / "argument_specs.yml"
+        spec.write_text(
+            spec.read_text(encoding="utf-8").replace(
+                "Whether the first thing", "CHANGED whether the first thing"
+            ),
+            encoding="utf-8",
+        )
+        readme_before = (collection / "README.md").read_text(encoding="utf-8")
+        result = runner.invoke(app, ["generate", str(collection), "--check"])
+        assert result.exit_code == 1
+        assert (collection / "README.md").read_text(encoding="utf-8") == readme_before
+
+    def test_validate_collection(self, temp_dir):
+        """Collection validation covers all roles and the collection README."""
+        runner = CliRunner()
+
+        fixture = Path(__file__).parent.parent / "fixtures" / "example-collection"
+        collection = temp_dir / "example-collection"
+        shutil.copytree(fixture, collection)
+
+        result = runner.invoke(app, ["validate", str(collection)])
+        assert result.exit_code == 0
+        assert "Role: first" in result.stdout
+        assert "Role: second" in result.stdout
+        assert "✅ Validation passed!" in result.stdout
+
+        # An orphaned role marker is a warning; --strict turns it into a failure
+        readme = collection / "README.md"
+        readme.write_text(
+            readme.read_text(encoding="utf-8")
+            + "\n<!-- ANSIBLE DOCSMITH TOC ghost START -->\n"
+            "<!-- ANSIBLE DOCSMITH TOC ghost END -->\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["validate", str(collection)])
+        assert result.exit_code == 0
+        assert "unknown role 'ghost'" in result.stdout
+
+        result = runner.invoke(app, ["validate", str(collection), "--strict"])
+        assert result.exit_code == 1
+
     def test_generate_mixed_main_and_other_entry_points(self, temp_dir):
         """'main' keeps short anchors; other entry points get prefixed ones."""
         runner = CliRunner()

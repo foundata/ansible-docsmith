@@ -1,0 +1,5 @@
+---
+
+first_state: "present"
+
+first_conf: "/etc/first.conf"

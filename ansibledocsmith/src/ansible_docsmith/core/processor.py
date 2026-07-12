@@ -43,6 +43,9 @@ class ProcessingResults:
     errors: list[str]
     warnings: list[str]
     file_diffs: list[tuple[Path, str, str]]  # (file, old_content, new_content)
+    # Full README content after the update (also set in dry-run mode);
+    # used for collection READMEs referencing role documentation
+    readme_content: str | None = None
 
 
 class RoleProcessor:
@@ -228,16 +231,15 @@ class RoleProcessor:
             if existed_before:
                 original_content = readme_path.read_text(encoding="utf-8")
 
-            # Get the new content that would be written
+            # Compute the new content once; write it unless in dry-run mode
+            new_content = self.readme_updater._get_updated_content(
+                readme_path, doc_content
+            )
+            results.readme_content = new_content
             if self.dry_run:
-                # For dry-run, we need to simulate what update_readme would produce
-                new_content = self.readme_updater._get_updated_content(
-                    readme_path, doc_content
-                )
                 results.file_diffs.append((readme_path, original_content, new_content))
             else:
-                # Update README
-                self.readme_updater.update_readme(readme_path, doc_content)
+                readme_path.write_text(new_content, encoding="utf-8", newline="\n")
 
             action = "Updated" if existed_before else "Created"
             results.operations.append((readme_path, action, "✅"))

@@ -32,6 +32,7 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
 - [Usage](#usage)
   - [Preparations](#usage-preparations)
   - [Generate or update documentation](#usage-generate)
+  - [Collections](#usage-collections)
   - [Validate `argument_specs.yml` and `/defaults`](#usage-validate)
   - [Custom templates](#usage-custom-templates)
 - [Licensing, copyright](#licensing-copyright)
@@ -165,6 +166,32 @@ ansible-docsmith generate /path/to/role --no-defaults-comments-nested
 
 # Verbose output for debugging
 ansible-docsmith generate /path/to/role --verbose
+```
+
+
+### Collections<a id="usage-collections"></a>
+
+`generate` and `validate` also accept a **collection** path. All roles found via `roles/*/meta/argument_specs.yml` are then processed like single roles. Additionally, DocSmith maintains role-named marker sections in the collection's `README.md` (or `README.rst`), so the collection README can reference the role documentation without manual upkeep:
+
+```markdown
+### My role: foo
+
+<!-- ANSIBLE DOCSMITH TOC foo START -->
+<!-- ANSIBLE DOCSMITH TOC foo END -->
+
+### My role: bar
+
+<!-- ANSIBLE DOCSMITH TOC-FULL bar START -->
+<!-- ANSIBLE DOCSMITH TOC-FULL bar END -->
+```
+
+- `TOC <role>` lists the role's variable documentation, `TOC-FULL <role>` lists *all* headings of the role's README. Both link into `roles/<role>/README.*` using relative paths.
+- Role-named sections are opt-in per role: roles without markers are simply not referenced in the collection README (`validate` emits a notice listing them). Markers referencing an unknown role produce a warning.
+
+```bash
+ansible-docsmith generate /path/to/collection
+ansible-docsmith validate /path/to/collection
+ansible-docsmith generate /path/to/collection --check
 ```
 
 

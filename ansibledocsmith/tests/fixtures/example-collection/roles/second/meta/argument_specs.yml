@@ -1,0 +1,12 @@
+# Please note: This file is just a dummy for testing.
+
+---
+
+argument_specs:
+  main:
+    short_description: "Second example role"
+    options:
+      second_port:
+        type: "int"
+        default: 8080
+        description: "Port the second thing listens on."
