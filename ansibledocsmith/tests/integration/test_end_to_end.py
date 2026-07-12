@@ -127,6 +127,72 @@ class TestEndToEnd:
         assert "✅ Validation passed!" in result.stdout
         assert "test-role" in result.stdout
 
+    def test_validate_strict_fails_on_warnings(self):
+        """--strict turns warnings into a non-zero exit code."""
+        runner = CliRunner()
+
+        # This fixture validates successfully but produces warnings
+        fixture = str(Path("tests/fixtures/example-role-simple"))
+
+        result = runner.invoke(app, ["validate", fixture])
+        assert result.exit_code == 0
+        assert "Warnings:" in result.stdout
+
+        result = runner.invoke(app, ["validate", fixture, "--strict"])
+        assert result.exit_code == 1
+        assert "--strict" in result.stdout
+
+    @staticmethod
+    def _create_clean_role(base_dir: Path, description: str) -> Path:
+        """Create a minimal role that validates without any warnings."""
+        role_path = base_dir / "clean-role"
+        (role_path / "meta").mkdir(parents=True)
+        (role_path / "defaults").mkdir()
+        (role_path / "meta" / "argument_specs.yml").write_text(
+            "---\n"
+            "argument_specs:\n"
+            "  main:\n"
+            "    short_description: Clean role\n"
+            "    options:\n"
+            "      clean_var:\n"
+            "        type: str\n"
+            "        default: ok\n"
+            f'        description: "{description}"\n',
+            encoding="utf-8",
+        )
+        (role_path / "defaults" / "main.yml").write_text(
+            "---\nclean_var: ok\n", encoding="utf-8"
+        )
+        (role_path / "README.md").write_text(
+            "# Clean role\n\n"
+            "<!-- ANSIBLE DOCSMITH MAIN START -->\n"
+            "<!-- ANSIBLE DOCSMITH MAIN END -->\n",
+            encoding="utf-8",
+        )
+        return role_path
+
+    def test_validate_strict_passes_without_warnings(self, temp_dir):
+        """--strict does not change the result of a warning-free role."""
+        runner = CliRunner()
+        role_path = self._create_clean_role(temp_dir, "A clean description.")
+
+        result = runner.invoke(app, ["validate", str(role_path), "--strict"])
+
+        assert result.exit_code == 0
+        assert "✅ Validation passed!" in result.stdout
+
+    def test_validate_reports_invalid_markup(self, temp_dir):
+        """Invalid Ansible markup in descriptions shows up as a warning."""
+        runner = CliRunner()
+        role_path = self._create_clean_role(temp_dir, "Bad M(ref) here.")
+
+        result = runner.invoke(app, ["validate", str(role_path)])
+        assert result.exit_code == 0
+        assert "Invalid Ansible markup" in result.stdout
+
+        result = runner.invoke(app, ["validate", str(role_path), "--strict"])
+        assert result.exit_code == 1
+
     def test_generate_command_with_actual_files(
         self, sample_role_with_specs_and_defaults
     ):

@@ -508,6 +508,59 @@ argument_specs:
 
         assert warnings == []
 
+    def test_validate_markup_reports_invalid_constructs(self, temp_dir):
+        """Invalid Ansible markup in descriptions produces warnings."""
+        processor = RoleProcessor()
+
+        spec_file = temp_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    short_description: "Fine C(here)."
+    description:
+      - "Broken M(copy) reference."
+    options:
+      test_var:
+        type: "dict"
+        description: "All good C(code)."
+        options:
+          inner:
+            type: "str"
+            description: "Unclosed C(construct here."
+""")
+
+        warnings = processor._validate_markup(
+            processor._parse_original_specs(spec_file)
+        )
+
+        assert len(warnings) == 2
+        joined = "\n".join(warnings)
+        assert "Entry point 'main' (description)" in joined
+        assert 'Module name "copy" is not a FQCN' in joined
+        assert "variable 'test_var.inner'" in joined
+        assert 'Cannot find closing ")"' in joined
+
+    def test_validate_markup_accepts_valid_specs(self, temp_dir):
+        """Valid markup and plain descriptions produce no warnings."""
+        processor = RoleProcessor()
+
+        spec_file = temp_dir / "argument_specs.yml"
+        spec_file.write_text("""---
+argument_specs:
+  main:
+    description: "Uses M(ansible.builtin.copy) and C(code)."
+    options:
+      test_var:
+        type: "str"
+        description: "No markup at all."
+""")
+
+        warnings = processor._validate_markup(
+            processor._parse_original_specs(spec_file)
+        )
+
+        assert warnings == []
+
     def test_validate_unknown_keys_checks_nested_options(self, temp_dir):
         """Unknown keys in nested option specs warn with a dotted path."""
         processor = RoleProcessor()

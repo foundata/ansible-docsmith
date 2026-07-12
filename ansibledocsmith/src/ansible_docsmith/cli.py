@@ -167,6 +167,9 @@ def generate(
             console.print("\n[green]✅ Documentation generation complete![/green]")
             console.print()  # Trailing newline
 
+    except typer.Exit:
+        # Intentional exit with a specific code; do not treat as error
+        raise
     except (ValidationError, ProcessingError) as e:
         logger.error(f"Processing error: {e}")
         console.print()  # Trailing newline
@@ -207,6 +210,12 @@ def validate(
         "--argument-specs/--no-argument-specs",
         help="Validate argument_specs file",
     ),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Treat warnings as errors (exit code 1). Useful for CI/CD "
+        "pipelines and pre-commit hooks. Notices do not fail validation.",
+    ),
 ):
     """Validate argument_specs.yml structure and content."""
 
@@ -236,9 +245,20 @@ def validate(
         # Display validation results
         _display_validation_results(role_data)
 
+        if strict and role_data.get("warnings"):
+            console.print(
+                "\n[red]❌ Validation failed (--strict): "
+                "warnings are treated as errors[/red]"
+            )
+            console.print()  # Trailing newline
+            raise typer.Exit(1)
+
         console.print("\n[green]✅ Validation passed![/green]")
         console.print()  # Trailing newline
 
+    except typer.Exit:
+        # Intentional exit with a specific code; do not treat as error
+        raise
     except ValidationError as e:
         logger.error(f"Validation failed: {e}")
         console.print()  # Trailing newline

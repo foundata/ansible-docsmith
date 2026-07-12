@@ -8,6 +8,7 @@ from ..constants import SPEC_VALID_ENTRYPOINT_KEYS, SPEC_VALID_OPTION_KEYS
 from .defaults_comments import DefaultsCommentGenerator
 from .doc_generators import create_documentation_generator
 from .exceptions import ProcessingError, ValidationError
+from .markup import lint_ansible_markup
 from .parser import ArgumentSpecParser
 from .readme_updater import ReadmeUpdater
 
@@ -144,6 +145,10 @@ class RoleProcessor:
                     original_specs
                 )
                 role_data["errors"].extend(exclusive_errors)
+
+                # Add Ansible markup linting
+                markup_warnings = self._validate_markup(original_specs)
+                role_data["warnings"].extend(markup_warnings)
 
             if validate_readme:
                 # Add README marker validation
@@ -355,6 +360,51 @@ class RoleProcessor:
             options = spec.get("options", {})
             if isinstance(options, dict):
                 self._check_unknown_option_keys(entry_point, options, warnings, path="")
+
+        return warnings
+
+    def _validate_markup(self, original_specs: dict) -> list[str]:
+        """Lint Ansible markup in all descriptions of the argument specs.
+
+        Invalid markup (like ``M()`` without a FQCN) is left verbatim by
+        the generators; these warnings point role authors at the mistake.
+
+        Args:
+            original_specs: Raw (unnormalized) argument specs as returned
+                by _parse_original_specs().
+        """
+        warnings = []
+
+        def _lint(texts, location: str) -> None:
+            if isinstance(texts, str):
+                texts = [texts]
+            if not isinstance(texts, list):
+                return
+            for item in texts:
+                for message in lint_ansible_markup(str(item)):
+                    warnings.append(f"{location}: Invalid Ansible markup: {message}")
+
+        def _walk_options(options: dict, entry_point: str, path: str) -> None:
+            for var_name, var_spec in options.items():
+                if not isinstance(var_spec, dict):
+                    continue
+                display_name = f"{path}{var_name}"
+                _lint(
+                    var_spec.get("description"),
+                    f"Entry point '{entry_point}', variable '{display_name}'",
+                )
+                nested = var_spec.get("options")
+                if isinstance(nested, dict):
+                    _walk_options(nested, entry_point, f"{display_name}.")
+
+        for entry_point, spec in original_specs.items():
+            if not isinstance(spec, dict):
+                continue
+            for key in ("short_description", "description"):
+                _lint(spec.get(key), f"Entry point '{entry_point}' ({key})")
+            options = spec.get("options", {})
+            if isinstance(options, dict):
+                _walk_options(options, entry_point, path="")
 
         return warnings
 

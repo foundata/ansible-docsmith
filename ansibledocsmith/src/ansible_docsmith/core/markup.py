@@ -200,6 +200,35 @@ def _convert_chunk(chunk: str, target: str, role_options: Collection[str]) -> st
     )
 
 
+def lint_ansible_markup(text: str) -> list[str]:
+    """Return parse error messages for Ansible markup in the given text.
+
+    Text without markup-like constructs (or inside code blocks, which the
+    converter skips as well) produces no messages. The returned messages
+    include the offending construct and position, e.g.:
+    'While parsing "M(bad)" at index 1: Module name "bad" is not a FQCN'.
+    """
+    if not text or not _MARKUP_HINT.search(text):
+        return []
+
+    errors = []
+    for index, chunk in enumerate(_PARAGRAPH_SPLIT.split(text)):
+        if index % 2 or not _MARKUP_HINT.search(chunk):
+            continue
+        if _looks_like_code_block(chunk):
+            continue
+        for paragraph in parse(
+            chunk,
+            Context(),
+            errors="message",
+            whitespace=Whitespace.KEEP_SINGLE_NEWLINES,
+        ):
+            for part in paragraph:
+                if part.type == dom.PartType.ERROR:
+                    errors.append(part.message)
+    return errors
+
+
 def convert_ansible_markup(
     text: str,
     target: str,

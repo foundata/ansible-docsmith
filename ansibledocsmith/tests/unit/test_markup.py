@@ -7,7 +7,7 @@ from ansible_docsmith.core.doc_generators import (
     MarkdownDocumentationGenerator,
     RSTDocumentationGenerator,
 )
-from ansible_docsmith.core.markup import convert_ansible_markup
+from ansible_docsmith.core.markup import convert_ansible_markup, lint_ansible_markup
 
 
 class TestConvertAnsibleMarkupMarkdown:
@@ -233,3 +233,37 @@ class TestMarkupInGeneratorFilters:
         # ... but no README anchor links inside a YAML comment
         assert "](#variable-" not in text
         assert "O(" not in text
+
+
+class TestLintAnsibleMarkup:
+    """Linting of invalid Ansible markup constructs."""
+
+    def test_invalid_module_fqcn(self):
+        messages = lint_ansible_markup("Use M(copy) for this.")
+        assert len(messages) == 1
+        assert 'Module name "copy" is not a FQCN' in messages[0]
+
+    def test_unclosed_construct(self):
+        messages = lint_ansible_markup("Use C(unclosed here.")
+        assert len(messages) == 1
+        assert 'Cannot find closing ")"' in messages[0]
+
+    def test_link_without_url(self):
+        messages = lint_ansible_markup("See L(only text) for details.")
+        assert len(messages) == 1
+        assert "Cannot find comma" in messages[0]
+
+    def test_valid_markup_produces_no_messages(self):
+        assert lint_ansible_markup("Use C(code) and M(ansible.builtin.copy).") == []
+
+    def test_plain_text_produces_no_messages(self):
+        assert lint_ansible_markup("No markup at all, just text.") == []
+        assert lint_ansible_markup("") == []
+
+    def test_code_blocks_are_not_linted(self):
+        text = "```yaml\nvalue: M(bad)\n```"
+        assert lint_ansible_markup(text) == []
+
+    def test_multiple_errors_are_all_reported(self):
+        messages = lint_ansible_markup("M(one) and P(two).\n\nAlso M(three).")
+        assert len(messages) == 3

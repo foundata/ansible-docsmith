@@ -168,9 +168,14 @@ ansible-docsmith generate /path/to/role --verbose
 # - ERROR:   Variables with "default:" values defined in "argument_specs.yml" but
 #            missing from the entry-point files in "defaults/".
 # - WARNING: Unknown keys in "argument_specs.yml".
+# - WARNING: Invalid Ansible markup in descriptions (like "M()" without a FQCN).
 # - NOTICE:  Potential mismatches, where variables are listed in "argument_specs.yml"
 #            but not in "defaults/", for user awareness.
 ansible-docsmith validate /path/to/role
+
+# Treat warnings as errors (exit code 1). Useful for CI/CD pipelines and
+# pre-commit hooks. Notices do not fail validation.
+ansible-docsmith validate /path/to/role --strict
 
 # Validate only parts of a role:
 #
