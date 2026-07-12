@@ -1,0 +1,175 @@
+{
+  "descriptions_nowrap": {
+    "plain_paragraph": "Simple text.",
+    "softbreak_join": "Line one line two",
+    "multi_paragraph": "Para one.\n\nPara two.",
+    "hard_break": "Line one line two",
+    "double_spaces": "keep double spaces?",
+    "bullets_dash": "- a\n- b",
+    "bullets_asterisk": "* a\n* b",
+    "bullets_plus": "+ a\n+ b",
+    "nested_list_3deep": "- a\n    - b\n      - c",
+    "ordered_simple": "1. one\n2. two",
+    "ordered_start_three": "3. three\n4. four",
+    "ordered_paren_delimiter": "1. one\n2. two",
+    "loose_list": "- a\n- b",
+    "list_item_continuation": "- item continued line",
+    "list_item_two_paragraphs": "- item\n  second paragraph of item",
+    "fenced_code_lang": "```yaml\nkey: value\n```",
+    "fenced_code_nolang": "```\nplain\n```",
+    "fenced_code_after_text": "Example:\n\n```sh\nrun --now\n```",
+    "indented_code": "```\nindented code\nsecond line\n```",
+    "inline_code": "Use `foo` here.",
+    "inline_code_backticks": "Use `a`b` span.",
+    "link_plain": "See [text](https://example.com) now.",
+    "link_title": "See [text](https://example.com \"The Title\") now.",
+    "autolink": "See https://example.com now.",
+    "bare_url": "See https://example.com now.",
+    "emphasis_strong": "*em* and **strong**.",
+    "blockquote": "quoted text",
+    "thematic_break": "before\n\nafter",
+    "image": "An alt text image.",
+    "escaped_star": "*not emphasis*",
+    "html_entity": "AT&T and 2 < 3.",
+    "html_block": "",
+    "html_inline": "text with <br> inline",
+    "heading_in_description": "Heading\n\nRegular text below.",
+    "long_paragraph": "This paragraph is deliberately longer than the usual wrapping width of seventy-eight characters so that the greedy word wrapping logic has to break it into several lines and the exact break positions become part of the frozen behavior.",
+    "long_list_items": "- First list item that exceeds the wrapping width by using many unnecessary words in a single sentence for testing purposes\n- Second item with a [link](https://example.com/quite/long/url) and `inline code` that must survive wrapping",
+    "mixed_document": "Intro paragraph.\n\n- bullet one\n- bullet two with `code`\n\n```yaml\nkey: value\n```\n\nClosing paragraph."
+  },
+  "descriptions_wrap78": {
+    "plain_paragraph": "Simple text.",
+    "softbreak_join": "Line one line two",
+    "multi_paragraph": "Para one.\n\nPara two.",
+    "hard_break": "Line one line two",
+    "double_spaces": "keep double spaces?",
+    "bullets_dash": "- a\n- b",
+    "bullets_asterisk": "* a\n* b",
+    "bullets_plus": "+ a\n+ b",
+    "nested_list_3deep": "- a\n    - b\n      - c",
+    "ordered_simple": "1. one\n2. two",
+    "ordered_start_three": "3. three\n4. four",
+    "ordered_paren_delimiter": "1. one\n2. two",
+    "loose_list": "- a\n- b",
+    "list_item_continuation": "- item continued line",
+    "list_item_two_paragraphs": "- item\n  second paragraph of item",
+    "fenced_code_lang": "```yaml\nkey: value\n```",
+    "fenced_code_nolang": "```\nplain\n```",
+    "fenced_code_after_text": "Example:\n\n```sh\nrun --now\n```",
+    "indented_code": "```\nindented code\nsecond line\n```",
+    "inline_code": "Use `foo` here.",
+    "inline_code_backticks": "Use `a`b` span.",
+    "link_plain": "See [text](https://example.com) now.",
+    "link_title": "See [text](https://example.com \"The Title\") now.",
+    "autolink": "See https://example.com now.",
+    "bare_url": "See https://example.com now.",
+    "emphasis_strong": "*em* and **strong**.",
+    "blockquote": "quoted text",
+    "thematic_break": "before\n\nafter",
+    "image": "An alt text image.",
+    "escaped_star": "*not emphasis*",
+    "html_entity": "AT&T and 2 < 3.",
+    "html_block": "",
+    "html_inline": "text with <br> inline",
+    "heading_in_description": "Heading\n\nRegular text below.",
+    "long_paragraph": "This paragraph is deliberately longer than the usual wrapping width of\nseventy-eight characters so that the greedy word wrapping logic has to break\nit into several lines and the exact break positions become part of the frozen\nbehavior.",
+    "long_list_items": "- First list item that exceeds the wrapping width by using many unnecessary\n  words in a single sentence for testing purposes\n- Second item with a [link](https://example.com/quite/long/url) and\n  `inline code` that must survive wrapping",
+    "mixed_document": "Intro paragraph.\n\n- bullet one\n- bullet two with `code`\n\n```yaml\nkey: value\n```\n\nClosing paragraph."
+  },
+  "toc_headings": {
+    "simple": [
+      {
+        "text": "One",
+        "level": 1,
+        "anchor": "one"
+      },
+      {
+        "text": "Two",
+        "level": 2,
+        "anchor": "two"
+      }
+    ],
+    "inline_code_heading": [
+      {
+        "text": "Configure `nginx` Settings",
+        "level": 2,
+        "anchor": "configure-nginx-settings"
+      }
+    ],
+    "anchor_heading": [
+      {
+        "text": "Custom Title",
+        "level": 2,
+        "anchor": "custom-anchor"
+      }
+    ],
+    "anchor_and_code_heading": [
+      {
+        "text": "The `code` part",
+        "level": 3,
+        "anchor": "code-part"
+      }
+    ],
+    "setext_headings": [
+      {
+        "text": "Heading",
+        "level": 1,
+        "anchor": "heading"
+      },
+      {
+        "text": "Subheading",
+        "level": 2,
+        "anchor": "subheading"
+      }
+    ],
+    "hash_in_code_block": [
+      {
+        "text": "Real Heading",
+        "level": 1,
+        "anchor": "real-heading"
+      }
+    ],
+    "hash_in_indented_code": [
+      {
+        "text": "Real",
+        "level": 2,
+        "anchor": "real"
+      }
+    ],
+    "no_headings": [],
+    "all_levels": [
+      {
+        "text": "a",
+        "level": 1,
+        "anchor": "a"
+      },
+      {
+        "text": "b",
+        "level": 2,
+        "anchor": "b"
+      },
+      {
+        "text": "c",
+        "level": 3,
+        "anchor": "c"
+      },
+      {
+        "text": "d",
+        "level": 4,
+        "anchor": "d"
+      },
+      {
+        "text": "e",
+        "level": 5,
+        "anchor": "e"
+      },
+      {
+        "text": "f",
+        "level": 6,
+        "anchor": "f"
+      }
+    ],
+    "empty": []
+  }
+}
