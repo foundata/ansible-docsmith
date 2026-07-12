@@ -4,9 +4,13 @@
 MARKER_README_MAIN_START = "ANSIBLE DOCSMITH MAIN START"
 MARKER_README_MAIN_END = "ANSIBLE DOCSMITH MAIN END"
 
-# TOC section markers for table of contents (content only)
+# TOC section markers for table of contents (content only). TOC indexes
+# only the DocSmith-managed MAIN content; TOC-FULL indexes all headings
+# of the whole document, including hand-written ones.
 MARKER_README_TOC_START = "ANSIBLE DOCSMITH TOC START"
 MARKER_README_TOC_END = "ANSIBLE DOCSMITH TOC END"
+MARKER_README_TOCFULL_START = "ANSIBLE DOCSMITH TOC-FULL START"
+MARKER_README_TOCFULL_END = "ANSIBLE DOCSMITH TOC-FULL END"
 
 # Markdown comment markers
 MARKER_COMMENT_MD_BEGIN = "<!-- "

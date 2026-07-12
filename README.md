@@ -112,7 +112,12 @@ pipx install ansible-docsmith
    <!-- ANSIBLE DOCSMITH TOC START -->
    <!-- ANSIBLE DOCSMITH TOC END -->
    ```
-   for putting list entries for a table of contents (ToC) (optional).
+   for putting list entries for a table of contents (ToC) (optional). These list only the DocSmith-managed variable documentation and are designed to be placed inside a hand-written ToC list. Alternatively, use
+   ```markdown
+   <!-- ANSIBLE DOCSMITH TOC-FULL START -->
+   <!-- ANSIBLE DOCSMITH TOC-FULL END -->
+   ```
+   to generate a complete ToC of *all* headings of the README, including hand-written ones (optional). Headings with an explicit anchor (like `## Usage<a id="usage"></a>`) are linked exactly; for other headings, the anchor is derived from the heading text and `validate` emits a notice, as the derivation cannot be guaranteed to match your rendering platform for exotic titles.
 
 That's it. The entry-point variable files below the `/defaults` directory of your role do *not* need additional preparations. The tool will automatically (re)place formatted inline comment blocks above variables defined there.
 

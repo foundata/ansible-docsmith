@@ -12,6 +12,8 @@ from ..constants import (
     MARKER_README_MAIN_START,
     MARKER_README_TOC_END,
     MARKER_README_TOC_START,
+    MARKER_README_TOCFULL_END,
+    MARKER_README_TOCFULL_START,
 )
 from .exceptions import FileOperationError
 from .toc import create_toc_generator
@@ -44,6 +46,14 @@ class ReadmeUpdater:
         self.toc_start_marker = f"{comment_begin}{MARKER_README_TOC_START}{comment_end}"
         self.toc_end_marker = f"{comment_begin}{MARKER_README_TOC_END}{comment_end}"
 
+        # TOC-FULL markers (whole-document table of contents)
+        self.tocfull_start_marker = (
+            f"{comment_begin}{MARKER_README_TOCFULL_START}{comment_end}"
+        )
+        self.tocfull_end_marker = (
+            f"{comment_begin}{MARKER_README_TOCFULL_END}{comment_end}"
+        )
+
         # TOC generator for the specified format
         self.toc_generator = create_toc_generator(
             format_type=self.format_type, bullet_style=toc_bullet_style
@@ -70,6 +80,8 @@ class ReadmeUpdater:
             )
             # Update TOC if markers are present
             content = self._update_toc_section(content)
+            # Update TOC-FULL if markers are present
+            content = self._update_tocfull_section(content)
             return content
         else:
             # Create new README with template
@@ -121,6 +133,39 @@ class ReadmeUpdater:
             content, toc_content, self.toc_start_marker, self.toc_end_marker
         )
 
+    def _update_tocfull_section(self, content: str) -> str:
+        """Update TOC-FULL section if markers are present.
+
+        Unlike the regular TOC (which indexes only the DocSmith-managed
+        MAIN content), TOC-FULL lists all headings of the whole document,
+        including hand-written ones. Headings with an explicit anchor
+        (like ``<a id="..."></a>``) are linked exactly; anchors of other
+        headings are derived from the heading text.
+        """
+        if not self.toc_generator:
+            return content
+
+        if (
+            self.tocfull_start_marker not in content
+            or self.tocfull_end_marker not in content
+        ):
+            return content
+
+        # Detect bullet style from content outside the managed sections
+        external_content = self._extract_external_content(content)
+        if external_content and not self.toc_generator.bullet_style:
+            detected_style = self.toc_generator._detect_bullet_style(external_content)
+            self.toc_generator.bullet_style = detected_style
+
+        # The whole document is the input; the old TOC/TOC-FULL sections
+        # contain only list items (no headings), so they cannot pollute
+        # the result
+        toc_content = self.toc_generator.generate_toc(content)
+
+        return self._replace_between_markers(
+            content, toc_content, self.tocfull_start_marker, self.tocfull_end_marker
+        )
+
     def _extract_main_content(self, content: str) -> str:
         """Extract content between MAIN markers for TOC generation."""
         if self.start_marker not in content or self.end_marker not in content:
@@ -146,6 +191,14 @@ class ReadmeUpdater:
         if self.toc_start_marker in content and self.toc_end_marker in content:
             pattern = (
                 f"{re.escape(self.toc_start_marker)}.*?{re.escape(self.toc_end_marker)}"
+            )
+            content = re.sub(pattern, "", content, flags=re.DOTALL)
+
+        # Remove content between TOC-FULL markers
+        if self.tocfull_start_marker in content and self.tocfull_end_marker in content:
+            pattern = (
+                f"{re.escape(self.tocfull_start_marker)}"
+                f".*?{re.escape(self.tocfull_end_marker)}"
             )
             content = re.sub(pattern, "", content, flags=re.DOTALL)
 
@@ -179,13 +232,13 @@ See ``min_ansible_version`` in ``meta/main.yml``.
 Licensing, copyright
 ====================
 
-..REUSE-IgnoreStart
+.. REUSE-IgnoreStart
 Copyright (c) [FIXME YYYY Your Name]
 
 [FIXME Adapt license:
 This project is licensed under the GNU General Public License v3.0 or later
 (SPDX-License-Identifier: ``GPL-3.0-or-later``)].
-..REUSE-IgnoreEnd
+.. REUSE-IgnoreEnd
 
 
 Author information

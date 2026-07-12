@@ -508,6 +508,50 @@ argument_specs:
 
         assert warnings == []
 
+    def test_validate_tocfull_markers_mismatch(
+        self, sample_role_with_specs_and_defaults
+    ):
+        """A lone TOC-FULL marker is an error."""
+        processor = RoleProcessor()
+        role_path = sample_role_with_specs_and_defaults
+
+        (role_path / "README.md").write_text(
+            "# Role\n\n"
+            "<!-- ANSIBLE DOCSMITH TOC-FULL START -->\n\n"
+            "<!-- ANSIBLE DOCSMITH MAIN START -->\n"
+            "<!-- ANSIBLE DOCSMITH MAIN END -->\n",
+            encoding="utf-8",
+        )
+
+        errors, _ = processor._validate_readme_toc_markers(role_path)
+
+        assert any("TOC-FULL end marker" in e for e in errors)
+
+    def test_validate_tocfull_notices_anchorless_headings(
+        self, sample_role_with_specs_and_defaults
+    ):
+        """Headings without explicit anchors produce a notice in TOC-FULL docs."""
+        processor = RoleProcessor()
+        role_path = sample_role_with_specs_and_defaults
+
+        (role_path / "README.md").write_text(
+            "# Role\n\n"
+            "<!-- ANSIBLE DOCSMITH TOC-FULL START -->\n"
+            "<!-- ANSIBLE DOCSMITH TOC-FULL END -->\n\n"
+            '## With anchor<a id="with-anchor"></a>\n\n'
+            "## Without anchor\n\n"
+            "<!-- ANSIBLE DOCSMITH MAIN START -->\n"
+            "<!-- ANSIBLE DOCSMITH MAIN END -->\n",
+            encoding="utf-8",
+        )
+
+        _, notices = processor._validate_readme_toc_markers(role_path)
+
+        joined = "\n".join(notices)
+        assert "'Without anchor'" in joined
+        assert '<a id="without-anchor"></a>' in joined
+        assert "'With anchor'" not in joined
+
     def test_validate_markup_reports_invalid_constructs(self, temp_dir):
         """Invalid Ansible markup in descriptions produces warnings."""
         processor = RoleProcessor()

@@ -2003,6 +2003,78 @@ single linebreaks becoming spaces for natural flow."""
 class TestReadmeUpdater:
     """Test the ReadmeUpdater class."""
 
+    def test_update_readme_tocfull_section(self, temp_dir):
+        """TOC-FULL lists all headings, including hand-written ones."""
+        updater = ReadmeUpdater()
+        readme_path = temp_dir / "README.md"
+
+        readme_path.write_text(
+            "# My Role\n\n"
+            '## Table of contents<a id="toc"></a>\n\n'
+            "<!-- ANSIBLE DOCSMITH TOC-FULL START -->\n"
+            "<!-- ANSIBLE DOCSMITH TOC-FULL END -->\n\n"
+            '## Usage<a id="usage"></a>\n\nHand-written section.\n\n'
+            "<!-- ANSIBLE DOCSMITH MAIN START -->\n"
+            "<!-- ANSIBLE DOCSMITH MAIN END -->\n\n"
+            "## License\n\nText.\n",
+            encoding="utf-8",
+        )
+
+        updater.update_readme(
+            readme_path, '## Role variables<a id="variables"></a>\n\ncontent'
+        )
+        content = readme_path.read_text(encoding="utf-8")
+
+        # All headings are listed: hand-written (explicit + derived
+        # anchors) as well as the generated ones
+        assert "* [My Role](#my-role)" in content
+        assert "  * [Usage](#usage)" in content
+        assert "  * [Role variables](#variables)" in content
+        assert "  * [License](#license)" in content
+
+        # Idempotence: a second run must not change anything
+        before = content
+        updater.update_readme(
+            readme_path, '## Role variables<a id="variables"></a>\n\ncontent'
+        )
+        assert readme_path.read_text(encoding="utf-8") == before
+
+    def test_update_readme_tocfull_and_toc_coexist(self, temp_dir):
+        """TOC (MAIN content only) and TOC-FULL work in the same file."""
+        updater = ReadmeUpdater()
+        readme_path = temp_dir / "README.md"
+
+        readme_path.write_text(
+            "# My Role\n\n"
+            "- Hand entry<!-- ANSIBLE DOCSMITH TOC START -->"
+            "<!-- ANSIBLE DOCSMITH TOC END -->\n\n"
+            "<!-- ANSIBLE DOCSMITH TOC-FULL START -->\n"
+            "<!-- ANSIBLE DOCSMITH TOC-FULL END -->\n\n"
+            '## Hand-written<a id="hand"></a>\n\n'
+            "<!-- ANSIBLE DOCSMITH MAIN START -->\n"
+            "<!-- ANSIBLE DOCSMITH MAIN END -->\n",
+            encoding="utf-8",
+        )
+
+        updater.update_readme(
+            readme_path, '## Role variables<a id="variables"></a>\n\ncontent'
+        )
+        content = readme_path.read_text(encoding="utf-8")
+
+        # The regular TOC section indexes only the MAIN content ...
+        toc_section = content.split("ANSIBLE DOCSMITH TOC START -->")[1].split(
+            "<!-- ANSIBLE DOCSMITH TOC END"
+        )[0]
+        assert "[Role variables](#variables)" in toc_section
+        assert "Hand-written" not in toc_section
+
+        # ... while TOC-FULL indexes the whole document
+        tocfull_section = content.split("TOC-FULL START -->")[1].split(
+            "<!-- ANSIBLE DOCSMITH TOC-FULL END"
+        )[0]
+        assert "[Hand-written](#hand)" in tocfull_section
+        assert "[Role variables](#variables)" in tocfull_section
+
     def test_update_readme_new_file(self, temp_dir):
         """Test creating new README file."""
         updater = ReadmeUpdater()
