@@ -28,7 +28,7 @@ class TestTemplateManager:
 
         # Add dummy filters for testing template loading
         tm.add_filter("ansible_escape", lambda x: x)
-        tm.add_filter("format_default", lambda x: x)
+        tm.add_filter("format_default", lambda x, table=False: x)
         tm.add_filter("format_table_description", lambda x, y=None: x)
         tm.add_filter("format_description", lambda x: x)
         tm.add_filter("code_escape", lambda x: x)
@@ -44,7 +44,9 @@ class TestTemplateManager:
 
         # Add dummy filters for testing
         tm.add_filter("ansible_escape", lambda x: x)
-        tm.add_filter("format_default", lambda x: str(x) if x is not None else "N/A")
+        tm.add_filter(
+            "format_default", lambda x, table=False: str(x) if x is not None else "N/A"
+        )
         tm.add_filter("format_table_description", lambda x, y=None: x)
         tm.add_filter("format_description", lambda x: x)
         tm.add_filter("code_escape", lambda x: f"`{x}`")
@@ -79,7 +81,9 @@ class TestTemplateManager:
 
         # Add dummy filters for testing
         tm.add_filter("ansible_escape", lambda x: x)
-        tm.add_filter("format_default", lambda x: str(x) if x is not None else "N/A")
+        tm.add_filter(
+            "format_default", lambda x, table=False: str(x) if x is not None else "N/A"
+        )
         tm.add_filter("format_table_description", lambda x, y=None: x)
         tm.add_filter("format_description", lambda x: x)
         tm.add_filter("code_escape", lambda x: f"`{x}`")

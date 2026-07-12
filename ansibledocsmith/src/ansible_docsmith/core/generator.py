@@ -143,22 +143,37 @@ class BaseDocumentationGenerator(ABC):
         pass
 
     @abstractmethod
-    def _code_escape_filter(self, value: Any) -> str:
-        """Escape code for the target format."""
+    def _code_escape_filter(self, value: Any, table: bool = False) -> str:
+        """Escape code for the target format.
+
+        Args:
+            value: The value to render as inline code
+            table: Set to True when the output is placed in a table cell
+                (enables cell-delimiter escaping where the format needs it).
+        """
         pass
 
-    def _format_default_filter(self, value: Any) -> str:
-        """Format default values for display."""
+    @abstractmethod
+    def _wrap_inline_code(self, text: str, table: bool = False) -> str:
+        """Wrap text in format-specific inline code syntax."""
+        pass
+
+    def _format_default_filter(self, value: Any, table: bool = False) -> str:
+        """Format default values for display.
+
+        Args:
+            value: The default value from the argument spec
+            table: Set to True when the output is placed in a table cell
+        """
         if value is None:
             return "N/A"
         elif isinstance(value, str):
-            return f'`"{value}"`'
+            text = f'"{value}"'
         elif isinstance(value, bool):
-            return f"`{str(value).lower()}`"
-        elif isinstance(value, list | dict):
-            return f"`{value}`"
+            text = str(value).lower()
         else:
-            return f"`{value}`"
+            text = str(value)
+        return self._wrap_inline_code(text, table)
 
     def _format_description_filter(self, description: Any) -> str:
         """Format description for README display, handling both strings and lists."""
@@ -210,13 +225,28 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         value_str = str(value)
         return value_str.replace("{{", "\\{\\{").replace("}}", "\\}\\}")
 
-    def _code_escape_filter(self, value: Any) -> str:
-        """Escape code for Markdown code blocks."""
+    def _code_escape_filter(self, value: Any, table: bool = False) -> str:
+        """Escape code for Markdown inline code spans."""
         if value is None:
             return "N/A"
-        value_str = str(value)
-        escaped = value_str.replace("`", "\\`").replace("|", "\\|")
-        return f"`{escaped}`"
+        return self._wrap_inline_code(str(value), table)
+
+    def _wrap_inline_code(self, text: str, table: bool = False) -> str:
+        """Build a CommonMark-valid inline code span for arbitrary content.
+
+        Backslash escapes do not work inside code spans; content containing
+        backticks needs a delimiter run longer than the longest backtick run
+        in the content, padded with spaces if the content starts or ends
+        with a backtick. Pipes are only escaped inside GFM table cells,
+        where ``\\|`` is honored even within code spans.
+        """
+        if table:
+            text = text.replace("|", "\\|")
+        backtick_runs = re.findall(r"`+", text)
+        longest_run = max((len(run) for run in backtick_runs), default=0)
+        delimiter = "`" * (longest_run + 1)
+        padding = " " if text.startswith("`") or text.endswith("`") else ""
+        return f"{delimiter}{padding}{text}{padding}{delimiter}"
 
     def _format_table_description_filter(
         self,
@@ -295,7 +325,8 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
             else:
                 result = f"{truncated} […]"
 
-        return result
+        # Escape unescaped pipes so description text cannot break the table row
+        return re.sub(r"(?<!\\)\|", r"\\|", result)
 
 
 class RSTDocumentationGenerator(BaseDocumentationGenerator):
@@ -324,14 +355,22 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         # RST doesn't need special escaping for Ansible variables
         return value_str
 
-    def _code_escape_filter(self, value: Any) -> str:
-        """Escape code for reStructuredText code blocks."""
+    def _code_escape_filter(self, value: Any, table: bool = False) -> str:
+        """Escape code for reStructuredText inline literals."""
         if value is None:
             return "N/A"
-        value_str = str(value)
-        # RST uses double backticks for inline code
-        escaped = value_str.replace("`", "\\`")
-        return f"``{escaped}``"
+        return self._wrap_inline_code(str(value), table)
+
+    def _wrap_inline_code(self, text: str, table: bool = False) -> str:
+        """Wrap text in an RST inline literal (double backticks).
+
+        Single backticks inside inline literals are valid RST and need no
+        escaping (backslash escapes are not processed inside literals).
+        Content containing a double backtick cannot be represented in an
+        RST inline literal at all; a space is inserted as mitigation.
+        """
+        _ = table  # RST tables use csv_escape; no delimiter escaping needed
+        return f"``{text.replace('``', '` `')}``"
 
     def _format_table_description_filter(
         self,

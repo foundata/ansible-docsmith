@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Pipe characters (`|`) in default values and descriptions no longer break the Markdown variable table; they are escaped only there (previously, pipes in choices were escaped globally, rendering a stray backslash outside of tables).
+- Inline code containing backticks now renders correctly in Markdown (longer delimiter runs instead of backslash escapes, which are not processed inside code spans).
+- Default values in reStructuredText output now use valid inline literals (double backticks); single backticks are interpreted text in RST and rendered incorrectly.
+
 - Comment blocks in `defaults/` files are no longer injected above indented (nested) keys that share a top-level variable's name, and hand-written comments above such nested keys are no longer deleted during comment cleanup.
 - `README.*` and `defaults/` files are now always written with LF line endings on all platforms.
 - The processing results now report "Created" for a newly generated README (previously always "Updated") and "Skipped (no variables found)" instead of "Comments added" for defaults files without variables.

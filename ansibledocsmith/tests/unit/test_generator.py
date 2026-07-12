@@ -87,11 +87,21 @@ class TestDocumentationGenerator:
         """Test code escaping for Markdown."""
         generator = MarkdownDocumentationGenerator()
 
+        # Pipes are only escaped in table context (backslash-escaping a pipe
+        # outside a table renders the backslash literally inside a code span)
         result = generator._code_escape_filter("test|value")
+        assert result == "`test|value`"
+
+        result = generator._code_escape_filter("test|value", table=True)
         assert result == "`test\\|value`"
 
+        # Backticks cannot be backslash-escaped inside code spans; a longer
+        # delimiter run is required instead
         result = generator._code_escape_filter("test`value")
-        assert result == "`test\\`value`"
+        assert result == "``test`value``"
+
+        result = generator._code_escape_filter("``double``")
+        assert result == "``` ``double`` ```"
 
         result = generator._code_escape_filter(None)
         assert result == "N/A"
@@ -126,6 +136,18 @@ class TestDocumentationGenerator:
         # Number
         result = generator._format_default_filter(42)
         assert result == "`42`"
+
+        # Pipe in a table cell must not break the table row
+        result = generator._format_default_filter("a|b", table=True)
+        assert result == '`"a\\|b"`'
+
+        # Pipe outside a table stays literal (no stray backslash)
+        result = generator._format_default_filter("a|b")
+        assert result == '`"a|b"`'
+
+        # Backtick in value: longer delimiter run instead of broken escape
+        result = generator._format_default_filter("back`tick")
+        assert result == '``"back`tick"``'
 
     def test_multiline_description_handling(self, sample_role_with_specs):
         """Test handling of multiline descriptions in documentation generation."""
@@ -246,6 +268,19 @@ class TestHTMLStripper:
 
 class TestTableDescriptionFilter:
     """Test the improved format_table_description filter functionality."""
+
+    def test_pipes_escaped_for_table_cells(self):
+        """Pipes in description text must not break the Markdown table row."""
+        generator = MarkdownDocumentationGenerator()
+
+        result = generator._format_table_description_filter(
+            "Use `key|value` pairs or a|b syntax."
+        )
+        assert result == "Use `key\\|value` pairs or a\\|b syntax."
+
+        # Already escaped pipes must not be double-escaped
+        result = generator._format_table_description_filter("escaped \\| pipe")
+        assert result == "escaped \\| pipe"
 
     def test_html_stripping_basic_tags(self):
         """Test that HTML tags are properly stripped (not encoded)."""
@@ -2568,10 +2603,26 @@ class TestRSTDocumentationGenerator:
         result = generator._code_escape_filter("test|value")
         assert result == "``test|value``"
 
+        # Single backticks are valid inside RST inline literals; backslash
+        # escapes are not processed there and must not be emitted
         result = generator._code_escape_filter("test`value")
-        assert result == "``test\\`value``"  # Escape backticks in RST
+        assert result == "``test`value``"
 
         result = generator._code_escape_filter(None)
+        assert result == "N/A"
+
+    def test_rst_format_default_filter(self):
+        """RST defaults must use double-backtick inline literals."""
+        generator = RSTDocumentationGenerator()
+
+        # Single backticks are interpreted text in RST, not code
+        result = generator._format_default_filter("test")
+        assert result == '``"test"``'
+
+        result = generator._format_default_filter(True)
+        assert result == "``true``"
+
+        result = generator._format_default_filter(None)
         assert result == "N/A"
 
     def test_rst_format_table_description_filter(self):
