@@ -35,6 +35,25 @@ _MD_ATOMIC_TOKENS = re.compile(r"\[[^\]]*\]\([^)]*\)\S*|`+[^`]+`+\S*|\S+")
 _RST_ATOMIC_TOKENS = re.compile(r"`[^`<>]*<[^>]*>`__\S*|``[^`]+``\S*|\S+")
 
 
+def normalize_description(description: Any) -> str:
+    """Normalize a description value (string or list) to a single string.
+
+    Argument specs allow descriptions as a string or as a list of
+    paragraphs; list items are joined as paragraphs separated by blank
+    lines. Any other YAML object type is converted via str().
+    """
+    if description is None:
+        return ""
+    if isinstance(description, list):
+        return "\n\n".join(
+            str(item).strip() for item in description if str(item).strip()
+        )
+    try:
+        return str(description).strip()
+    except Exception:
+        return ""
+
+
 def _truncate_preserving_tokens(
     text: str, max_length: int, token_pattern: re.Pattern
 ) -> str:
@@ -212,13 +231,7 @@ class BaseDocumentationGenerator(ABC):
 
     def _format_description_filter(self, description: Any) -> str:
         """Format description for README display, handling both strings and lists."""
-        if isinstance(description, list):
-            # Join list items with double newlines for paragraph separation
-            text = "\n\n".join(
-                str(item).strip() for item in description if str(item).strip()
-            )
-        else:
-            text = str(description).strip() if description else ""
+        text = normalize_description(description)
         return convert_ansible_markup(text, self._get_format_type(), self._role_options)
 
     @abstractmethod
@@ -285,23 +298,7 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
             variable_name: Optional variable name for creating anchor links
             max_length: Maximum length before truncation. Use 0 to disable.
         """
-        if description is None:
-            return ""
-
-        # Normalize description to string format
-        if isinstance(description, list):
-            # Join list items with double newlines for paragraph separation
-            text = "\n\n".join(
-                str(item).strip() for item in description if str(item).strip()
-            )
-        else:
-            # Convert to string and strip, handling any YAML object types
-            try:
-                text = str(description)
-                text = text.strip() if hasattr(text, "strip") else text
-            except Exception:
-                return ""
-
+        text = normalize_description(description)
         if not text:
             return ""
 
@@ -399,23 +396,7 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
             variable_name: Optional variable name for creating anchor links
             max_length: Maximum length before truncation. Use 0 to disable.
         """
-        if description is None:
-            return ""
-
-        # Normalize description to string format
-        if isinstance(description, list):
-            # Join list items with double newlines for paragraph separation
-            text = "\n\n".join(
-                str(item).strip() for item in description if str(item).strip()
-            )
-        else:
-            # Convert to string and strip, handling any YAML object types
-            try:
-                text = str(description)
-                text = text.strip() if hasattr(text, "strip") else text
-            except Exception:
-                return ""
-
+        text = normalize_description(description)
         if not text:
             return ""
 
@@ -1163,22 +1144,7 @@ class DefaultsCommentGenerator:
         - Markdown lists are preserved
         - Markdown code blocks are preserved
         """
-        if description is None:
-            return ""
-
-        if isinstance(description, list):
-            # Join list items with double newlines for paragraph separation
-            text = "\n\n".join(
-                str(item).strip() for item in description if str(item).strip()
-            )
-        else:
-            # Convert to string and strip, handling any YAML object types
-            try:
-                text = str(description)
-                text = text.strip() if hasattr(text, "strip") else text
-            except Exception:
-                return ""
-
+        text = normalize_description(description)
         if not text:
             return ""
 
@@ -1546,16 +1512,6 @@ class DefaultsCommentGenerator:
             child = child.nxt
 
         return "".join(text_parts)
-
-    def _has_block_comment_above(self, result_lines: list[str]) -> bool:
-        """Check if there's already a variable-specific block comment above."""
-        # We should only skip if the immediately preceding lines contain
-        # a block comment that was just added for this variable
-        # For now, we'll be more permissive and always add comments
-        # since detecting "our" comments vs existing general comments is complex
-        # Parameter result_lines is reserved for future implementation
-        _ = result_lines  # Suppress unused parameter warning
-        return False
 
     def _remove_inline_comment(self, line: str) -> str:
         """Remove inline comments from a YAML line, preserving variable definition."""
