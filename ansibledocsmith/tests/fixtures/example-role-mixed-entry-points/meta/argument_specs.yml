@@ -1,0 +1,48 @@
+# Please note: This file is just a dummy for testing. It combines a "main"
+# entry point (which keeps the short, historical anchor scheme) with an
+# additional entry point (whose anchors get an entry-point prefix), and
+# uses O(...) cross-references between the two.
+
+---
+
+argument_specs:
+
+  main:
+    short_description: "Main entry point of the mixed example role"
+    description:
+      - "Manages the C(foo) service."
+      - "See the O(install_prefix) option of the install entry point for the installation location."
+    author:
+      - "foundata GmbH"
+    options:
+
+      foo_state:
+        type: "str"
+        default: "present"
+        choices:
+          - "present"
+          - "absent"
+        description: "Whether C(foo) shall be present. Uses O(foo_conf) internally."
+
+      foo_conf:
+        type: "path"
+        default: "/etc/foo.conf"
+        description: "Path of the configuration file."
+
+  install:
+    short_description: "Installs the software"
+    description:
+      - "Only needed for manual installations, M(ansible.builtin.package) is used otherwise."
+    author:
+      - "foundata GmbH"
+    options:
+
+      install_prefix:
+        type: "path"
+        default: "/usr/local"
+        description: "Installation prefix. The service reads O(foo_conf) after installation."
+
+      foo_state:
+        type: "str"
+        default: "present"
+        description: "Shared variable name to exercise anchor disambiguation (main wins)."

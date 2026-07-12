@@ -1,0 +1,5 @@
+---
+
+install_prefix: "/usr/local"
+
+foo_state: "present"

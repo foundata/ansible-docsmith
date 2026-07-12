@@ -1,0 +1,5 @@
+---
+
+foo_state: "present"
+
+foo_conf: "/etc/foo.conf"
