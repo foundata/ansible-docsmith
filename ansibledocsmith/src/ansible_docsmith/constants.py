@@ -19,6 +19,11 @@ MARKER_COMMENT_RST_END = ""
 # Default maximum length for variable description shown in tables
 TABLE_DESCRIPTION_MAX_LENGTH = 250
 
+# Maximum nesting depth for documenting nested options ("dict attributes")
+# in entry-point file comments. Matches the depth limit of the built-in
+# README templates.
+COMMENT_MAX_NESTED_DEPTH = 3
+
 # CLI branding (please keep rendered length under 75 chars)
 CLI_HEADER = (
     "Welcome to "

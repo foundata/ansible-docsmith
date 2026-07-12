@@ -57,6 +57,45 @@ class TestEndToEnd:
             encoding="utf-8"
         ) == defaults_before
 
+    def test_generate_documents_nested_options(self, temp_dir):
+        """Nested options are documented in defaults comments (issue #21)."""
+        runner = CliRunner()
+
+        fixture = (
+            Path(__file__).parent.parent / "fixtures" / "example-role-nested-options"
+        )
+        role_path = temp_dir / "example-role-nested-options"
+        shutil.copytree(fixture, role_path)
+
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+
+        defaults = (role_path / "defaults" / "main.yml").read_text(encoding="utf-8")
+        assert "# - Dict attributes:" in defaults
+        assert "#   - name: Name of the group." in defaults
+        assert "#     - Required: Yes" in defaults
+        assert "#     - Choices: present, absent" in defaults
+        # Third nesting level is rendered, the fourth is omitted
+        assert "- username: Login name of the member." in defaults
+        assert "- permission: Permission entry (third nesting level)." in defaults
+        assert "- too_deep:" not in defaults
+        assert "omitted at this nesting depth" in defaults
+
+        # Idempotence: a second run must not change anything
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+        assert (role_path / "defaults" / "main.yml").read_text(
+            encoding="utf-8"
+        ) == defaults
+
+        # Opt-out flag removes the nested documentation
+        result = runner.invoke(
+            app, ["generate", str(role_path), "--no-defaults-comments-nested"]
+        )
+        assert result.exit_code == 0
+        defaults = (role_path / "defaults" / "main.yml").read_text(encoding="utf-8")
+        assert "Dict attributes" not in defaults
+
     def test_generate_command_dry_run(self, sample_role_with_specs_and_defaults):
         """Test generate command in dry run mode."""
         runner = CliRunner()

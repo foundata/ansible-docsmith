@@ -753,6 +753,141 @@ class TestDefaultsCommentGenerator:
 
         assert "# keep this comment" in cleaned
 
+    def test_block_comment_documents_nested_options(self):
+        """Nested options (dict attributes) are documented, see issue #21."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "List of Active Directory groups to manage.",
+                "type": "list",
+                "elements": "dict",
+                "required": False,
+                "default": [],
+                "options": {
+                    "name": {
+                        "type": "str",
+                        "required": True,
+                        "description": "Name of the Active Directory group.",
+                    },
+                    "state": {
+                        "type": "str",
+                        "required": False,
+                        "default": "present",
+                        "choices": ["present", "absent"],
+                        "description": "Whether the group shall exist.",
+                    },
+                },
+            }
+        )
+
+        expected = [
+            "# List of Active Directory groups to manage.",
+            "#",
+            "# - Type: list",
+            "# - Required: No",
+            "# - Default: []",
+            "# - List elements: dict",
+            "# - Dict attributes:",
+            "#   - name: Name of the Active Directory group.",
+            "#     - Type: str",
+            "#     - Required: Yes",
+            "#   - state: Whether the group shall exist.",
+            "#     - Type: str",
+            "#     - Required: No",
+            "#     - Default: present",
+            "#     - Choices: present, absent",
+        ]
+        assert comment_lines == expected
+
+    def test_block_comment_nested_options_can_be_disabled(self):
+        """The nested_options flag suppresses dict attribute documentation."""
+        generator = DefaultsCommentGenerator(nested_options=False)
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "A dict variable.",
+                "type": "dict",
+                "required": False,
+                "options": {
+                    "key": {"type": "str", "description": "Some key."},
+                },
+            }
+        )
+
+        assert not any("Dict attributes" in line for line in comment_lines)
+        assert not any("- key:" in line for line in comment_lines)
+
+    def test_block_comment_nested_options_depth_limit(self):
+        """Nesting beyond the depth limit is replaced by an omission note."""
+        generator = DefaultsCommentGenerator()
+
+        # Depth 4 (level1 > level2 > level3 > level4)
+        spec = {
+            "description": "Top.",
+            "type": "list",
+            "elements": "dict",
+            "options": {
+                "level1": {
+                    "type": "dict",
+                    "description": "First level.",
+                    "options": {
+                        "level2": {
+                            "type": "dict",
+                            "description": "Second level.",
+                            "options": {
+                                "level3": {
+                                    "type": "dict",
+                                    "description": "Third level.",
+                                    "options": {
+                                        "level4": {
+                                            "type": "str",
+                                            "description": "Too deep.",
+                                        }
+                                    },
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+        }
+
+        comment_lines = generator._format_block_comment(spec)
+        text = "\n".join(comment_lines)
+
+        assert "- level3:" in text
+        assert "- level4:" not in text
+        assert "omitted at this nesting depth" in text
+
+    def test_block_comment_nested_description_wraps_with_hanging_indent(self):
+        """Long nested descriptions wrap and align below the bullet."""
+        generator = DefaultsCommentGenerator()
+
+        long_text = (
+            "This is a longer description that will definitely need to "
+            "wrap onto a continuation line to demonstrate hanging indents."
+        )
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Top.",
+                "type": "dict",
+                "options": {"gid": {"type": "int", "description": long_text}},
+            }
+        )
+
+        bullet_index = next(
+            i for i, line in enumerate(comment_lines) if "- gid:" in line
+        )
+        # Description starts on the bullet line and wraps below it with
+        # hanging indent, aligned with the detail bullets
+        assert comment_lines[bullet_index].startswith(
+            "#   - gid: This is a longer description"
+        )
+        assert comment_lines[bullet_index + 1].startswith("#     ")
+        assert "hanging indents." in comment_lines[bullet_index + 1]
+        assert all(len(line) <= 80 for line in comment_lines)
+
     def test_format_block_comment_formats_compound_default_as_yaml(self):
         """Test issue #17 list-of-dicts defaults render as wrapped YAML comments."""
         generator = DefaultsCommentGenerator()

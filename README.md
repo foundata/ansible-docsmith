@@ -149,6 +149,10 @@ ansible-docsmith generate /path/to/role --no-defaults
 # skip README.md
 ansible-docsmith generate /path/to/role --no-readme
 
+# Do not document nested options ("dict attributes") in the comments of
+# entry-point files (like defaults/main.yml)
+ansible-docsmith generate /path/to/role --no-defaults-comments-nested
+
 # Verbose output for debugging
 ansible-docsmith generate /path/to/role --verbose
 ```

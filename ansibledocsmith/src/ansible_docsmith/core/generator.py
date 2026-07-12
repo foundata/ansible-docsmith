@@ -13,6 +13,7 @@ from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from ..constants import (
+    COMMENT_MAX_NESTED_DEPTH,
     MARKER_COMMENT_MD_BEGIN,
     MARKER_COMMENT_MD_END,
     MARKER_COMMENT_RST_BEGIN,
@@ -907,7 +908,14 @@ def create_toc_generator(
 class DefaultsCommentGenerator:
     """Add block comments above variables in entry-point files from argument specs."""
 
-    def __init__(self):
+    def __init__(self, nested_options: bool = True):
+        """Initialize the comment generator.
+
+        Args:
+            nested_options: Whether to document nested options ("dict
+                attributes") of a variable inside its comment block.
+        """
+        self.nested_options = nested_options
         self.yaml = YAML()
         self.yaml.preserve_quotes = True
         self.yaml.explicit_start = True
@@ -1015,46 +1023,104 @@ class DefaultsCommentGenerator:
 
         return comment_lines
 
-    def _format_variable_details(self, var_spec: dict[str, Any]) -> list[str]:
-        """Format variable details (type, required, default, choices) as comments."""
+    def _format_variable_details(
+        self, var_spec: dict[str, Any], indent: str = "", depth: int = 0
+    ) -> list[str]:
+        """Format variable details (type, required, default, choices) as comments.
+
+        Args:
+            var_spec: The (normalized) option specification
+            indent: Indentation inside the comment, after the "# " prefix
+            depth: Current nesting depth (0 = top-level variable)
+        """
         details = []
 
         # Type
         var_type = var_spec.get("type", "str")
-        details.append(f"# - Type: {var_type}")
+        details.append(f"# {indent}- Type: {var_type}")
 
         # Required
         required = var_spec.get("required", False)
-        details.append(f"# - Required: {'Yes' if required else 'No'}")
+        details.append(f"# {indent}- Required: {'Yes' if required else 'No'}")
 
         # Default value
         default = var_spec.get("default")
         if default is not None:
-            details.extend(self._format_default_comment(default))
+            details.extend(self._format_default_comment(default, indent))
 
         # Choices
         choices = var_spec.get("choices")
         if choices:
             formatted_choices = ", ".join(str(choice) for choice in choices)
-            details.append(f"# - Choices: {formatted_choices}")
+            details.append(f"# {indent}- Choices: {formatted_choices}")
 
         # List elements
         elements = var_spec.get("elements")
         if elements:
-            details.append(f"# - List elements: {elements}")
+            details.append(f"# {indent}- List elements: {elements}")
+
+        # Nested options ("dict attributes"), see issue #21
+        suboptions = var_spec.get("options")
+        if suboptions and self.nested_options:
+            if depth < COMMENT_MAX_NESTED_DEPTH:
+                details.append(f"# {indent}- Dict attributes:")
+                details.extend(self._format_suboptions(suboptions, depth + 1))
+            else:
+                details.append(
+                    f"# {indent}- Dict attributes: (omitted at this nesting "
+                    f"depth, see meta/argument_specs.yml)"
+                )
 
         return details
 
-    def _format_default_comment(self, default: Any) -> list[str]:
+    def _format_suboptions(self, options: dict[str, Any], depth: int = 1) -> list[str]:
+        """Render nested option specs as indented comment bullets.
+
+        Produces a compact block per attribute: the description on the
+        bullet line (wrapped with hanging indent) followed by the same
+        detail bullets used for top-level variables.
+        """
+        bullet_indent = "  " * (2 * depth - 1)
+        detail_indent = f"{bullet_indent}  "
+        lines: list[str] = []
+
+        for name, spec in options.items():
+            header = f"{bullet_indent}- {name}:"
+
+            description = self._normalize_description(spec.get("description", ""))
+            if description:
+                width = max(78 - len(detail_indent), 30)
+                wrapped = self._parse_and_format_description(
+                    description, max_width=width
+                )
+                desc_lines = wrapped.split("\n")
+                first_line = desc_lines[0]
+                if first_line and len(f"{header} {first_line}") <= 78:
+                    lines.append(f"# {header} {first_line}")
+                    remaining = desc_lines[1:]
+                else:
+                    lines.append(f"# {header}")
+                    remaining = desc_lines
+                lines.extend(
+                    f"# {detail_indent}{line}" if line else "#" for line in remaining
+                )
+            else:
+                lines.append(f"# {header}")
+
+            lines.extend(self._format_variable_details(spec, detail_indent, depth))
+
+        return lines
+
+    def _format_default_comment(self, default: Any, indent: str = "") -> list[str]:
         """Format a default value as one or more comment lines."""
         formatted_default = self._format_default_value(default)
         if "\n" not in formatted_default:
-            return [f"# - Default: {formatted_default}"]
+            return [f"# {indent}- Default: {formatted_default}"]
 
         return [
-            "# - Default:",
+            f"# {indent}- Default:",
             *(
-                f"#   {line}" if line else "#"
+                f"# {indent}  {line}" if line else "#"
                 for line in formatted_default.splitlines()
             ),
         ]

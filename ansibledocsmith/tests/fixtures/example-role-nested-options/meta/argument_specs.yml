@@ -1,0 +1,61 @@
+# Please note: This file is just a dummy for testing. It demonstrates
+# nested options (dict attributes) as described in issue #21.
+
+---
+
+argument_specs:
+  main:
+    short_description: Example role with nested options
+    description:
+      - "This role demonstrates documentation of nested options."
+    author:
+      - "foundata GmbH"
+    options:
+
+      nested_groups:
+        type: "list"
+        elements: "dict"
+        default: []
+        description: "List of groups to manage."
+        options:
+          name:
+            type: "str"
+            required: true
+            description: "Name of the group."
+          state:
+            type: "str"
+            default: "present"
+            choices:
+              - "present"
+              - "absent"
+            description: "Whether the group shall exist."
+          members:
+            type: "list"
+            elements: "dict"
+            description: "Members of the group."
+            options:
+              username:
+                type: "str"
+                required: true
+                description: "Login name of the member."
+              grants:
+                type: "dict"
+                description: "Grants of this member (second nesting level)."
+                options:
+                  permission:
+                    type: "dict"
+                    description: "Permission entry (third nesting level)."
+                    options:
+                      too_deep:
+                        type: "str"
+                        description: "This exceeds the depth limit for comments."
+
+      nested_settings:
+        type: "dict"
+        default: {}
+        description: "A dictionary of settings."
+        options:
+          verbose:
+            type: "bool"
+            default: false
+            description: "Enable verbose output."

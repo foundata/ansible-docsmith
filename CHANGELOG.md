@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Nested options ("dict attributes") are now documented in the comments of entry-point files like `defaults/main.yml` (#21, thanks to @Adam-SCP for the suggestion and issue). Each attribute is rendered as a compact, indented bullet with its description, type, required flag, default and choices, up to three nesting levels (matching the README templates). Use `--no-defaults-comments-nested` to restore the old behavior.
+
 - Support for [Ansible markup](https://docs.ansible.com/projects/ansible/latest/dev_guide/ansible_markup.html) in `argument_specs.yml` descriptions (#22, thanks to @spike77453 for the suggestion and issue). Constructs like `C(...)`, `B(...)`, `I(...)`, `V(...)`, `E(...)`, `U(...)`, `L(...)`, `R(...)` and `HORIZONTALLINE` are converted to the target format (Markdown, reStructuredText, or YAML comments) instead of being rendered verbatim:
   - `O(variable)` references to variables of the same role become links to the matching README section.
   - `M(ns.col.module)` and `P(ns.col.plugin#type)` become links to the official documentation on docs.ansible.com.

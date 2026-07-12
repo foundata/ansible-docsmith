@@ -55,6 +55,7 @@ class RoleProcessor:
         toc_bullet_style: str | None = None,
         format_type: str = "auto",
         role_path: Path | None = None,
+        defaults_comments_nested: bool = True,
     ):
         self.dry_run = dry_run
         self.template_readme = template_readme
@@ -85,7 +86,9 @@ class RoleProcessor:
                 format_type=self.format_type, toc_bullet_style=toc_bullet_style
             )
 
-        self.defaults_generator = DefaultsCommentGenerator()
+        self.defaults_generator = DefaultsCommentGenerator(
+            nested_options=defaults_comments_nested
+        )
 
     def _resolve_auto_format(self, role_path: Path) -> None:
         """Resolve auto format detection and initialize generators if needed."""

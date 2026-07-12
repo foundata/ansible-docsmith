@@ -75,6 +75,11 @@ def generate(
         "--defaults/--no-defaults",
         help="Add inline comments to entry-point variable files like defaults/main.yml",
     ),
+    defaults_comments_nested: bool = typer.Option(
+        True,
+        "--defaults-comments-nested/--no-defaults-comments-nested",
+        help=("Document nested options (dict attributes) in entry-point file comments"),
+    ),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview changes without writing files"
     ),
@@ -138,6 +143,7 @@ def generate(
                 toc_bullet_style=readme_toc_list_bulletpoints,
                 format_type=format_type,
                 role_path=role_path,
+                defaults_comments_nested=defaults_comments_nested,
             )
         except ValueError as e:
             logger.error(f"Template error: {e}")
