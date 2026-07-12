@@ -8,7 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for [Ansible markup](https://docs.ansible.com/projects/ansible/latest/dev_guide/ansible_markup.html) in `argument_specs.yml` descriptions (#22, thanks to @spike77453 for the suggestion and issue). Constructs like `C(...)`, `B(...)`, `I(...)`, `V(...)`, `E(...)`, `U(...)`, `L(...)`, `R(...)` and `HORIZONTALLINE` are converted to the target format (Markdown, reStructuredText, or YAML comments) instead of being rendered verbatim:
+  - `O(variable)` references to variables of the same role become links to the matching README section.
+  - `M(ns.col.module)` and `P(ns.col.plugin#type)` become links to the official documentation on docs.ansible.com.
+  - Invalid markup (e.g. `M()` without a FQCN) is left verbatim; existing Markdown in descriptions is never touched. Descriptions without Ansible markup remain byte-identical.
+
 ### Fixed
+
+- Table-cell truncation in the README variable overview no longer cuts through Markdown links or inline code (whole tokens are dropped instead).
+- Autolinks (`<https://...>`) in variable descriptions are rendered as bare URLs in `defaults/` YAML comments instead of a redundant `[url](url)` construct.
 
 - Pipe characters (`|`) in default values and descriptions no longer break the Markdown variable table; they are escaped only there (previously, pipes in choices were escaped globally, rendering a stray backslash outside of tables).
 - Inline code containing backticks now renders correctly in Markdown (longer delimiter runs instead of backslash escapes, which are not processed inside code spans).

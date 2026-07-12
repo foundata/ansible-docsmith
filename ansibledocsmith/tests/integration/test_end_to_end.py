@@ -1,5 +1,8 @@
 """End-to-end integration tests."""
 
+import shutil
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from ansible_docsmith.cli import app
@@ -7,6 +10,52 @@ from ansible_docsmith.cli import app
 
 class TestEndToEnd:
     """Test complete workflows."""
+
+    def test_generate_converts_ansible_markup(self, temp_dir):
+        """Ansible markup in descriptions is converted in README and defaults."""
+        runner = CliRunner()
+
+        fixture = (
+            Path(__file__).parent.parent / "fixtures" / "example-role-ansible-markup"
+        )
+        role_path = temp_dir / "example-role-ansible-markup"
+        shutil.copytree(fixture, role_path)
+
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+
+        readme = (role_path / "README.md").read_text(encoding="utf-8")
+        # B(...) -> bold, O(known) -> anchor link, M(fqcn) -> docs link
+        assert "**present**" in readme
+        assert "[`markup_port`](#variable-markup_port)" in readme
+        assert (
+            "[`ansible.builtin.copy`](https://docs.ansible.com/ansible/latest/"
+            "collections/ansible/builtin/copy_module.html)" in readme
+        )
+        # U(...) -> autolink, V/E -> code, unknown O() and invalid M() unlinked
+        assert "<https://example.com/>" in readme
+        assert "`8080`" in readme
+        assert "`MARKUP_PORT`" in readme
+        assert "`markup_unknown`" in readme
+        assert "M(noFQCN)" in readme
+        # No raw markup left over (outside the intentionally invalid M())
+        assert "B(present)" not in readme
+        assert "O(markup_port)" not in readme
+
+        defaults = (role_path / "defaults" / "main.yml").read_text(encoding="utf-8")
+        # Markup converted in YAML comments, but never as anchor links
+        assert "`8080`" in defaults
+        assert "O(markup_port)" not in defaults
+        assert "](#variable-" not in defaults
+
+        # Idempotence: a second run must not change anything
+        readme_before, defaults_before = readme, defaults
+        result = runner.invoke(app, ["generate", str(role_path)])
+        assert result.exit_code == 0
+        assert (role_path / "README.md").read_text(encoding="utf-8") == readme_before
+        assert (role_path / "defaults" / "main.yml").read_text(
+            encoding="utf-8"
+        ) == defaults_before
 
     def test_generate_command_dry_run(self, sample_role_with_specs_and_defaults):
         """Test generate command in dry run mode."""

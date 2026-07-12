@@ -74,6 +74,7 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
 - **Built-in validation:** Verifies that argument specs are complete, correct, and in sync with entry-point `defaults/`.
 - **Automation‑friendly:** Works seamlessly in CI/CD pipelines and pre‑commit hooks.
 - **Supports Markdown and reStructuredText**.
+- **Understands [Ansible markup](https://docs.ansible.com/projects/ansible/latest/dev_guide/ansible_markup.html):** Constructs like `C(...)`, `O(...)`, `V(...)` or `M(...)` in descriptions are converted to the target format.
 
 
 ## Installation<a id="installation"></a>

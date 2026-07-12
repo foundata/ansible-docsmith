@@ -25,6 +25,32 @@ from ..constants import (
 )
 from ..templates import TemplateManager
 from .exceptions import FileOperationError, TemplateError
+from .markup import convert_ansible_markup, md_code_span, rst_inline_literal
+
+# Tokens that must never be split by table-cell truncation: Markdown
+# links and inline code spans (left), RST hyperlinks and inline literals
+# (right), each with trailing punctuation attached.
+_MD_ATOMIC_TOKENS = re.compile(r"\[[^\]]*\]\([^)]*\)\S*|`+[^`]+`+\S*|\S+")
+_RST_ATOMIC_TOKENS = re.compile(r"`[^`<>]*<[^>]*>`__\S*|``[^`]+``\S*|\S+")
+
+
+def _truncate_preserving_tokens(
+    text: str, max_length: int, token_pattern: re.Pattern
+) -> str:
+    """Truncate at a word boundary without splitting atomic markup tokens.
+
+    Accumulates whole tokens (words, links, code spans) until the length
+    limit is reached, so truncation can never produce broken inline markup
+    such as half a link.
+    """
+    result = ""
+    for token in token_pattern.findall(text):
+        candidate = f"{result} {token}" if result else token
+        if len(candidate) > max_length:
+            break
+        result = candidate
+    # A single oversized token: fall back to a hard character cut
+    return result if result else text[:max_length].rstrip()
 
 
 class HTMLStripper(HTMLParser):
@@ -80,6 +106,11 @@ class BaseDocumentationGenerator(ABC):
         self.template_manager = TemplateManager(template_dir, template_file)
         self.template_name = template_name
 
+        # Top-level option names of the role being rendered; used to turn
+        # O(name) markup into intra-README anchor links. Set per render in
+        # generate_role_documentation().
+        self._role_options: set[str] = set()
+
         # Add format-specific filters to the Jinja environment
         self._setup_filters()
 
@@ -114,6 +145,9 @@ class BaseDocumentationGenerator(ABC):
             # but make all entry points available to templates
             primary_entry_point = next(iter(specs.keys()))
             primary_spec = specs[primary_entry_point]
+
+            # Known top-level options for O(name) anchor linking in filters
+            self._role_options = set(primary_spec.get("options", {}).keys())
 
             context = {
                 "role_name": role_name,
@@ -179,10 +213,12 @@ class BaseDocumentationGenerator(ABC):
         """Format description for README display, handling both strings and lists."""
         if isinstance(description, list):
             # Join list items with double newlines for paragraph separation
-            return "\n\n".join(
+            text = "\n\n".join(
                 str(item).strip() for item in description if str(item).strip()
             )
-        return str(description).strip() if description else ""
+        else:
+            text = str(description).strip() if description else ""
+        return convert_ansible_markup(text, self._get_format_type(), self._role_options)
 
     @abstractmethod
     def _format_table_description_filter(
@@ -232,21 +268,8 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         return self._wrap_inline_code(str(value), table)
 
     def _wrap_inline_code(self, text: str, table: bool = False) -> str:
-        """Build a CommonMark-valid inline code span for arbitrary content.
-
-        Backslash escapes do not work inside code spans; content containing
-        backticks needs a delimiter run longer than the longest backtick run
-        in the content, padded with spaces if the content starts or ends
-        with a backtick. Pipes are only escaped inside GFM table cells,
-        where ``\\|`` is honored even within code spans.
-        """
-        if table:
-            text = text.replace("|", "\\|")
-        backtick_runs = re.findall(r"`+", text)
-        longest_run = max((len(run) for run in backtick_runs), default=0)
-        delimiter = "`" * (longest_run + 1)
-        padding = " " if text.startswith("`") or text.endswith("`") else ""
-        return f"{delimiter}{padding}{text}{padding}{delimiter}"
+        """Build a CommonMark-valid inline code span for arbitrary content."""
+        return md_code_span(text, table)
 
     def _format_table_description_filter(
         self,
@@ -281,6 +304,9 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         if not text:
             return ""
 
+        # Step 0: Convert Ansible markup (C(...), O(...), ...) to Markdown
+        text = convert_ansible_markup(text, "markdown", self._role_options)
+
         # Step 1: Strip all HTML tags using proper HTML parser
         text = HTMLStripper.strip_tags(text)
 
@@ -307,16 +333,9 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         # Step 4 & 5: Truncate at max length and add ellipses with link if needed
         # If max_length is 0 or less, disable truncation
         if max_length > 0 and len(result) > max_length:
-            # Find the last word boundary before or at position max length
-            truncate_pos = max_length
-            while truncate_pos > 0 and result[truncate_pos] != " ":
-                truncate_pos -= 1
-
-            # If we couldn't find a space, just truncate at max length
-            if truncate_pos == 0:
-                truncate_pos = max_length
-
-            truncated = result[:truncate_pos].rstrip()
+            truncated = _truncate_preserving_tokens(
+                result, max_length, _MD_ATOMIC_TOKENS
+            )
 
             # Add ellipses with link
             if variable_name:
@@ -362,15 +381,9 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         return self._wrap_inline_code(str(value), table)
 
     def _wrap_inline_code(self, text: str, table: bool = False) -> str:
-        """Wrap text in an RST inline literal (double backticks).
-
-        Single backticks inside inline literals are valid RST and need no
-        escaping (backslash escapes are not processed inside literals).
-        Content containing a double backtick cannot be represented in an
-        RST inline literal at all; a space is inserted as mitigation.
-        """
+        """Wrap text in an RST inline literal (double backticks)."""
         _ = table  # RST tables use csv_escape; no delimiter escaping needed
-        return f"``{text.replace('``', '` `')}``"
+        return rst_inline_literal(text)
 
     def _format_table_description_filter(
         self,
@@ -405,6 +418,9 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         if not text:
             return ""
 
+        # Step 0: Convert Ansible markup (C(...), O(...), ...) to RST
+        text = convert_ansible_markup(text, "rst", self._role_options)
+
         # Step 1: Strip all HTML tags using proper HTML parser
         text = HTMLStripper.strip_tags(text)
 
@@ -431,16 +447,9 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         # Step 4 & 5: Truncate at max length and add ellipses with link if needed
         # If max_length is 0 or less, disable truncation
         if max_length > 0 and len(result) > max_length:
-            # Find the last word boundary before or at position max length
-            truncate_pos = max_length
-            while truncate_pos > 0 and result[truncate_pos] != " ":
-                truncate_pos -= 1
-
-            # If we couldn't find a space, just truncate at max length
-            if truncate_pos == 0:
-                truncate_pos = max_length
-
-            truncated = result[:truncate_pos].rstrip()
+            truncated = _truncate_preserving_tokens(
+                result, max_length, _RST_ATOMIC_TOKENS
+            )
 
             # Add ellipses with link (RST format)
             if variable_name:
@@ -1107,6 +1116,11 @@ class DefaultsCommentGenerator:
         if not text:
             return ""
 
+        # Convert Ansible markup (C(...), O(...), ...) to Markdown first;
+        # YAML comments follow Markdown conventions. Anchor links would
+        # point nowhere in a defaults file, so no role options are passed.
+        text = convert_ansible_markup(text, "markdown")
+
         return self._parse_and_format_description(text)
 
     def _parse_and_format_description(self, text: str, max_width: int = 0) -> str:
@@ -1448,9 +1462,14 @@ class DefaultsCommentGenerator:
                 label = self._format_inline_content(child)
                 destination = child.destination or ""
                 title = child.title or ""
-                escaped_title = title.replace('"', '\\"')
-                title_suffix = f' "{escaped_title}"' if title else ""
-                text_parts.append(f"[{label}]({destination}{title_suffix})")
+                if label == destination and not title:
+                    # Autolink (<url> or bare URL): keep it a plain URL
+                    # instead of a noisy [url](url) construct
+                    text_parts.append(destination)
+                else:
+                    escaped_title = title.replace('"', '\\"')
+                    title_suffix = f' "{escaped_title}"' if title else ""
+                    text_parts.append(f"[{label}]({destination}{title_suffix})")
             elif child.t == "emph":
                 text_parts.append(f"*{self._format_inline_content(child)}*")
             elif child.t == "strong":

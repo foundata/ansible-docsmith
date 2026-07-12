@@ -25,6 +25,7 @@ name = "ansible-docsmith"
 version = "2.0.2"
 source = { editable = "." }
 dependencies = [
+    { name = "antsibull-docs-parser" },
     { name = "commonmark" },
     { name = "jinja2" },
     { name = "pydantic" },
@@ -42,6 +43,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "antsibull-docs-parser", specifier = ">=1.2.0,<2.0.0" },
     { name = "commonmark", specifier = ">=0.9.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "pydantic", specifier = ">=2.11.7" },
@@ -55,6 +57,15 @@ dev = [
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
     { name = "ruff", specifier = ">=0.12.7" },
+]
+
+[[package]]
+name = "antsibull-docs-parser"
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/bf/69b95e12ba05fba0d52e8307ae5eea5f1765d51ee7a9d38d8bc840607c12/antsibull_docs_parser-1.2.2.tar.gz", hash = "sha256:52d647b1683466f9a27e93ae997b9eda955617c7fa7670b1268a6922d24b7340", size = 55663, upload-time = "2025-09-28T19:15:08.109Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/56/fcf484630134248790cfed657631f49221afa3664677b688e4ad6226a1da/antsibull_docs_parser-1.2.2-py3-none-any.whl", hash = "sha256:5919e3b1484a5d07c67915bd032b2b7101956139dcc4c43cadddb38cb9a9d6a5", size = 33747, upload-time = "2025-09-28T19:15:05.463Z" },
 ]
 
 [[package]]

@@ -1,0 +1,39 @@
+# Please note: This file is just a dummy for testing. It demonstrates
+# Ansible markup (C(...), O(...), M(...), ...) in descriptions, see
+# https://docs.ansible.com/projects/ansible/latest/dev_guide/ansible_markup.html
+
+---
+
+argument_specs:
+  main:
+    short_description: Example role using Ansible markup in descriptions
+    description:
+      - "This role demonstrates Ansible markup handling in C(ansible-docsmith)."
+    author:
+      - "foundata GmbH"
+    version_added: "1.0.0"
+    options:
+
+      markup_state:
+        type: "str"
+        required: false
+        default: "present"
+        choices:
+          - "present"
+          - "absent"
+        description:
+          - "Whether resources are B(present) or B(absent) on the system."
+          - "Ports are configured via O(markup_port). Files get copied with
+            M(ansible.builtin.copy). Background: U(https://example.com/)."
+
+      markup_port:
+        type: "int"
+        required: false
+        default: 8080
+        description:
+          - "Port used by the service, for example V(8080). Any I(free) TCP
+            port works. The E(MARKUP_PORT) environment variable and the
+            P(ansible.builtin.env#lookup) lookup are honored as well, see
+            L(the documentation,https://example.com/docs) for details.
+            Unknown options like O(markup_unknown) and invalid markup like
+            M(noFQCN) are rendered without links."
