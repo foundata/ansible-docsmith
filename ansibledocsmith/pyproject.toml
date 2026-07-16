@@ -114,7 +114,6 @@ module = [
     "ansible_docsmith.core.defaults_comments",
     "ansible_docsmith.core.doc_generators",
     "ansible_docsmith.core.processor",
-    "ansible_docsmith.core.toc",
     "ansible_docsmith.templates",
 ]
 ignore_errors = true

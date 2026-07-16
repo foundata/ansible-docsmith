@@ -4,6 +4,9 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any
 
+from markdown_it.tree import SyntaxTreeNode
+from typing_extensions import override
+
 from .markdown_ast import parse_markdown
 
 
@@ -84,10 +87,12 @@ class BaseTocGenerator(ABC):
 class MarkdownTocGenerator(BaseTocGenerator):
     """Generate Table of Contents from markdown content."""
 
+    @override
     def _get_format_type(self) -> str:
         """Return the format type this generator handles."""
         return "markdown"
 
+    @override
     def _extract_headings(self, content: str) -> list[dict[str, Any]]:
         """Extract headings from markdown content using the Markdown AST.
 
@@ -129,7 +134,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
             # Fallback to regex-based extraction if AST parsing fails
             return self._extract_headings_fallback(content)
 
-    def _extract_text_from_node(self, node) -> str:
+    def _extract_text_from_node(self, node: SyntaxTreeNode) -> str:
         """Extract text from a Markdown AST node preserving inline formatting.
 
         Inline code keeps its backticks to maintain the original heading
@@ -177,6 +182,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
 
         return headings
 
+    @override
     def _detect_bullet_style(self, content: str) -> str:
         """Auto-detect bullet style from existing content.
 
@@ -196,6 +202,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
         # Return the more common style, default to "*"
         return "-" if dash_count > asterisk_count else "*"
 
+    @override
     def _create_anchor_link(self, text: str) -> str:
         """Create anchor link from heading text.
 
@@ -210,6 +217,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
         anchor = re.sub(r"[-\s]+", "-", anchor)
         return anchor.strip("-")
 
+    @override
     def _generate_toc_lines(
         self,
         headings: list[dict[str, Any]],
@@ -260,10 +268,12 @@ class RSTTocGenerator(BaseTocGenerator):
     your reStructuredText (reST) renderer is very limited.
     """
 
+    @override
     def _get_format_type(self) -> str:
         """Return the format type this generator handles."""
         return "rst"
 
+    @override
     def _extract_headings(self, content: str) -> list[dict[str, Any]]:
         """Extract headings from RST content.
 
@@ -318,6 +328,7 @@ class RSTTocGenerator(BaseTocGenerator):
 
         return headings
 
+    @override
     def _detect_bullet_style(self, content: str) -> str:
         """Auto-detect bullet style from existing RST content."""
         # Look for existing list patterns in RST
@@ -330,6 +341,7 @@ class RSTTocGenerator(BaseTocGenerator):
         # Return the more common style, default to "*"
         return "-" if dash_count > asterisk_count else "*"
 
+    @override
     def _create_anchor_link(self, text: str) -> str:
         """Create anchor link from heading text for RST.
 
@@ -344,6 +356,7 @@ class RSTTocGenerator(BaseTocGenerator):
         anchor = re.sub(r"[-\s]+", "-", anchor)
         return anchor.strip("-")
 
+    @override
     def _generate_toc_lines(
         self,
         headings: list[dict[str, Any]],
