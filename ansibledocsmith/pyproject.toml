@@ -62,6 +62,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "mypy>=1.13",
     "pytest>=9.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.12.7",
@@ -98,6 +99,28 @@ ignore = [
     "B017",    # Tests deliberately assert on Exception.
     "RUF059",  # Tests unpack result tuples and assert on a subset.
 ]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+enable_error_code = ["explicit-override"]  # Extends strict mode.
+warn_unreachable = true                     # Extends strict mode.
+
+# Migration ratchet: strict typing is being introduced module by module.
+# Each follow-up commit removes one entry below and fixes its diagnostics.
+[[tool.mypy.overrides]]
+module = [
+    "ansible_docsmith.cli",
+    "ansible_docsmith.core.collection",
+    "ansible_docsmith.core.defaults_comments",
+    "ansible_docsmith.core.doc_generators",
+    "ansible_docsmith.core.parser",
+    "ansible_docsmith.core.processor",
+    "ansible_docsmith.core.text",
+    "ansible_docsmith.core.toc",
+    "ansible_docsmith.templates",
+]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 addopts = [
