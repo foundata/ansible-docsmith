@@ -62,7 +62,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.1",
+    "pytest>=9.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.12.7",
 ]
@@ -98,6 +98,14 @@ ignore = [
     "B017",    # Tests deliberately assert on Exception.
     "RUF059",  # Tests unpack result tuples and assert on a subset.
 ]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+filterwarnings = ["error"]
+strict = true
+testpaths = ["tests"]
 
 [tool.ruff.format]
 quote-style = "double"
