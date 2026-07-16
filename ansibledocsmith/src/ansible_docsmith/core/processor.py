@@ -6,7 +6,10 @@ from typing import Any
 
 from ..constants import SPEC_VALID_ENTRYPOINT_KEYS, SPEC_VALID_OPTION_KEYS
 from .defaults_comments import DefaultsCommentGenerator
-from .doc_generators import create_documentation_generator
+from .doc_generators import (
+    BaseDocumentationGenerator,
+    create_documentation_generator,
+)
 from .exceptions import ProcessingError, ValidationError
 from .markup import lint_ansible_markup
 from .parser import ArgumentSpecParser
@@ -105,12 +108,24 @@ class RoleProcessor:
                 format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
             )
 
+    def _require_doc_generator(self) -> BaseDocumentationGenerator:
+        """Return the documentation generator, ensuring it is initialized."""
+        if self.doc_generator is None:
+            raise ProcessingError("Documentation generator is not initialized")
+        return self.doc_generator
+
+    def _require_readme_updater(self) -> ReadmeUpdater:
+        """Return the README updater, ensuring it is initialized."""
+        if self.readme_updater is None:
+            raise ProcessingError("README updater is not initialized")
+        return self.readme_updater
+
     def validate_role(
         self,
         role_path: Path,
         validate_readme: bool = True,
         validate_argument_specs: bool = True,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         Validate role structure and return metadata with further check results
         (like consistency, unknown keys).
@@ -211,8 +226,12 @@ class RoleProcessor:
         return results
 
     def _process_readme(
-        self, role_path: Path, specs: dict, role_name: str, results: ProcessingResults
-    ):
+        self,
+        role_path: Path,
+        specs: dict[str, Any],
+        role_name: str,
+        results: ProcessingResults,
+    ) -> None:
         """Generate/update README file."""
 
         # Determine README file extension based on format
@@ -220,8 +239,11 @@ class RoleProcessor:
         readme_path = role_path / f"README.{readme_ext}"
 
         try:
+            doc_generator = self._require_doc_generator()
+            readme_updater = self._require_readme_updater()
+
             # Generate documentation content
-            doc_content = self.doc_generator.generate_role_documentation(
+            doc_content = doc_generator.generate_role_documentation(
                 specs, role_name, role_path
             )
 
@@ -232,9 +254,7 @@ class RoleProcessor:
                 original_content = readme_path.read_text(encoding="utf-8")
 
             # Compute the new content once; write it unless in dry-run mode
-            new_content = self.readme_updater._get_updated_content(
-                readme_path, doc_content
-            )
+            new_content = readme_updater._get_updated_content(readme_path, doc_content)
             results.readme_content = new_content
             if self.dry_run:
                 results.file_diffs.append((readme_path, original_content, new_content))
@@ -248,8 +268,8 @@ class RoleProcessor:
             results.errors.append(f"README generation failed: {e}")
 
     def _process_defaults(
-        self, role_path: Path, specs: dict, results: ProcessingResults
-    ):
+        self, role_path: Path, specs: dict[str, Any], results: ProcessingResults
+    ) -> None:
         """Add inline comments to defaults files for all entry points."""
 
         # Find defaults files for all entry points
@@ -296,7 +316,9 @@ class RoleProcessor:
             except Exception as e:
                 results.errors.append(f"Defaults update failed for {entry_point}: {e}")
 
-    def _find_defaults_files(self, role_path: Path, specs: dict) -> dict[str, Path]:
+    def _find_defaults_files(
+        self, role_path: Path, specs: dict[str, Any]
+    ) -> dict[str, Path]:
         """Find defaults files for all entry points."""
         defaults_files = {}
 
@@ -331,14 +353,14 @@ class RoleProcessor:
             pass  # Ignore parsing errors, handled elsewhere
         return {}
 
-    def _validate_unknown_keys(self, original_specs: dict) -> list[str]:
+    def _validate_unknown_keys(self, original_specs: dict[str, Any]) -> list[str]:
         """Validate that only known keys are used in argument_specs.
 
         Args:
             original_specs: Raw (unnormalized) argument specs as returned
                 by _parse_original_specs(), which preserve unknown keys.
         """
-        warnings = []
+        warnings: list[str] = []
         if not original_specs:
             return warnings
 
@@ -365,7 +387,7 @@ class RoleProcessor:
 
         return warnings
 
-    def _validate_markup(self, original_specs: dict) -> list[str]:
+    def _validate_markup(self, original_specs: dict[str, Any]) -> list[str]:
         """Lint Ansible markup in all descriptions of the argument specs.
 
         Invalid markup (like ``M()`` without a FQCN) is left verbatim by
@@ -377,7 +399,7 @@ class RoleProcessor:
         """
         warnings = []
 
-        def _lint(texts, location: str) -> None:
+        def _lint(texts: Any, location: str) -> None:
             if isinstance(texts, str):
                 texts = [texts]
             if not isinstance(texts, list):
@@ -386,7 +408,7 @@ class RoleProcessor:
                 for message in lint_ansible_markup(str(item)):
                     warnings.append(f"{location}: Invalid Ansible markup: {message}")
 
-        def _walk_options(options: dict, entry_point: str, path: str) -> None:
+        def _walk_options(options: dict[str, Any], entry_point: str, path: str) -> None:
             for var_name, var_spec in options.items():
                 if not isinstance(var_spec, dict):
                     continue
@@ -411,7 +433,7 @@ class RoleProcessor:
         return warnings
 
     def _check_unknown_option_keys(
-        self, entry_point: str, options: dict, warnings: list[str], path: str
+        self, entry_point: str, options: dict[str, Any], warnings: list[str], path: str
     ) -> None:
         """Recursively warn about unknown keys in (nested) option specs."""
         for var_name, var_spec in options.items():
@@ -433,7 +455,7 @@ class RoleProcessor:
                     entry_point, nested, warnings, path=f"{display_name}."
                 )
 
-    def _parse_original_specs(self, spec_file: Path) -> dict:
+    def _parse_original_specs(self, spec_file: Path) -> dict[str, Any]:
         """
         Parse the original specs file without normalization to check for
         default keys.
@@ -441,18 +463,21 @@ class RoleProcessor:
         try:
             with open(spec_file, encoding="utf-8") as file:
                 data = self.parser.yaml.load(file)
-                return data.get("argument_specs", {})
+                specs = data.get("argument_specs", {})
+                return specs if isinstance(specs, dict) else {}
         except Exception:
             return {}
 
-    def _validate_mutually_exclusive_keys(self, original_specs: dict) -> list[str]:
+    def _validate_mutually_exclusive_keys(
+        self, original_specs: dict[str, Any]
+    ) -> list[str]:
         """Validate that default and required: true are not used together.
 
         Args:
             original_specs: Raw (unnormalized) argument specs as returned
                 by _parse_original_specs().
         """
-        errors = []
+        errors: list[str] = []
         if not original_specs:
             return errors
 
@@ -485,8 +510,8 @@ class RoleProcessor:
     def _validate_defaults_consistency(
         self,
         role_path: Path,
-        specs: dict,
-        original_specs: dict | None = None,
+        specs: dict[str, Any],
+        original_specs: dict[str, Any] | None = None,
     ) -> tuple[list[str], list[str], list[str]]:
         """Validate consistency between defaults files and argument_specs.
 
@@ -624,7 +649,7 @@ class RoleProcessor:
 
     def _validate_readme_markers(self, role_path: Path) -> list[str]:
         """Validate that existing README file contains required markers."""
-        errors = []
+        errors: list[str] = []
 
         # Resolve auto format if needed
         self._resolve_auto_format(role_path)
@@ -646,8 +671,9 @@ class RoleProcessor:
 
         try:
             content = readme_path.read_text(encoding="utf-8")
-            start_marker = self.readme_updater.start_marker
-            end_marker = self.readme_updater.end_marker
+            readme_updater = self._require_readme_updater()
+            start_marker = readme_updater.start_marker
+            end_marker = readme_updater.end_marker
 
             has_start = start_marker in content
             has_end = end_marker in content
@@ -682,8 +708,8 @@ class RoleProcessor:
         Returns:
             Tuple of (errors, notices)
         """
-        errors = []
-        notices = []
+        errors: list[str] = []
+        notices: list[str] = []
 
         # Resolve auto format if needed
         self._resolve_auto_format(role_path)
@@ -703,8 +729,9 @@ class RoleProcessor:
 
         try:
             content = readme_path.read_text(encoding="utf-8")
-            toc_start_marker = self.readme_updater.toc_start_marker
-            toc_end_marker = self.readme_updater.toc_end_marker
+            readme_updater = self._require_readme_updater()
+            toc_start_marker = readme_updater.toc_start_marker
+            toc_end_marker = readme_updater.toc_end_marker
 
             has_toc_start = toc_start_marker in content
             has_toc_end = toc_end_marker in content
@@ -727,8 +754,8 @@ class RoleProcessor:
                 )
 
             # TOC-FULL markers (optional, so no notice when absent)
-            tocfull_start = self.readme_updater.tocfull_start_marker
-            tocfull_end = self.readme_updater.tocfull_end_marker
+            tocfull_start = readme_updater.tocfull_start_marker
+            tocfull_end = readme_updater.tocfull_end_marker
             has_tocfull_start = tocfull_start in content
             has_tocfull_end = tocfull_end in content
 

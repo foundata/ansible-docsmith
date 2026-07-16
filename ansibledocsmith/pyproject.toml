@@ -106,14 +106,6 @@ strict = true
 enable_error_code = ["explicit-override"]  # Extends strict mode.
 warn_unreachable = true                     # Extends strict mode.
 
-# Migration ratchet: strict typing is being introduced module by module.
-# Each follow-up commit removes one entry below and fixes its diagnostics.
-[[tool.mypy.overrides]]
-module = [
-    "ansible_docsmith.core.processor",
-]
-ignore_errors = true
-
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
