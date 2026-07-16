@@ -15,6 +15,7 @@ collection README are simply not referenced there.
 """
 
 from pathlib import Path
+from typing import Any
 
 from .processor import ProcessingResults, RoleProcessor, detect_format_from_role
 from .readme_updater import MARKER_PATTERN, ReadmeUpdater, marker_comment
@@ -267,7 +268,7 @@ class CollectionProcessor:
         self,
         validate_readme: bool = True,
         validate_argument_specs: bool = True,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Validate all roles and the collection README's markers.
 
         Returns:
@@ -276,7 +277,12 @@ class CollectionProcessor:
             and "notices". Role validation failures are collected into
             "errors" instead of raising.
         """
-        summary: dict = {"roles": {}, "errors": [], "warnings": [], "notices": []}
+        summary: dict[str, Any] = {
+            "roles": {},
+            "errors": [],
+            "warnings": [],
+            "notices": [],
+        }
 
         from .exceptions import ProcessingError, ValidationError
 

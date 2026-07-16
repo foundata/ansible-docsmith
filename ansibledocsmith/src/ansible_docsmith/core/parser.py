@@ -12,7 +12,7 @@ from .exceptions import ParseError, ValidationError
 class ArgumentSpecParser:
     """Parser for argument_specs.yml with validation."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.yaml = YAML()
         self.yaml.preserve_quotes = True
         self.yaml.explicit_start = True
