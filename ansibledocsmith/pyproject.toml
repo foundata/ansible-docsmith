@@ -28,7 +28,6 @@ dependencies = [
 # https://pypi.org/classifiers/
 classifiers = [
   "Development Status :: 5 - Production/Stable",
-  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 
   # Indication for whom the project is for
   "Environment :: Console",

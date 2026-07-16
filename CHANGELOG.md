@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Nothing worth mentioning yet.
+### Fixed
+
+- Removed the deprecated `License :: OSI Approved :: ...` trove classifier that duplicated the SPDX `license`/`license-files` metadata and triggered a PEP 639 deprecation warning during builds (#25).
 
 
 ## [2.1.0] - 2026-07-12
