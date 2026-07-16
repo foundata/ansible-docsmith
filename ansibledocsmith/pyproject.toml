@@ -111,7 +111,6 @@ warn_unreachable = true                     # Extends strict mode.
 [[tool.mypy.overrides]]
 module = [
     "ansible_docsmith.cli",
-    "ansible_docsmith.core.defaults_comments",
     "ansible_docsmith.core.processor",
     "ansible_docsmith.templates",
 ]

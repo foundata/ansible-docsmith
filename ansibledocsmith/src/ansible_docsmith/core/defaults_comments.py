@@ -5,6 +5,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
+from markdown_it.tree import SyntaxTreeNode
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
@@ -59,7 +60,7 @@ class DefaultsCommentGenerator:
 
             # Process the cleaned file line by line to insert new comments
             lines = cleaned_content.splitlines()
-            result_lines = []
+            result_lines: list[str] = []
 
             for line in lines:
                 # Check if this line defines a variable
@@ -252,7 +253,7 @@ class DefaultsCommentGenerator:
         else:
             return str(default)
 
-    def _format_yaml_default_value(self, default: list | dict) -> str:
+    def _format_yaml_default_value(self, default: list[Any] | dict[str, Any]) -> str:
         """Format compound defaults as block-style YAML."""
         yaml = YAML()
         yaml.default_flow_style = False
@@ -334,7 +335,7 @@ class DefaultsCommentGenerator:
             return [""]
 
         lines = []
-        current_line = []
+        current_line: list[str] = []
         current_length = 0
 
         for word in words:
@@ -367,7 +368,9 @@ class DefaultsCommentGenerator:
             text,
         )
 
-    def _format_list_node(self, node, max_width: int = 0, indent_level: int = 0) -> str:
+    def _format_list_node(
+        self, node: SyntaxTreeNode, max_width: int = 0, indent_level: int = 0
+    ) -> str:
         """Format a list node with proper type recognition and nesting support.
 
         Args:
@@ -388,7 +391,7 @@ class DefaultsCommentGenerator:
         # Determine list type and starting number. The "start" attribute is
         # only present when the list does not start at 1.
         is_ordered = node.type == "ordered_list"
-        start_num = node.attrs.get("start", 1) if is_ordered else None
+        start_num = int(node.attrs.get("start", 1)) if is_ordered else None
         # Preserve original bullet character from the AST
         bullet_char = node.markup or "-"
 
@@ -449,7 +452,7 @@ class DefaultsCommentGenerator:
 
     def _format_list_item_content(
         self,
-        item_node,
+        item_node: SyntaxTreeNode,
         max_width: int = 0,
         indent_level: int = 0,
         item_prefix: str = "",
@@ -525,7 +528,9 @@ class DefaultsCommentGenerator:
 
             return "\n".join(result_lines)
 
-    def _format_ast_node(self, node, max_width: int = 0, indent_level: int = 0) -> str:
+    def _format_ast_node(
+        self, node: SyntaxTreeNode, max_width: int = 0, indent_level: int = 0
+    ) -> str:
         """Format a single AST node based on its type with optional text wrapping.
 
         Args:
@@ -590,7 +595,7 @@ class DefaultsCommentGenerator:
             else:
                 return cleaned_text
 
-    def _format_inline_content(self, node) -> str:
+    def _format_inline_content(self, node: SyntaxTreeNode) -> str:
         """Format inline Markdown nodes while preserving Markdown links."""
         text_parts = []
 
@@ -653,7 +658,9 @@ class DefaultsCommentGenerator:
 
         return line
 
-    def _remove_existing_variable_comments(self, content: str, options: dict) -> str:
+    def _remove_existing_variable_comments(
+        self, content: str, options: dict[str, Any]
+    ) -> str:
         """Remove existing block comments that appear to be for variables."""
         lines = content.splitlines()
         result_lines = []
