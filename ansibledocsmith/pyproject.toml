@@ -110,7 +110,6 @@ warn_unreachable = true                     # Extends strict mode.
 # Each follow-up commit removes one entry below and fixes its diagnostics.
 [[tool.mypy.overrides]]
 module = [
-    "ansible_docsmith.cli",
     "ansible_docsmith.core.processor",
 ]
 ignore_errors = true

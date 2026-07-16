@@ -5,6 +5,7 @@ Ansible-DocSmith CLI - Generate Ansible role documentation from argument_specs.y
 
 import difflib
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich import print as rprint
@@ -15,7 +16,7 @@ from . import __version__
 from .constants import CLI_HEADER
 from .core.collection import CollectionProcessor, detect_project_type
 from .core.exceptions import ProcessingError, ValidationError
-from .core.processor import RoleProcessor
+from .core.processor import ProcessingResults, RoleProcessor
 from .utils.logging import setup_logging
 
 app = typer.Typer(
@@ -26,14 +27,14 @@ app = typer.Typer(
 console = Console()
 
 
-def _display_header():
+def _display_header() -> None:
     """Display the branding header."""
     header = CLI_HEADER.format(version=__version__)
     console.print(header, style="bold", highlight=False)
     console.print()  # Blank line
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
     if value:
         rprint(f"Ansible-DocSmith version: {__version__}")
         raise typer.Exit()
@@ -48,7 +49,7 @@ def main(
         is_eager=True,
         help="Show version and exit",
     ),
-):
+) -> None:
     """Ansible-DocSmith - Modern Ansible role documentation automation."""
     pass
 
@@ -109,7 +110,7 @@ def generate(
         file_okay=True,
         dir_okay=False,
     ),
-):
+) -> None:
     """Generate comprehensive documentation for an Ansible role."""
 
     logger = setup_logging(verbose)
@@ -266,7 +267,7 @@ def validate(
         help="Treat warnings as errors (exit code 1). Useful for CI/CD "
         "pipelines and pre-commit hooks. Notices do not fail validation.",
     ),
-):
+) -> None:
     """Validate argument_specs.yml structure and content."""
 
     logger = setup_logging(verbose)
@@ -339,7 +340,7 @@ def _validate_collection(
     validate_readme: bool,
     validate_argument_specs: bool,
     strict: bool,
-):
+) -> None:
     """Validate all roles of a collection plus the collection README."""
     processor = CollectionProcessor(
         collection_path=collection_path, format_type=format_type
@@ -390,7 +391,7 @@ def _validate_collection(
     console.print()  # Trailing newline
 
 
-def _display_results(results, dry_run: bool):
+def _display_results(results: ProcessingResults, dry_run: bool) -> None:
     """Display processing results in a rich table."""
 
     if not results.operations and not results.errors and not results.warnings:
@@ -432,7 +433,7 @@ def _display_results(results, dry_run: bool):
             console.print(f"  • {error}", style="red")
 
 
-def _display_file_diff(file_path: Path, old_content: str, new_content: str):
+def _display_file_diff(file_path: Path, old_content: str, new_content: str) -> None:
     """Display a unified diff for a file."""
     console.print(f"\n[bold cyan]--- {file_path}[/bold cyan]")
 
@@ -466,7 +467,7 @@ def _display_file_diff(file_path: Path, old_content: str, new_content: str):
             console.print(line)
 
 
-def _display_validation_results(role_data):
+def _display_validation_results(role_data: dict[str, Any]) -> None:
     """Display validation results."""
 
     specs = role_data["specs"]
