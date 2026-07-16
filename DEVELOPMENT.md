@@ -307,7 +307,13 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 
 ## Releases<a id="releases"></a>
 
-1. Do proper [Testing](#testing). Continue only if everything is fine.
+1. Run the release checks and only continue if everything passes:
+   ```bash
+   ./ansibledocsmith/scripts/release-check.sh
+   ```
+   This runs formatting, linting, type checks and the test suite on every
+   supported Python version, then builds the wheel and source distribution and
+   smoke-tests the installed artifact (import and CLI). See also [Testing](#testing).
 2. Determine the next version number. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 3. Update several files to match the new release version:
    - [`CHANGELOG.md`](./CHANGELOG.md): Insert a section for the new release. Do not forget the comparison link at the end of the file.
