@@ -16,6 +16,7 @@ and review the resulting diff carefully.
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -98,7 +99,7 @@ TOC_CORPUS = {
 }
 
 
-def _compute_results() -> dict:
+def _compute_results() -> dict[str, Any]:
     """Compute the pipeline outputs for the whole corpus."""
     generator = DefaultsCommentGenerator()
     toc = MarkdownTocGenerator()
@@ -119,25 +120,30 @@ def _compute_results() -> dict:
 
 
 @pytest.fixture(scope="module")
-def golden() -> dict:
+def golden() -> dict[str, Any]:
     assert GOLDEN_FILE.exists(), (
         f"Golden file missing: {GOLDEN_FILE}. Generate it with: "
         f"uv run python {Path(__file__).name}"
     )
-    return json.loads(GOLDEN_FILE.read_text(encoding="utf-8"))
+    data: dict[str, Any] = json.loads(GOLDEN_FILE.read_text(encoding="utf-8"))
+    return data
 
 
 class TestMarkdownPipelineGolden:
     """Compare current pipeline output against the frozen golden data."""
 
     @pytest.mark.parametrize("name", sorted(DESCRIPTION_CORPUS))
-    def test_description_formatting_nowrap(self, golden, name):
+    def test_description_formatting_nowrap(
+        self, golden: dict[str, Any], name: str
+    ) -> None:
         generator = DefaultsCommentGenerator()
         result = generator._parse_and_format_description(DESCRIPTION_CORPUS[name])
         assert result == golden["descriptions_nowrap"][name]
 
     @pytest.mark.parametrize("name", sorted(DESCRIPTION_CORPUS))
-    def test_description_formatting_wrap78(self, golden, name):
+    def test_description_formatting_wrap78(
+        self, golden: dict[str, Any], name: str
+    ) -> None:
         generator = DefaultsCommentGenerator()
         result = generator._parse_and_format_description(
             DESCRIPTION_CORPUS[name], max_width=78
@@ -145,7 +151,7 @@ class TestMarkdownPipelineGolden:
         assert result == golden["descriptions_wrap78"][name]
 
     @pytest.mark.parametrize("name", sorted(TOC_CORPUS))
-    def test_toc_heading_extraction(self, golden, name):
+    def test_toc_heading_extraction(self, golden: dict[str, Any], name: str) -> None:
         toc = MarkdownTocGenerator()
         result = toc._extract_headings(TOC_CORPUS[name])
         assert result == golden["toc_headings"][name]

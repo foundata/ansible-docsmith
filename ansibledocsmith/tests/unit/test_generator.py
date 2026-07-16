@@ -1,5 +1,8 @@
 """Tests for documentation generators."""
 
+from pathlib import Path
+from typing import Any
+
 from ansible_docsmith import (
     MARKER_COMMENT_MD_BEGIN,
     MARKER_COMMENT_MD_END,
@@ -26,7 +29,7 @@ from ansible_docsmith.core.toc import (
 class TestOptionAnchors:
     """Anchor scheme for O(name) links across entry points."""
 
-    def test_single_entry_point_uses_short_scheme(self):
+    def test_single_entry_point_uses_short_scheme(self) -> None:
         anchors = build_option_anchors(
             {"install": {"options": {"inst_prefix": {}, "inst_state": {}}}}
         )
@@ -36,7 +39,7 @@ class TestOptionAnchors:
             "inst_state": "variable-inst_state",
         }
 
-    def test_main_keeps_short_scheme_others_are_prefixed(self):
+    def test_main_keeps_short_scheme_others_are_prefixed(self) -> None:
         anchors = build_option_anchors(
             {
                 "main": {"options": {"foo_state": {}}},
@@ -48,7 +51,7 @@ class TestOptionAnchors:
             "inst_prefix": "install-variable-inst_prefix",
         }
 
-    def test_name_in_main_and_other_entry_point_resolves_to_main(self):
+    def test_name_in_main_and_other_entry_point_resolves_to_main(self) -> None:
         anchors = build_option_anchors(
             {
                 "install": {"options": {"shared_var": {}}},
@@ -57,7 +60,7 @@ class TestOptionAnchors:
         )
         assert anchors["shared_var"] == "variable-shared_var"
 
-    def test_name_in_several_non_main_entry_points_is_ambiguous(self):
+    def test_name_in_several_non_main_entry_points_is_ambiguous(self) -> None:
         anchors = build_option_anchors(
             {
                 "install": {"options": {"shared_var": {}}},
@@ -70,7 +73,7 @@ class TestOptionAnchors:
 class TestDocumentationGenerator:
     """Test the DocumentationGenerator class (alias for MarkdownDocGenerator)."""
 
-    def test_generate_role_documentation(self, sample_role_with_specs):
+    def test_generate_role_documentation(self, sample_role_with_specs: Path) -> None:
         """Test generating role documentation."""
         generator = MarkdownDocumentationGenerator()
 
@@ -101,7 +104,7 @@ class TestDocumentationGenerator:
         assert "test_var" in result.lower()
         assert "a test variable" in result.lower()
 
-    def test_generate_documentation_no_options(self, sample_role_path):
+    def test_generate_documentation_no_options(self, sample_role_path: Path) -> None:
         """Test generating documentation with no options."""
         generator = MarkdownDocumentationGenerator()
 
@@ -120,7 +123,7 @@ class TestDocumentationGenerator:
 
         assert "no variables are defined for this role" in result.lower()
 
-    def test_ansible_escape_filter(self):
+    def test_ansible_escape_filter(self) -> None:
         """Test Ansible variable escaping."""
         generator = MarkdownDocumentationGenerator()
 
@@ -130,7 +133,7 @@ class TestDocumentationGenerator:
         result = generator._ansible_escape_filter(None)
         assert result == "N/A"
 
-    def test_code_escape_filter(self):
+    def test_code_escape_filter(self) -> None:
         """Test code escaping for Markdown."""
         generator = MarkdownDocumentationGenerator()
 
@@ -153,7 +156,7 @@ class TestDocumentationGenerator:
         result = generator._code_escape_filter(None)
         assert result == "N/A"
 
-    def test_format_default_filter(self):
+    def test_format_default_filter(self) -> None:
         """Test default value formatting."""
         generator = MarkdownDocumentationGenerator()
 
@@ -196,7 +199,7 @@ class TestDocumentationGenerator:
         result = generator._format_default_filter("back`tick")
         assert result == '``"back`tick"``'
 
-    def test_multiline_description_handling(self, sample_role_with_specs):
+    def test_multiline_description_handling(self, sample_role_with_specs: Path) -> None:
         """Test handling of multiline descriptions in documentation generation."""
         generator = MarkdownDocumentationGenerator()
 
@@ -240,7 +243,7 @@ Second paragraph with more details.
 class TestHTMLStripper:
     """Test the HTMLStripper class for HTML tag removal and entity unescaping."""
 
-    def test_basic_html_tag_removal(self):
+    def test_basic_html_tag_removal(self) -> None:
         """Test that basic HTML tags are properly removed."""
         result = HTMLStripper.strip_tags("<p>Simple paragraph</p>")
         assert result == "Simple paragraph"
@@ -248,7 +251,7 @@ class TestHTMLStripper:
         result = HTMLStripper.strip_tags("<b>Bold</b> and <em>italic</em> text")
         assert result == "Bold and italic text"
 
-    def test_nested_html_tags(self):
+    def test_nested_html_tags(self) -> None:
         """Test removal of nested HTML tags."""
         result = HTMLStripper.strip_tags("<div><span>Nested</span> tags</div>")
         assert result == "Nested tags"
@@ -256,7 +259,7 @@ class TestHTMLStripper:
         result = HTMLStripper.strip_tags("<p><b>Bold <em>and italic</em></b> text</p>")
         assert result == "Bold and italic text"
 
-    def test_html_entities_unescaping(self):
+    def test_html_entities_unescaping(self) -> None:
         """Test that HTML entities are properly unescaped."""
         result = HTMLStripper.strip_tags("Text with &lt;escaped&gt; entities")
         assert result == "Text with <escaped> entities"
@@ -264,7 +267,7 @@ class TestHTMLStripper:
         result = HTMLStripper.strip_tags("Ampersand &amp; and quotes &quot;here&quot;")
         assert result == 'Ampersand & and quotes "here"'
 
-    def test_complex_html_with_attributes(self):
+    def test_complex_html_with_attributes(self) -> None:
         """Test removal of HTML tags with attributes."""
         result = HTMLStripper.strip_tags(
             "<img src='test.jpg' alt='Test image' style='width:100px'/>Caption"
@@ -276,7 +279,7 @@ class TestHTMLStripper:
         )
         assert result == "Link text"
 
-    def test_script_and_style_content(self):
+    def test_script_and_style_content(self) -> None:
         """Test handling of script and style tag content."""
         # HTMLParser preserves content inside script tags (which is correct behavior)
         result = HTMLStripper.strip_tags("<script>alert('test')</script>Safe text")
@@ -285,7 +288,7 @@ class TestHTMLStripper:
         result = HTMLStripper.strip_tags("<style>body {color: red;}</style>Content")
         assert result == "body {color: red;}Content"
 
-    def test_edge_cases(self):
+    def test_edge_cases(self) -> None:
         """Test edge cases for HTML stripping."""
         # Empty input
         result = HTMLStripper.strip_tags("")
@@ -303,7 +306,7 @@ class TestHTMLStripper:
         result = HTMLStripper.strip_tags("<p></p><div></div>")
         assert result == ""
 
-    def test_malformed_html_fallback(self):
+    def test_malformed_html_fallback(self) -> None:
         """Test fallback behavior with malformed HTML."""
         # This should still work (HTMLParser is quite robust)
         result = HTMLStripper.strip_tags("<p>Unclosed paragraph")
@@ -316,7 +319,7 @@ class TestHTMLStripper:
 class TestTableDescriptionFilter:
     """Test the improved format_table_description filter functionality."""
 
-    def test_pipes_escaped_for_table_cells(self):
+    def test_pipes_escaped_for_table_cells(self) -> None:
         """Pipes in description text must not break the Markdown table row."""
         generator = MarkdownDocumentationGenerator()
 
@@ -329,7 +332,7 @@ class TestTableDescriptionFilter:
         result = generator._format_table_description_filter("escaped \\| pipe")
         assert result == "escaped \\| pipe"
 
-    def test_html_stripping_basic_tags(self):
+    def test_html_stripping_basic_tags(self) -> None:
         """Test that HTML tags are properly stripped (not encoded)."""
         generator = MarkdownDocumentationGenerator()
 
@@ -339,7 +342,7 @@ class TestTableDescriptionFilter:
         expected = "This has emphasis and bold text."
         assert result == expected
 
-    def test_html_stripping_with_entities(self):
+    def test_html_stripping_with_entities(self) -> None:
         """Test that HTML entities are properly unescaped after tag stripping."""
         generator = MarkdownDocumentationGenerator()
 
@@ -348,7 +351,7 @@ class TestTableDescriptionFilter:
         expected = "Text with <entities> and & symbols."
         assert result == expected
 
-    def test_html_stripping_complex_tags(self):
+    def test_html_stripping_complex_tags(self) -> None:
         """Test stripping of complex HTML with attributes."""
         generator = MarkdownDocumentationGenerator()
 
@@ -360,7 +363,7 @@ class TestTableDescriptionFilter:
         expected = "This has HTML tags that should be stripped."
         assert result == expected
 
-    def test_multiline_single_breaks_to_spaces(self):
+    def test_multiline_single_breaks_to_spaces(self) -> None:
         """Test that single line breaks within paragraphs become spaces."""
         generator = MarkdownDocumentationGenerator()
 
@@ -371,7 +374,7 @@ ends on third line."""
         expected = "First line continues on the second line and ends on third line."
         assert result == expected
 
-    def test_multiline_double_breaks_to_br_tags(self):
+    def test_multiline_double_breaks_to_br_tags(self) -> None:
         """Test that double line breaks (paragraphs) become <br><br> tags."""
         generator = MarkdownDocumentationGenerator()
 
@@ -387,7 +390,7 @@ Third paragraph here."""
         )
         assert result == expected
 
-    def test_truncation_at_word_boundary(self):
+    def test_truncation_at_word_boundary(self) -> None:
         """Test that text is truncated at word boundaries at max length."""
         generator = MarkdownDocumentationGenerator()
 
@@ -413,7 +416,7 @@ Third paragraph here."""
         truncated_part = result.split(" […](")[0]
         assert not truncated_part.endswith("Lorem")  # Shouldn't cut mid-word
 
-    def test_truncation_with_ellipses_and_link(self):
+    def test_truncation_with_ellipses_and_link(self) -> None:
         """Test truncation adds proper ellipses and variable link."""
         generator = MarkdownDocumentationGenerator()
 
@@ -442,7 +445,7 @@ Third paragraph here."""
         )
         assert "`present` ensures that required components" in result
 
-    def test_no_truncation_for_short_text(self):
+    def test_no_truncation_for_short_text(self) -> None:
         """Test that short text is not truncated."""
         generator = MarkdownDocumentationGenerator()
 
@@ -453,7 +456,7 @@ Third paragraph here."""
         assert result == short_text
         assert "[…]" not in result
 
-    def test_truncation_without_variable_name(self):
+    def test_truncation_without_variable_name(self) -> None:
         """Test truncation behavior without variable name for link."""
         generator = MarkdownDocumentationGenerator()
 
@@ -465,7 +468,7 @@ Third paragraph here."""
         assert result.endswith(" […]")
         assert "#variable-" not in result
 
-    def test_list_descriptions_with_br_tags(self):
+    def test_list_descriptions_with_br_tags(self) -> None:
         """Test that list descriptions are joined with <br><br>."""
         generator = MarkdownDocumentationGenerator()
 
@@ -481,7 +484,7 @@ Third paragraph here."""
         )
         assert result == expected
 
-    def test_list_with_html_stripping(self):
+    def test_list_with_html_stripping(self) -> None:
         """Test that HTML in list items gets properly stripped."""
         generator = MarkdownDocumentationGenerator()
 
@@ -493,7 +496,7 @@ Third paragraph here."""
         expected = "First item with HTML.<br><br>Second item with alert('xss')."
         assert result == expected
 
-    def test_combined_html_stripping_and_multiline(self):
+    def test_combined_html_stripping_and_multiline(self) -> None:
         """Test HTML stripping combined with multiline processing."""
         generator = MarkdownDocumentationGenerator()
 
@@ -507,7 +510,7 @@ Third paragraph here."""
         )
         assert result == expected
 
-    def test_edge_cases_none_and_empty(self):
+    def test_edge_cases_none_and_empty(self) -> None:
         """Test edge cases with None and empty inputs."""
         generator = MarkdownDocumentationGenerator()
 
@@ -523,7 +526,7 @@ Third paragraph here."""
         result = generator._format_table_description_filter("   \n\n   ")
         assert result == ""
 
-    def test_edge_cases_empty_list(self):
+    def test_edge_cases_empty_list(self) -> None:
         """Test edge cases with empty and invalid lists."""
         generator = MarkdownDocumentationGenerator()
 
@@ -542,7 +545,7 @@ Third paragraph here."""
         expected = "Valid content<br><br>More content"
         assert result == expected
 
-    def test_whitespace_normalization(self):
+    def test_whitespace_normalization(self) -> None:
         """Test that multiple spaces are normalized to single spaces."""
         generator = MarkdownDocumentationGenerator()
 
@@ -551,7 +554,7 @@ Third paragraph here."""
         expected = "Text with multiple spaces here."
         assert result == expected
 
-    def test_rst_format_table_description_filter(self):
+    def test_rst_format_table_description_filter(self) -> None:
         """Test RST-specific table description formatting with pipe separators."""
         generator = RSTDocumentationGenerator()
 
@@ -562,7 +565,7 @@ Third paragraph here."""
         # RST uses pipe separators instead of <br><br>
         assert result == "First paragraph. | Second paragraph."
 
-    def test_rst_truncation_with_rst_link_format(self):
+    def test_rst_truncation_with_rst_link_format(self) -> None:
         """Test RST truncation uses RST-style link format."""
         generator = RSTDocumentationGenerator()
 
@@ -573,7 +576,7 @@ Third paragraph here."""
         assert len(result) < 300
         assert result.endswith("`[…] <#variable-test_var>`__")
 
-    def test_rst_html_stripping(self):
+    def test_rst_html_stripping(self) -> None:
         """Test that RST generator also strips HTML properly."""
         generator = RSTDocumentationGenerator()
 
@@ -584,7 +587,7 @@ Third paragraph here."""
         expected = "This has HTML tags that should be stripped."
         assert result == expected
 
-    def test_requirements_example_1(self):
+    def test_requirements_example_1(self) -> None:
         """Test the first example from requirements exactly."""
         generator = MarkdownDocumentationGenerator()
 
@@ -619,7 +622,7 @@ Third paragraph here."""
         )
         assert result == expected
 
-    def test_requirements_example_2(self):
+    def test_requirements_example_2(self) -> None:
         """Test the second example from requirements exactly."""
         generator = MarkdownDocumentationGenerator()
 
@@ -646,7 +649,7 @@ Third paragraph here."""
         result = generator._format_table_description_filter(input_text, "foo")
         assert result == expected
 
-    def test_disable_truncation_with_max_length_zero(self):
+    def test_disable_truncation_with_max_length_zero(self) -> None:
         """Test that setting max_length=0 disables truncation completely."""
         generator = MarkdownDocumentationGenerator()
 
@@ -681,7 +684,7 @@ Third paragraph here."""
         assert len(result_negative) == 400
         assert " […]" not in result_negative
 
-    def test_rst_disable_truncation_with_max_length_zero(self):
+    def test_rst_disable_truncation_with_max_length_zero(self) -> None:
         """Test that RST generator also supports max_length=0 to disable truncation."""
         generator = RSTDocumentationGenerator()
 
@@ -705,7 +708,9 @@ Third paragraph here."""
 class TestDefaultsCommentGenerator:
     """Test the DefaultsCommentGenerator class."""
 
-    def test_add_comments_success(self, sample_role_with_specs_and_defaults):
+    def test_add_comments_success(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test adding comments to defaults file."""
         generator = DefaultsCommentGenerator()
 
@@ -736,31 +741,31 @@ class TestDefaultsCommentGenerator:
         assert "email address for acme" in result.lower()
         assert "staging environment" in result.lower()
 
-    def test_add_comments_missing_file(self, sample_role_path):
+    def test_add_comments_missing_file(self, sample_role_path: Path) -> None:
         """Test adding comments to non-existent file."""
         generator = DefaultsCommentGenerator()
 
         defaults_path = sample_role_path / "defaults" / "main.yml"
-        specs = {"main": {"options": {}}}
+        specs: dict[str, Any] = {"main": {"options": {}}}
 
         result = generator.add_comments(defaults_path, specs)
 
         assert result is None
 
-    def test_add_comments_empty_file(self, sample_role_path):
+    def test_add_comments_empty_file(self, sample_role_path: Path) -> None:
         """Test adding comments to empty file."""
         generator = DefaultsCommentGenerator()
 
         defaults_path = sample_role_path / "defaults" / "main.yml"
         defaults_path.write_text("")
 
-        specs = {"main": {"options": {}}}
+        specs: dict[str, Any] = {"main": {"options": {}}}
 
         result = generator.add_comments(defaults_path, specs)
 
         assert result is None
 
-    def test_add_comments_ignores_nested_keys(self, sample_role_path):
+    def test_add_comments_ignores_nested_keys(self, sample_role_path: Path) -> None:
         """Nested keys sharing a managed variable's name get no comment block."""
         generator = DefaultsCommentGenerator()
 
@@ -780,6 +785,7 @@ class TestDefaultsCommentGenerator:
         }
 
         result = generator.add_comments(defaults_path, specs)
+        assert result is not None
         lines = result.splitlines()
 
         # The nested key must remain directly below its parent mapping,
@@ -789,7 +795,7 @@ class TestDefaultsCommentGenerator:
         # The description comment appears exactly once (top-level variable only)
         assert result.count("# Manage foo.") == 1
 
-    def test_remove_existing_comments_keeps_nested_key_comments(self):
+    def test_remove_existing_comments_keeps_nested_key_comments(self) -> None:
         """Hand-written comments above nested keys must survive cleaning."""
         generator = DefaultsCommentGenerator()
 
@@ -800,7 +806,7 @@ class TestDefaultsCommentGenerator:
 
         assert "# keep this comment" in cleaned
 
-    def test_block_comment_documents_nested_options(self):
+    def test_block_comment_documents_nested_options(self) -> None:
         """Nested options (dict attributes) are documented, see issue #21."""
         generator = DefaultsCommentGenerator()
 
@@ -847,7 +853,7 @@ class TestDefaultsCommentGenerator:
         ]
         assert comment_lines == expected
 
-    def test_block_comment_nested_options_can_be_disabled(self):
+    def test_block_comment_nested_options_can_be_disabled(self) -> None:
         """The nested_options flag suppresses dict attribute documentation."""
         generator = DefaultsCommentGenerator(nested_options=False)
 
@@ -865,7 +871,7 @@ class TestDefaultsCommentGenerator:
         assert not any("Dict attributes" in line for line in comment_lines)
         assert not any("- key:" in line for line in comment_lines)
 
-    def test_block_comment_nested_options_depth_limit(self):
+    def test_block_comment_nested_options_depth_limit(self) -> None:
         """Nesting beyond the depth limit is replaced by an omission note."""
         generator = DefaultsCommentGenerator()
 
@@ -907,7 +913,7 @@ class TestDefaultsCommentGenerator:
         assert "- level4:" not in text
         assert "omitted at this nesting depth" in text
 
-    def test_block_comment_nested_description_wraps_with_hanging_indent(self):
+    def test_block_comment_nested_description_wraps_with_hanging_indent(self) -> None:
         """Long nested descriptions wrap and align below the bullet."""
         generator = DefaultsCommentGenerator()
 
@@ -935,7 +941,7 @@ class TestDefaultsCommentGenerator:
         assert "hanging indents." in comment_lines[bullet_index + 1]
         assert all(len(line) <= 80 for line in comment_lines)
 
-    def test_format_block_comment_formats_compound_default_as_yaml(self):
+    def test_format_block_comment_formats_compound_default_as_yaml(self) -> None:
         """Test issue #17 list-of-dicts defaults render as wrapped YAML comments."""
         generator = DefaultsCommentGenerator()
 
@@ -968,7 +974,7 @@ class TestDefaultsCommentGenerator:
         assert not any("[{" in line for line in comment_lines)
         assert all(len(line) <= 160 for line in comment_lines)
 
-    def test_format_block_comment_keeps_empty_compound_defaults_inline(self):
+    def test_format_block_comment_keeps_empty_compound_defaults_inline(self) -> None:
         """Test empty list/dict defaults stay compact."""
         generator = DefaultsCommentGenerator()
 
@@ -992,7 +998,9 @@ class TestDefaultsCommentGenerator:
         assert "# - Default: {}" in dict_lines
         assert "# - Default: []" in list_lines
 
-    def test_format_block_comment_empty_string_default_has_no_trailing_space(self):
+    def test_format_block_comment_empty_string_default_has_no_trailing_space(
+        self,
+    ) -> None:
         """Test empty string defaults are explicit and do not add trailing space."""
         generator = DefaultsCommentGenerator()
 
@@ -1008,7 +1016,7 @@ class TestDefaultsCommentGenerator:
         assert '# - Default: ""' in comment_lines
         assert all(line == line.rstrip() for line in comment_lines)
 
-    def test_ast_aware_text_wrapping(self):
+    def test_ast_aware_text_wrapping(self) -> None:
         """Test AST-aware text wrapping functionality."""
         generator = DefaultsCommentGenerator()
 
@@ -1032,7 +1040,7 @@ class TestDefaultsCommentGenerator:
         result = generator._parse_and_format_description("", max_width=50)
         assert result == ""
 
-    def test_wrapping_preserves_punctuation_after_inline_code(self):
+    def test_wrapping_preserves_punctuation_after_inline_code(self) -> None:
         """Test wrapping does not add spaces before punctuation after code spans."""
         generator = DefaultsCommentGenerator()
 
@@ -1061,7 +1069,7 @@ class TestDefaultsCommentGenerator:
         assert "`git ls-remote` ." not in normalized
         assert "`run_acmesh_user` )" not in normalized
 
-    def test_complex_list_formatting_with_nesting(self):
+    def test_complex_list_formatting_with_nesting(self) -> None:
         """Test complex list formatting with proper nesting and list types."""
         generator = DefaultsCommentGenerator()
 
@@ -1124,7 +1132,7 @@ class TestDefaultsCommentGenerator:
         assert "- bar - foo" not in result  # This was the broken behavior
         assert "bar- foo" not in result  # This should be properly nested with spacing
 
-    def test_parse_and_format_description_basic_paragraphs(self):
+    def test_parse_and_format_description_basic_paragraphs(self) -> None:
         """Test basic paragraph formatting with single/double linebreak rules."""
         generator = DefaultsCommentGenerator()
 
@@ -1149,7 +1157,7 @@ Third paragraph here."""
         )
         assert result == expected
 
-    def test_parse_and_format_description_code_blocks(self):
+    def test_parse_and_format_description_code_blocks(self) -> None:
         """Test code block preservation without threading."""
         generator = DefaultsCommentGenerator()
 
@@ -1180,7 +1188,7 @@ Text after code block continues normally."""
         assert "Text before code block.\n\n```yaml" in result
         assert "```\n\nText after code block continues normally." in result
 
-    def test_parse_and_format_description_lists(self):
+    def test_parse_and_format_description_lists(self) -> None:
         """Test markdown list preservation."""
         generator = DefaultsCommentGenerator()
 
@@ -1203,7 +1211,7 @@ Regular paragraph after the list."""
         assert "Description with a list:\n\n- First list item" in result
         assert "- Third item\n\nRegular paragraph after the list." in result
 
-    def test_format_block_comment_preserves_markdown_links(self):
+    def test_format_block_comment_preserves_markdown_links(self) -> None:
         """Test named Markdown links are preserved in defaults comments."""
         generator = DefaultsCommentGenerator()
 
@@ -1239,7 +1247,7 @@ Regular paragraph after the list."""
         )
         assert "# - " not in comment_lines
 
-    def test_parse_and_format_description_mixed_content(self):
+    def test_parse_and_format_description_mixed_content(self) -> None:
         """Test complex mixed content with paragraphs, lists, and code blocks."""
         generator = DefaultsCommentGenerator()
 
@@ -1298,7 +1306,7 @@ single linebreaks becoming spaces for natural flow."""
         parts = result.split("\n\n")
         assert len(parts) >= 5  # Multiple distinct blocks
 
-    def test_parse_and_format_description_edge_cases(self):
+    def test_parse_and_format_description_edge_cases(self) -> None:
         """Test edge cases for parser-based description formatting."""
         generator = DefaultsCommentGenerator()
 
@@ -1337,7 +1345,7 @@ ls -la
 class TestBlockAwareProcessing:
     """Test the parser-based text processing methods."""
 
-    def test_ast_wrapping_preserves_code_blocks(self):
+    def test_ast_wrapping_preserves_code_blocks(self) -> None:
         """Test that AST-aware wrapping preserves code blocks correctly."""
         generator = DefaultsCommentGenerator()
 
@@ -1357,7 +1365,7 @@ class TestBlockAwareProcessing:
         assert "```" in result
         assert "Text after code block." in result
 
-    def test_ast_wrapping_preserves_lists(self):
+    def test_ast_wrapping_preserves_lists(self) -> None:
         """Test that AST-aware wrapping preserves lists correctly."""
         generator = DefaultsCommentGenerator()
 
@@ -1379,7 +1387,7 @@ Text after list."""
         assert "Text before list." in result
         assert "Text after list." in result
 
-    def test_ast_wrapping_mixed_content(self):
+    def test_ast_wrapping_mixed_content(self) -> None:
         """Test AST-aware wrapping with mixed content types."""
         generator = DefaultsCommentGenerator()
 
@@ -1400,7 +1408,7 @@ Text after list."""
         assert "Another paragraph." in result
         assert "- Different bullet style item" in result
 
-    def test_ast_wrapping_edge_cases(self):
+    def test_ast_wrapping_edge_cases(self) -> None:
         """Test edge cases in AST-aware text wrapping."""
         generator = DefaultsCommentGenerator()
 
@@ -1424,7 +1432,7 @@ Text after list."""
             if line.strip():  # Skip empty lines
                 assert len(line) <= 50
 
-    def test_format_ast_node_paragraph(self):
+    def test_format_ast_node_paragraph(self) -> None:
         """Test AST paragraph node formatting."""
         generator = DefaultsCommentGenerator()
 
@@ -1437,7 +1445,7 @@ Text after list."""
         result = generator._format_ast_node(paragraph_node)
         assert result == "First line with softbreak"
 
-    def test_format_ast_node_code_block(self):
+    def test_format_ast_node_code_block(self) -> None:
         """Test AST code block node formatting."""
         generator = DefaultsCommentGenerator()
 
@@ -1460,7 +1468,7 @@ Text after list."""
         result = generator._format_ast_node(indented_node)
         assert result == "```\nkey: value\n```"
 
-    def test_format_ast_node_list(self):
+    def test_format_ast_node_list(self) -> None:
         """Test AST list node formatting."""
         generator = DefaultsCommentGenerator()
 
@@ -1477,7 +1485,7 @@ Text after list."""
 class TestMarkdownListFormattingFixes:
     """Test the markdown list formatting fixes for CommonMark AST processing."""
 
-    def test_preserve_asterisk_list_markers(self):
+    def test_preserve_asterisk_list_markers(self) -> None:
         """
         Test that asterisk list markers are preserved instead of converted to dashes.
         """
@@ -1499,7 +1507,7 @@ class TestMarkdownListFormattingFixes:
         # Should not be converted to dashes
         assert "- First item" not in result
 
-    def test_proper_list_indentation_levels(self):
+    def test_proper_list_indentation_levels(self) -> None:
         """Test that nested lists use proper continuation indentation levels."""
         generator = DefaultsCommentGenerator()
 
@@ -1528,7 +1536,7 @@ class TestMarkdownListFormattingFixes:
                 # Third level should have 6 spaces (nested continuation alignment)
                 assert line.startswith("      - ")
 
-    def test_top_level_list_continuation_indentation(self):
+    def test_top_level_list_continuation_indentation(self) -> None:
         """Test that continuation lines for top-level lists get proper indentation."""
         generator = DefaultsCommentGenerator()
 
@@ -1561,7 +1569,7 @@ class TestMarkdownListFormattingFixes:
 
         assert code_block_found, "Code block was not found in output"
 
-    def test_code_block_indentation_preservation(self):
+    def test_code_block_indentation_preservation(self) -> None:
         """
         Test that code blocks preserve internal indentation while getting proper base
         indentation.
@@ -1600,7 +1608,7 @@ class TestMarkdownListFormattingFixes:
                 # List items should have base + 4 indentation
                 assert line.startswith("      - item")
 
-    def test_mixed_list_types_preservation(self):
+    def test_mixed_list_types_preservation(self) -> None:
         """Test that both bullet and ordered lists are preserved correctly."""
         generator = DefaultsCommentGenerator()
 
@@ -1643,7 +1651,7 @@ Separate ordered list:
             elif "Bullet under ordered" in line:
                 assert line.startswith("     * ")  # 5 spaces for bullet under ordered
 
-    def test_long_text_wrapping_in_nested_lists(self):
+    def test_long_text_wrapping_in_nested_lists(self) -> None:
         """
         Test that long text in nested lists wraps correctly with proper indentation.
         """
@@ -1695,7 +1703,7 @@ Separate ordered list:
         assert found_wrapped_second_level, "Did not find wrapped second level text"
         assert found_wrapped_third_level, "Did not find wrapped third level text"
 
-    def test_comprehensive_list_and_code_example(self):
+    def test_comprehensive_list_and_code_example(self) -> None:
         """Test the comprehensive example from the user's report."""
         generator = DefaultsCommentGenerator()
 
@@ -1790,7 +1798,7 @@ Separate ordered list:
             '#            - "long long' in final_result
         )  # List items inside code (12 spaces)
 
-    def test_edge_case_empty_lists_and_mixed_content(self):
+    def test_edge_case_empty_lists_and_mixed_content(self) -> None:
         """Test edge cases with empty list items and mixed content."""
         generator = DefaultsCommentGenerator()
 
@@ -1818,7 +1826,9 @@ Regular paragraph after list."""
 class TestParserBasedIntegration:
     """Integration tests for the complete parser-based workflow."""
 
-    def test_real_world_complex_description(self, sample_role_with_specs_and_defaults):
+    def test_real_world_complex_description(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test with actual complex descriptions from fixtures."""
         generator = DefaultsCommentGenerator()
 
@@ -1847,7 +1857,7 @@ class TestParserBasedIntegration:
         paragraphs = result.split("\n\n")
         assert len(paragraphs) == 3
 
-    def test_code_block_threading_prevention(self):
+    def test_code_block_threading_prevention(self) -> None:
         """Test that code blocks are NOT threaded (critical regression test)."""
         generator = DefaultsCommentGenerator()
 
@@ -1900,7 +1910,7 @@ Regular text after code blocks works perfectly."""
         assert code_content[1] == 'echo "Hello, World!"'
         assert code_content[2] == "ls -la /home/user/"
 
-    def test_comprehensive_formatting_example(self):
+    def test_comprehensive_formatting_example(self) -> None:
         """Test the comprehensive example from the final test case."""
         generator = DefaultsCommentGenerator()
 
@@ -1966,8 +1976,8 @@ single linebreaks becoming spaces for natural flow."""
         assert len(parts) >= 6  # Should have multiple distinct sections
 
     def test_backwards_compatibility_with_existing_tests(
-        self, sample_role_with_specs_and_defaults
-    ):
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test parser-based approach compatibility with existing functionality."""
         generator = DefaultsCommentGenerator()
 
@@ -2003,7 +2013,7 @@ single linebreaks becoming spaces for natural flow."""
 class TestReadmeUpdater:
     """Test the ReadmeUpdater class."""
 
-    def test_update_readme_tocfull_section(self, temp_dir):
+    def test_update_readme_tocfull_section(self, temp_dir: Path) -> None:
         """TOC-FULL lists all headings, including hand-written ones."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
@@ -2039,7 +2049,7 @@ class TestReadmeUpdater:
         )
         assert readme_path.read_text(encoding="utf-8") == before
 
-    def test_update_readme_tocfull_and_toc_coexist(self, temp_dir):
+    def test_update_readme_tocfull_and_toc_coexist(self, temp_dir: Path) -> None:
         """TOC (MAIN content only) and TOC-FULL work in the same file."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
@@ -2075,7 +2085,7 @@ class TestReadmeUpdater:
         assert "[Hand-written](#hand)" in tocfull_section
         assert "[Role variables](#variables)" in tocfull_section
 
-    def test_update_readme_new_file(self, temp_dir):
+    def test_update_readme_new_file(self, temp_dir: Path) -> None:
         """Test creating new README file."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
@@ -2100,7 +2110,7 @@ class TestReadmeUpdater:
         assert expected_start in content
         assert expected_end in content
 
-    def test_update_readme_existing_file_no_markers(self, temp_dir):
+    def test_update_readme_existing_file_no_markers(self, temp_dir: Path) -> None:
         """Test updating existing README without markers."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
@@ -2124,7 +2134,7 @@ class TestReadmeUpdater:
         )
         assert expected_start in content
 
-    def test_update_readme_existing_file_with_markers(self, temp_dir):
+    def test_update_readme_existing_file_with_markers(self, temp_dir: Path) -> None:
         """Test updating existing README with markers."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
@@ -2152,7 +2162,7 @@ More content"""
         assert "new documentation" in content.lower()
         assert "old documentation" not in content.lower()
 
-    def test_update_readme_preserves_regex_backslashes(self, temp_dir):
+    def test_update_readme_preserves_regex_backslashes(self, temp_dir: Path) -> None:
         """Test README replacement preserves regex escapes in generated content."""
         updater = ReadmeUpdater()
         readme_path = temp_dir / "README.md"
@@ -2181,7 +2191,7 @@ failregex: |-
         assert r"^[Bb]ad password attempt from <HOST>:\d+$" in content
         assert "Old documentation" not in content
 
-    def test_create_new_readme(self):
+    def test_create_new_readme(self) -> None:
         """Test creating new README template."""
         updater = ReadmeUpdater()
 
@@ -2193,7 +2203,7 @@ failregex: |-
         assert "## licens" in result.lower()
         assert "gpl-3.0-or-later" in result.lower()
 
-    def test_custom_markers(self, temp_dir):
+    def test_custom_markers(self, temp_dir: Path) -> None:
         """Test using custom markers."""
         updater = ReadmeUpdater(start_marker="START CUSTOM", end_marker="END CUSTOM")
 
@@ -2216,7 +2226,7 @@ Old content
         assert "new content" in content.lower()
         assert "old content" not in content.lower()
 
-    def test_update_readme_with_toc_markers(self, temp_dir):
+    def test_update_readme_with_toc_markers(self, temp_dir: Path) -> None:
         """Test updating README with TOC markers."""
         from ansible_docsmith import MARKER_README_TOC_END, MARKER_README_TOC_START
 
@@ -2265,7 +2275,7 @@ Some variable documentation here."""
 class TestTocGenerator:
     """Test the TOC generator functionality (using MarkdownTocGenerator)."""
 
-    def test_generate_toc_basic(self):
+    def test_generate_toc_basic(self) -> None:
         """Test basic TOC generation."""
         generator = MarkdownTocGenerator(bullet_style="*")
 
@@ -2294,7 +2304,7 @@ Final content.
 
         assert toc == "\n".join(expected_lines)
 
-    def test_generate_toc_with_dash_bullets(self):
+    def test_generate_toc_with_dash_bullets(self) -> None:
         """Test TOC generation with dash bullets."""
         generator = MarkdownTocGenerator(bullet_style="-")
 
@@ -2313,7 +2323,7 @@ More content.
 
         assert toc == "\n".join(expected_lines)
 
-    def test_extract_headings(self):
+    def test_extract_headings(self) -> None:
         """Test heading extraction."""
         generator = MarkdownTocGenerator()
 
@@ -2339,7 +2349,7 @@ Some text that is not a heading.
 
         assert headings == expected
 
-    def test_create_anchor_link(self):
+    def test_create_anchor_link(self) -> None:
         """Test anchor link creation."""
         generator = MarkdownTocGenerator()
 
@@ -2355,7 +2365,7 @@ Some text that is not a heading.
         for input_text, expected in test_cases:
             assert generator._create_anchor_link(input_text) == expected
 
-    def test_detect_bullet_style(self):
+    def test_detect_bullet_style(self) -> None:
         """Test bullet style detection."""
         generator = MarkdownTocGenerator()
 
@@ -2385,7 +2395,7 @@ with no bullet lists.
 """
         assert generator._detect_bullet_style(content_none) == "*"
 
-    def test_generate_toc_auto_detect_bullets(self):
+    def test_generate_toc_auto_detect_bullets(self) -> None:
         """Test TOC generation with auto-detected bullet style."""
         generator = MarkdownTocGenerator()  # No bullet style specified
 
@@ -2404,7 +2414,7 @@ More content.
         # Should detect dash style from existing content
         assert toc.startswith("- [Main Title]")
 
-    def test_generate_toc_empty_content(self):
+    def test_generate_toc_empty_content(self) -> None:
         """Test TOC generation with no headings."""
         generator = MarkdownTocGenerator()
 
@@ -2416,7 +2426,7 @@ with no headings at all.
         toc = generator.generate_toc(content)
         assert toc == ""
 
-    def test_generate_toc_complex_headings(self):
+    def test_generate_toc_complex_headings(self) -> None:
         """Test TOC generation with complex heading text."""
         generator = MarkdownTocGenerator(bullet_style="*")
 
@@ -2443,12 +2453,12 @@ with no headings at all.
 class TestMarkdownTocGenerator:
     """Test the MarkdownTocGenerator class."""
 
-    def test_markdown_get_format_type(self):
+    def test_markdown_get_format_type(self) -> None:
         """Test that MarkdownTocGenerator returns correct format type."""
         generator = MarkdownTocGenerator()
         assert generator._get_format_type() == "markdown"
 
-    def test_markdown_toc_generation_same_as_legacy(self):
+    def test_markdown_toc_generation_same_as_legacy(self) -> None:
         """Test MarkdownTocGenerator produces same results as legacy TocGenerator."""
         content = """# Main Title
 
@@ -2475,7 +2485,7 @@ Final content.
 
         assert legacy_result == new_result
 
-    def test_ast_extract_headings_with_code_blocks(self):
+    def test_ast_extract_headings_with_code_blocks(self) -> None:
         """Test that AST-based extraction avoids false positives from code blocks."""
         generator = MarkdownTocGenerator()
 
@@ -2509,7 +2519,7 @@ key: value
         assert headings[2]["text"] == "Third Real Heading"
         assert headings[2]["level"] == 3
 
-    def test_ast_extract_headings_with_inline_code(self):
+    def test_ast_extract_headings_with_inline_code(self) -> None:
         """Test headings with inline code are handled properly."""
         generator = MarkdownTocGenerator()
 
@@ -2532,7 +2542,7 @@ key: value
         assert headings[2]["text"] == "Method `configure_ssl()`"
         assert headings[2]["level"] == 3
 
-    def test_ast_extract_headings_mixed_content(self):
+    def test_ast_extract_headings_mixed_content(self) -> None:
         """Test complex markdown with various constructs."""
         generator = MarkdownTocGenerator()
 
@@ -2586,7 +2596,7 @@ Answer here.
             assert headings[i]["level"] == expected["level"]
             assert headings[i]["anchor"] == expected["anchor"]
 
-    def test_ast_extract_headings_fallback_on_error(self):
+    def test_ast_extract_headings_fallback_on_error(self) -> None:
         """Test fallback to regex extraction when AST parsing fails."""
         generator = MarkdownTocGenerator()
 
@@ -2607,7 +2617,7 @@ Answer here.
             assert headings[0]["text"] == "Test Heading"
             assert headings[1]["text"] == "Second Heading"
 
-    def test_ast_extract_headings_empty_content(self):
+    def test_ast_extract_headings_empty_content(self) -> None:
         """Test AST extraction with empty or whitespace content."""
         generator = MarkdownTocGenerator()
 
@@ -2626,7 +2636,7 @@ but no headings at all."""
 
         assert generator._extract_headings(content) == []
 
-    def test_ast_extract_text_from_node(self):
+    def test_ast_extract_text_from_node(self) -> None:
         """Test the helper method for extracting text from AST nodes."""
         from ansible_docsmith.core.markdown_ast import parse_markdown
 
@@ -2642,7 +2652,7 @@ but no headings at all."""
         text = generator._extract_text_from_node(heading_node)
         assert text == "Configure `nginx` Settings"
 
-    def test_ast_fallback_method(self):
+    def test_ast_fallback_method(self) -> None:
         """Test the fallback regex-based extraction method."""
         generator = MarkdownTocGenerator()
 
@@ -2662,12 +2672,12 @@ but no headings at all."""
 class TestRSTTocGenerator:
     """Test the RSTTocGenerator class."""
 
-    def test_rst_get_format_type(self):
+    def test_rst_get_format_type(self) -> None:
         """Test that RSTTocGenerator returns correct format type."""
         generator = RSTTocGenerator()
         assert generator._get_format_type() == "rst"
 
-    def test_rst_extract_headings(self):
+    def test_rst_extract_headings(self) -> None:
         """Test extracting headings from RST content."""
         generator = RSTTocGenerator()
         content = """Main Title
@@ -2703,7 +2713,7 @@ Final content.
         assert headings[3]["text"] == "Section Two"
         assert headings[3]["level"] == 2
 
-    def test_rst_create_anchor_link(self):
+    def test_rst_create_anchor_link(self) -> None:
         """Test creating anchor links for RST format."""
         generator = RSTTocGenerator()
 
@@ -2714,7 +2724,7 @@ Final content.
         )
         assert generator._create_anchor_link("Multiple   Spaces") == "multiple-spaces"
 
-    def test_rst_generate_toc_lines(self):
+    def test_rst_generate_toc_lines(self) -> None:
         """Test generating TOC lines in RST format."""
         generator = RSTTocGenerator(bullet_style="*")
 
@@ -2736,7 +2746,7 @@ Final content.
 
         assert result == "\n".join(expected_lines)
 
-    def test_rst_detect_bullet_style(self):
+    def test_rst_detect_bullet_style(self) -> None:
         """Test auto-detecting bullet style from RST content."""
         generator = RSTTocGenerator()
 
@@ -2762,24 +2772,24 @@ Final content.
 class TestCreateTocGenerator:
     """Test the factory function for creating TOC generators."""
 
-    def test_create_markdown_toc_generator(self):
+    def test_create_markdown_toc_generator(self) -> None:
         """Test creating a Markdown TOC generator."""
         generator = create_toc_generator("markdown")
         assert isinstance(generator, MarkdownTocGenerator)
         assert generator._get_format_type() == "markdown"
 
-    def test_create_rst_toc_generator(self):
+    def test_create_rst_toc_generator(self) -> None:
         """Test creating an RST TOC generator."""
         generator = create_toc_generator("rst")
         assert isinstance(generator, RSTTocGenerator)
         assert generator._get_format_type() == "rst"
 
-    def test_create_toc_generator_with_bullet_style(self):
+    def test_create_toc_generator_with_bullet_style(self) -> None:
         """Test factory function with bullet style parameter."""
         generator = create_toc_generator("markdown", bullet_style="-")
         assert generator.bullet_style == "-"
 
-    def test_create_toc_generator_case_insensitive(self):
+    def test_create_toc_generator_case_insensitive(self) -> None:
         """Test factory function is case insensitive."""
         generator = create_toc_generator("RST")
         assert isinstance(generator, RSTTocGenerator)
@@ -2787,7 +2797,7 @@ class TestCreateTocGenerator:
         generator = create_toc_generator("Markdown")
         assert isinstance(generator, MarkdownTocGenerator)
 
-    def test_create_toc_generator_unsupported_format(self):
+    def test_create_toc_generator_unsupported_format(self) -> None:
         """Test factory function with unsupported format."""
         import pytest
 
@@ -2798,7 +2808,9 @@ class TestCreateTocGenerator:
 class TestRSTDocumentationGenerator:
     """Test the RSTDocumentationGenerator class."""
 
-    def test_rst_generate_role_documentation(self, sample_role_with_specs):
+    def test_rst_generate_role_documentation(
+        self, sample_role_with_specs: Path
+    ) -> None:
         """Test generating RST role documentation."""
         generator = RSTDocumentationGenerator()
 
@@ -2833,7 +2845,7 @@ class TestRSTDocumentationGenerator:
         assert ":Required: Yes" in result
         assert "a test variable" in result.lower()
 
-    def test_rst_ansible_escape_filter(self):
+    def test_rst_ansible_escape_filter(self) -> None:
         """Test RST Ansible escape filter (should not escape)."""
         generator = RSTDocumentationGenerator()
 
@@ -2844,7 +2856,7 @@ class TestRSTDocumentationGenerator:
         result = generator._ansible_escape_filter(None)
         assert result == "N/A"
 
-    def test_rst_code_escape_filter(self):
+    def test_rst_code_escape_filter(self) -> None:
         """Test RST code escape filter."""
         generator = RSTDocumentationGenerator()
 
@@ -2860,7 +2872,7 @@ class TestRSTDocumentationGenerator:
         result = generator._code_escape_filter(None)
         assert result == "N/A"
 
-    def test_rst_format_default_filter(self):
+    def test_rst_format_default_filter(self) -> None:
         """RST defaults must use double-backtick inline literals."""
         generator = RSTDocumentationGenerator()
 
@@ -2874,7 +2886,7 @@ class TestRSTDocumentationGenerator:
         result = generator._format_default_filter(None)
         assert result == "N/A"
 
-    def test_rst_format_table_description_filter(self):
+    def test_rst_format_table_description_filter(self) -> None:
         """Test RST table description formatting."""
         generator = RSTDocumentationGenerator()
 
@@ -2885,7 +2897,7 @@ class TestRSTDocumentationGenerator:
         # RST uses pipe separators instead of <br><br>
         assert "First paragraph. | Second paragraph." == result
 
-    def test_rst_format_description_filter(self):
+    def test_rst_format_description_filter(self) -> None:
         """Test RST description formatting."""
         generator = RSTDocumentationGenerator()
 
@@ -2908,19 +2920,19 @@ class TestRSTDocumentationGenerator:
 class TestCreateDocumentationGenerator:
     """Test the factory function for creating generators."""
 
-    def test_create_markdown_generator(self):
+    def test_create_markdown_generator(self) -> None:
         """Test creating a Markdown generator."""
         generator = create_documentation_generator("markdown")
         assert isinstance(generator, MarkdownDocumentationGenerator)
         assert generator._get_format_type() == "markdown"
 
-    def test_create_rst_generator(self):
+    def test_create_rst_generator(self) -> None:
         """Test creating an RST generator."""
         generator = create_documentation_generator("rst")
         assert isinstance(generator, RSTDocumentationGenerator)
         assert generator._get_format_type() == "rst"
 
-    def test_create_generator_case_insensitive(self):
+    def test_create_generator_case_insensitive(self) -> None:
         """Test factory function is case insensitive."""
         generator = create_documentation_generator("RST")
         assert isinstance(generator, RSTDocumentationGenerator)
@@ -2928,7 +2940,7 @@ class TestCreateDocumentationGenerator:
         generator = create_documentation_generator("Markdown")
         assert isinstance(generator, MarkdownDocumentationGenerator)
 
-    def test_create_generator_unsupported_format(self):
+    def test_create_generator_unsupported_format(self) -> None:
         """Test factory function with unsupported format."""
         import pytest
 

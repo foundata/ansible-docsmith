@@ -1,5 +1,8 @@
 """Tests for RoleProcessor."""
 
+from pathlib import Path
+from typing import Any
+
 import pytest
 
 from ansible_docsmith import (
@@ -23,7 +26,9 @@ from ansible_docsmith.core.processor import (
 class TestRoleProcessor:
     """Test the RoleProcessor class."""
 
-    def test_validate_role_success(self, sample_role_with_specs_and_defaults):
+    def test_validate_role_success(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test successful role validation."""
         processor = RoleProcessor()
 
@@ -34,14 +39,16 @@ class TestRoleProcessor:
         assert "role_name" in result
         assert result["role_name"] == sample_role_with_specs_and_defaults.name
 
-    def test_validate_role_failure(self, sample_role_path):
+    def test_validate_role_failure(self, sample_role_path: Path) -> None:
         """Test role validation failure."""
         processor = RoleProcessor()
 
         with pytest.raises(ValidationError):
             processor.validate_role(sample_role_path)
 
-    def test_process_role_readme_only(self, sample_role_with_specs_and_defaults):
+    def test_process_role_readme_only(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test processing role with README generation only."""
         processor = RoleProcessor(dry_run=True)
 
@@ -57,7 +64,9 @@ class TestRoleProcessor:
         readme_ops = [op for op in result.operations if "README" in str(op[0])]
         assert len(readme_ops) == 1
 
-    def test_process_role_defaults_only(self, sample_role_with_specs_and_defaults):
+    def test_process_role_defaults_only(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test processing role with defaults update only."""
         processor = RoleProcessor(dry_run=True)
 
@@ -73,11 +82,9 @@ class TestRoleProcessor:
         defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
         assert len(defaults_ops) == 1
 
-    def test_process_role_defaults_only_bad_readme(self):
+    def test_process_role_defaults_only_bad_readme(self) -> None:
         """Test processing role with defaults update only with an invalid README."""
         processor = RoleProcessor(dry_run=True)
-
-        from pathlib import Path
 
         fixture_path = Path("tests/fixtures/example-role-missing-readme-markers")
         result = processor.process_role(
@@ -94,7 +101,9 @@ class TestRoleProcessor:
         defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
         assert len(defaults_ops) == 1
 
-    def test_process_role_both_operations(self, sample_role_with_specs_and_defaults):
+    def test_process_role_both_operations(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test processing role with both README and defaults."""
         processor = RoleProcessor(dry_run=True)
 
@@ -107,7 +116,7 @@ class TestRoleProcessor:
         assert len(result.operations) >= 2
         assert len(result.errors) == 0
 
-    def test_process_role_no_defaults_file(self, sample_role_with_specs):
+    def test_process_role_no_defaults_file(self, sample_role_with_specs: Path) -> None:
         """Test processing role without defaults file."""
         processor = RoleProcessor(dry_run=True)
 
@@ -120,8 +129,8 @@ class TestRoleProcessor:
         assert any("validation failed" in error.lower() for error in result.errors)
 
     def test_process_readme_reports_created_then_updated(
-        self, sample_role_with_specs_and_defaults
-    ):
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """A new README is reported as 'Created', an existing one as 'Updated'."""
         processor = RoleProcessor()
         role_path = sample_role_with_specs_and_defaults
@@ -140,7 +149,9 @@ class TestRoleProcessor:
         readme_ops = [op for op in result.operations if "README" in str(op[0])]
         assert readme_ops[0][1] == "Updated"
 
-    def test_process_defaults_reports_skip_for_empty_file(self, sample_role_with_specs):
+    def test_process_defaults_reports_skip_for_empty_file(
+        self, sample_role_with_specs: Path
+    ) -> None:
         """A defaults file without variables is reported as skipped."""
         processor = RoleProcessor()
         defaults_path = sample_role_with_specs / "defaults" / "main.yml"
@@ -156,19 +167,21 @@ class TestRoleProcessor:
         assert not any(op[1] == "Comments added" for op in results.operations)
         assert any("Skipped" in op[1] for op in results.operations)
 
-    def test_find_defaults_files_main_yml(self, sample_role_path):
+    def test_find_defaults_files_main_yml(self, sample_role_path: Path) -> None:
         """Test finding defaults files for main entry point."""
         processor = RoleProcessor()
 
         defaults_file = sample_role_path / "defaults" / "main.yml"
         defaults_file.write_text("---\ntest_var: test_value")
 
-        specs = {"main": {"options": {}}}
+        specs: dict[str, Any] = {"main": {"options": {}}}
         result = processor._find_defaults_files(sample_role_path, specs)
 
         assert result == {"main": defaults_file}
 
-    def test_find_defaults_files_multiple_entry_points(self, sample_role_path):
+    def test_find_defaults_files_multiple_entry_points(
+        self, sample_role_path: Path
+    ) -> None:
         """Test finding defaults files for multiple entry points."""
         processor = RoleProcessor()
 
@@ -178,21 +191,21 @@ class TestRoleProcessor:
         other_file = sample_role_path / "defaults" / "other.yaml"
         other_file.write_text("---\nother_var: other_value")
 
-        specs = {"main": {"options": {}}, "other": {"options": {}}}
+        specs: dict[str, Any] = {"main": {"options": {}}, "other": {"options": {}}}
         result = processor._find_defaults_files(sample_role_path, specs)
 
         assert result == {"main": main_file, "other": other_file}
 
-    def test_find_defaults_files_none(self, sample_role_path):
+    def test_find_defaults_files_none(self, sample_role_path: Path) -> None:
         """Test when no defaults files exist."""
         processor = RoleProcessor()
 
-        specs = {"main": {"options": {}}}
+        specs: dict[str, Any] = {"main": {"options": {}}}
         result = processor._find_defaults_files(sample_role_path, specs)
 
         assert result == {}
 
-    def test_validate_defaults_consistency_success(self):
+    def test_validate_defaults_consistency_success(self) -> None:
         """Test successful consistency validation with matching defaults and specs."""
         processor = RoleProcessor()
 
@@ -222,7 +235,7 @@ class TestRoleProcessor:
         # Should have no errors for this fixture (no unknown keys warnings expected)
         assert len(errors) == 0
 
-    def test_validate_defaults_consistency_errors(self):
+    def test_validate_defaults_consistency_errors(self) -> None:
         """
         Test consistency validation with mismatch fixture that should produce errors.
         """
@@ -255,7 +268,7 @@ class TestRoleProcessor:
         )
         assert "Default value mismatch for variable 'install_force'" in warning_messages
 
-    def test_validate_only_readme(self):
+    def test_validate_only_readme(self) -> None:
         """
         Test only validating the README file, not the argument_specs file.
         """
@@ -288,7 +301,7 @@ class TestRoleProcessor:
             not in warning_messages
         )
 
-    def test_validate_only_argument_specs(self):
+    def test_validate_only_argument_specs(self) -> None:
         """
         Test only validating the argument_specs file, not the README file.
         """
@@ -306,7 +319,7 @@ class TestRoleProcessor:
             validate_argument_specs=True,
         )
 
-    def test_validate_defaults_value_mismatch_detection(self, temp_dir):
+    def test_validate_defaults_value_mismatch_detection(self, temp_dir: Path) -> None:
         """Test detection of default value mismatches between specs and defaults."""
         processor = RoleProcessor()
 
@@ -364,7 +377,7 @@ test_number: 99
         assert "42" in warning_messages
         assert "99" in warning_messages
 
-    def test_validate_mutually_exclusive_keys(self, temp_dir):
+    def test_validate_mutually_exclusive_keys(self, temp_dir: Path) -> None:
         """Test validation of mutually exclusive default and required: true."""
         processor = RoleProcessor()
 
@@ -423,7 +436,7 @@ argument_specs:
         assert "mutually exclusive" in error_messages
         assert "required: true" in error_messages
 
-    def test_validate_mutually_exclusive_keys_with_role_validation(self):
+    def test_validate_mutually_exclusive_keys_with_role_validation(self) -> None:
         """Test that mutually exclusive keys cause role validation to fail."""
         processor = RoleProcessor()
 
@@ -440,7 +453,7 @@ argument_specs:
         assert "conflict_variable" in error_message.lower()
         assert "install_conflict" in error_message.lower()
 
-    def test_validate_unknown_keys(self, temp_dir):
+    def test_validate_unknown_keys(self, temp_dir: Path) -> None:
         """Test validation of unknown keys in argument_specs."""
         processor = RoleProcessor()
 
@@ -467,7 +480,9 @@ argument_specs:
         assert any("invalid_option_key" in w for w in warnings)
         assert any("This might be an error in your role" in w for w in warnings)
 
-    def test_validate_unknown_keys_accepts_valid_spec_keys(self, temp_dir):
+    def test_validate_unknown_keys_accepts_valid_spec_keys(
+        self, temp_dir: Path
+    ) -> None:
         """Valid argument-spec keys like no_log or aliases must not warn."""
         processor = RoleProcessor()
 
@@ -509,8 +524,8 @@ argument_specs:
         assert warnings == []
 
     def test_validate_tocfull_markers_mismatch(
-        self, sample_role_with_specs_and_defaults
-    ):
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """A lone TOC-FULL marker is an error."""
         processor = RoleProcessor()
         role_path = sample_role_with_specs_and_defaults
@@ -528,8 +543,8 @@ argument_specs:
         assert any("TOC-FULL end marker" in e for e in errors)
 
     def test_validate_tocfull_notices_anchorless_headings(
-        self, sample_role_with_specs_and_defaults
-    ):
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Headings without explicit anchors produce a notice in TOC-FULL docs."""
         processor = RoleProcessor()
         role_path = sample_role_with_specs_and_defaults
@@ -552,7 +567,7 @@ argument_specs:
         assert '<a id="without-anchor"></a>' in joined
         assert "'With anchor'" not in joined
 
-    def test_validate_markup_reports_invalid_constructs(self, temp_dir):
+    def test_validate_markup_reports_invalid_constructs(self, temp_dir: Path) -> None:
         """Invalid Ansible markup in descriptions produces warnings."""
         processor = RoleProcessor()
 
@@ -584,7 +599,7 @@ argument_specs:
         assert "variable 'test_var.inner'" in joined
         assert 'Cannot find closing ")"' in joined
 
-    def test_validate_markup_accepts_valid_specs(self, temp_dir):
+    def test_validate_markup_accepts_valid_specs(self, temp_dir: Path) -> None:
         """Valid markup and plain descriptions produce no warnings."""
         processor = RoleProcessor()
 
@@ -605,7 +620,7 @@ argument_specs:
 
         assert warnings == []
 
-    def test_validate_unknown_keys_checks_nested_options(self, temp_dir):
+    def test_validate_unknown_keys_checks_nested_options(self, temp_dir: Path) -> None:
         """Unknown keys in nested option specs warn with a dotted path."""
         processor = RoleProcessor()
 
@@ -633,7 +648,7 @@ argument_specs:
         assert "test_dict.inner" in warnings[0]
         assert "tpyo_key" in warnings[0]
 
-    def test_extract_variables_from_defaults(self, temp_dir):
+    def test_extract_variables_from_defaults(self, temp_dir: Path) -> None:
         """Test extracting variable names from defaults files."""
         processor = RoleProcessor()
 
@@ -650,7 +665,7 @@ var3:
 
         assert result == {"var1", "var2", "var3"}
 
-    def test_extract_variables_from_defaults_empty_file(self, temp_dir):
+    def test_extract_variables_from_defaults_empty_file(self, temp_dir: Path) -> None:
         """Test extracting variables from empty defaults file."""
         processor = RoleProcessor()
 
@@ -662,7 +677,7 @@ var3:
 
         assert result == set()
 
-    def test_extract_variables_from_defaults_invalid_file(self, temp_dir):
+    def test_extract_variables_from_defaults_invalid_file(self, temp_dir: Path) -> None:
         """Test extracting variables from invalid YAML file."""
         processor = RoleProcessor()
 
@@ -674,7 +689,7 @@ var3:
 
         assert result == set()
 
-    def test_validate_role_with_value_mismatch_warnings(self):
+    def test_validate_role_with_value_mismatch_warnings(self) -> None:
         """Test that validate_role succeeds but reports value mismatch warnings."""
         processor = RoleProcessor()
 
@@ -695,7 +710,7 @@ var3:
         assert "install_version" in warning_messages
         assert "install_force" in warning_messages
 
-    def test_validate_role_with_warnings_only(self):
+    def test_validate_role_with_warnings_only(self) -> None:
         """Test that validate_role passes when there are only warnings."""
         processor = RoleProcessor()
 
@@ -712,7 +727,7 @@ var3:
         assert len(result["errors"]) == 0
         assert len(result["notices"]) > 0
 
-    def test_validate_role_with_notices(self):
+    def test_validate_role_with_notices(self) -> None:
         """Test that validate_role includes notices for potential mismatches."""
         processor = RoleProcessor()
 
@@ -730,7 +745,7 @@ var3:
         assert "acmesh_dns_provider" in notice_messages
         assert "may be intentional" in notice_messages
 
-    def test_validate_role_with_unknown_key_warnings(self):
+    def test_validate_role_with_unknown_key_warnings(self) -> None:
         """
         Test that validate_role includes warnings for unknown keys in mismatch
         fixture.
@@ -754,7 +769,7 @@ var3:
         assert "unknown_key" in warning_messages.lower()
         assert "might be an error in your role" in warning_messages.lower()
 
-    def test_validate_readme_markers_no_readme(self, temp_dir):
+    def test_validate_readme_markers_no_readme(self, temp_dir: Path) -> None:
         """Test validation when no README.md exists (should pass)."""
         processor = RoleProcessor()
 
@@ -765,7 +780,7 @@ var3:
         errors = processor._validate_readme_markers(role_path)
         assert errors == []
 
-    def test_validate_readme_markers_missing_both(self, temp_dir):
+    def test_validate_readme_markers_missing_both(self, temp_dir: Path) -> None:
         """Test validation when README exists but has no markers."""
         processor = RoleProcessor()
 
@@ -789,7 +804,7 @@ var3:
         assert expected_start in errors[0]
         assert expected_end in errors[0]
 
-    def test_validate_readme_markers_missing_start(self, temp_dir):
+    def test_validate_readme_markers_missing_start(self, temp_dir: Path) -> None:
         """Test validation when README has end marker but no start marker."""
         processor = RoleProcessor()
 
@@ -813,7 +828,7 @@ Some content.
         )
         assert expected_start in errors[0]
 
-    def test_validate_readme_markers_missing_end(self, temp_dir):
+    def test_validate_readme_markers_missing_end(self, temp_dir: Path) -> None:
         """Test validation when README has start marker but no end marker."""
         processor = RoleProcessor()
 
@@ -834,7 +849,7 @@ Some content.
         )
         assert expected_end in errors[0]
 
-    def test_validate_readme_markers_both_present(self, temp_dir):
+    def test_validate_readme_markers_both_present(self, temp_dir: Path) -> None:
         """Test validation when README has both markers (should pass)."""
         processor = RoleProcessor()
 
@@ -855,7 +870,7 @@ More content.
         errors = processor._validate_readme_markers(role_path)
         assert errors == []
 
-    def test_validate_readme_toc_markers_both_missing(self, temp_dir):
+    def test_validate_readme_toc_markers_both_missing(self, temp_dir: Path) -> None:
         """Test TOC validation when README exists but has no TOC markers."""
         processor = RoleProcessor()
 
@@ -877,7 +892,7 @@ More content.
         assert expected_toc_start in notices[0]
         assert expected_toc_end in notices[0]
 
-    def test_validate_readme_toc_markers_missing_start(self, temp_dir):
+    def test_validate_readme_toc_markers_missing_start(self, temp_dir: Path) -> None:
         """Test TOC validation when README has end marker but no start marker."""
         processor = RoleProcessor()
 
@@ -900,7 +915,7 @@ Some content.
         )
         assert expected_toc_start in errors[0]
 
-    def test_validate_readme_toc_markers_missing_end(self, temp_dir):
+    def test_validate_readme_toc_markers_missing_end(self, temp_dir: Path) -> None:
         """Test TOC validation when README has start marker but no end marker."""
         processor = RoleProcessor()
 
@@ -922,7 +937,7 @@ Some content.
         )
         assert expected_toc_end in errors[0]
 
-    def test_validate_readme_toc_markers_both_present(self, temp_dir):
+    def test_validate_readme_toc_markers_both_present(self, temp_dir: Path) -> None:
         """Test TOC validation when README has both TOC markers (should pass)."""
         processor = RoleProcessor()
 
@@ -944,7 +959,7 @@ More content.
         assert errors == []
         assert notices == []
 
-    def test_validate_readme_toc_markers_no_readme(self, temp_dir):
+    def test_validate_readme_toc_markers_no_readme(self, temp_dir: Path) -> None:
         """Test TOC validation when no README exists."""
         processor = RoleProcessor()
 
@@ -955,7 +970,7 @@ More content.
         assert errors == []
         assert notices == []
 
-    def test_validate_role_rst_success(self, temp_dir):
+    def test_validate_role_rst_success(self, temp_dir: Path) -> None:
         """Test successful RST role validation."""
         processor = RoleProcessor(format_type="rst")
 
@@ -1030,7 +1045,7 @@ MIT
         assert result["role_name"] == role_path.name
         assert len(result["errors"]) == 0
 
-    def test_validate_role_rst_missing_markers_forced(self, temp_dir):
+    def test_validate_role_rst_missing_markers_forced(self, temp_dir: Path) -> None:
         """Test RST validation fails when markers are missing and format is forced."""
         processor = RoleProcessor(format_type="rst")
 
@@ -1091,7 +1106,7 @@ MIT
         assert rst_start in error_message
         assert rst_end in error_message
 
-    def test_validate_readme_markers_rst_missing_both(self, temp_dir):
+    def test_validate_readme_markers_rst_missing_both(self, temp_dir: Path) -> None:
         """Test validation when RST README exists but has no markers."""
         processor = RoleProcessor(format_type="rst")
 
@@ -1117,7 +1132,7 @@ MIT
         assert expected_start in errors[0]
         assert expected_end in errors[0]
 
-    def test_validate_readme_markers_rst_both_present(self, temp_dir):
+    def test_validate_readme_markers_rst_both_present(self, temp_dir: Path) -> None:
         """Test validation when RST README has both markers (should pass)."""
         processor = RoleProcessor(format_type="rst")
 
@@ -1149,7 +1164,7 @@ More content.
         errors = processor._validate_readme_markers(role_path)
         assert errors == []
 
-    def test_detect_format_from_role_rst_exists(self, temp_dir):
+    def test_detect_format_from_role_rst_exists(self, temp_dir: Path) -> None:
         """Test format detection when README.rst exists."""
         role_path = temp_dir / "test-role"
         role_path.mkdir()
@@ -1161,7 +1176,7 @@ More content.
         result = detect_format_from_role(role_path)
         assert result == "rst"
 
-    def test_detect_format_from_role_md_exists(self, temp_dir):
+    def test_detect_format_from_role_md_exists(self, temp_dir: Path) -> None:
         """Test format detection when README.md exists."""
         role_path = temp_dir / "test-role"
         role_path.mkdir()
@@ -1173,7 +1188,9 @@ More content.
         result = detect_format_from_role(role_path)
         assert result == "markdown"
 
-    def test_detect_format_from_role_both_exist_prefer_rst(self, temp_dir):
+    def test_detect_format_from_role_both_exist_prefer_rst(
+        self, temp_dir: Path
+    ) -> None:
         """Test format detection when both README files exist (should prefer RST)."""
         role_path = temp_dir / "test-role"
         role_path.mkdir()
@@ -1187,7 +1204,7 @@ More content.
         result = detect_format_from_role(role_path)
         assert result == "rst"
 
-    def test_detect_format_from_role_neither_exists(self, temp_dir):
+    def test_detect_format_from_role_neither_exists(self, temp_dir: Path) -> None:
         """Test format detection when no README exists (should default to markdown)."""
         role_path = temp_dir / "test-role"
         role_path.mkdir()
@@ -1195,7 +1212,7 @@ More content.
         result = detect_format_from_role(role_path)
         assert result == "markdown"
 
-    def test_processor_auto_format_detection(self, temp_dir):
+    def test_processor_auto_format_detection(self, temp_dir: Path) -> None:
         """Test RoleProcessor with auto format detection."""
         role_path = temp_dir / "test-role"
         role_path.mkdir()
@@ -1215,7 +1232,7 @@ More content.
         )
         assert detected_format == "rst"
 
-    def test_processor_markdown_format_detection(self, temp_dir):
+    def test_processor_markdown_format_detection(self, temp_dir: Path) -> None:
         """Test RoleProcessor with markdown format when README.md exists."""
         role_path = temp_dir / "test-role"
         role_path.mkdir()
@@ -1236,8 +1253,8 @@ More content.
         assert detected_format == "markdown"
 
     def test_validate_defaults_consistency_required_variables_excluded_from_notice(
-        self, temp_dir
-    ):
+        self, temp_dir: Path
+    ) -> None:
         """Test that variables with required: true are excluded from the notice."""
         processor = RoleProcessor()
 
@@ -1298,8 +1315,8 @@ optional_with_default: "default_value"
         assert "optional_with_default" not in notice_message  # Present in defaults
 
     def test_validate_defaults_consistency_all_required_variables_no_notice(
-        self, temp_dir
-    ):
+        self, temp_dir: Path
+    ) -> None:
         """Test that when all missing variables are required, no notice is generated."""
         processor = RoleProcessor()
 
@@ -1355,8 +1372,8 @@ optional_with_default: "default_value"
         assert len(notices) == 0
 
     def test_validate_defaults_consistency_mixed_required_optional_variables(
-        self, temp_dir
-    ):
+        self, temp_dir: Path
+    ) -> None:
         """Test notice generation with mix of required and optional variables."""
         processor = RoleProcessor()
 
@@ -1428,7 +1445,9 @@ optional_with_default: "default_value"
         # Variable with default should be excluded (it's in defaults)
         assert "optional_with_default" not in notice_message
 
-    def test_validate_defaults_consistency_required_false_explicit(self, temp_dir):
+    def test_validate_defaults_consistency_required_false_explicit(
+        self, temp_dir: Path
+    ) -> None:
         """Test that variables with explicit required: false are included in notice."""
         processor = RoleProcessor()
 

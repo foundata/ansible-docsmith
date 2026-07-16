@@ -1,5 +1,7 @@
 """Tests for ArgumentSpecParser."""
 
+from pathlib import Path
+
 import pytest
 
 from ansible_docsmith.core.exceptions import ParseError, ValidationError
@@ -9,7 +11,7 @@ from ansible_docsmith.core.parser import ArgumentSpecParser
 class TestArgumentSpecParser:
     """Test the ArgumentSpecParser class."""
 
-    def test_parse_valid_file(self, sample_role_path):
+    def test_parse_valid_file(self, sample_role_path: Path) -> None:
         """Test parsing a valid argument_specs.yml file."""
         parser = ArgumentSpecParser()
 
@@ -36,7 +38,7 @@ argument_specs:
         assert result["main"]["options"]["test_var"]["type"] == "str"
         assert result["main"]["options"]["test_var"]["required"] is True
 
-    def test_parse_missing_file(self, sample_role_path):
+    def test_parse_missing_file(self, sample_role_path: Path) -> None:
         """Test parsing a non-existent file."""
         parser = ArgumentSpecParser()
         spec_file = sample_role_path / "meta" / "missing.yml"
@@ -44,7 +46,7 @@ argument_specs:
         with pytest.raises(ParseError, match="File not found"):
             parser.parse_file(spec_file)
 
-    def test_parse_empty_file(self, sample_role_path):
+    def test_parse_empty_file(self, sample_role_path: Path) -> None:
         """Test parsing an empty file."""
         parser = ArgumentSpecParser()
         spec_file = sample_role_path / "meta" / "argument_specs.yml"
@@ -53,7 +55,7 @@ argument_specs:
         with pytest.raises(ParseError, match="Empty or invalid YAML"):
             parser.parse_file(spec_file)
 
-    def test_parse_missing_argument_specs_key(self, sample_role_path):
+    def test_parse_missing_argument_specs_key(self, sample_role_path: Path) -> None:
         """Test parsing file without argument_specs key."""
         parser = ArgumentSpecParser()
         spec_file = sample_role_path / "meta" / "argument_specs.yml"
@@ -62,7 +64,7 @@ argument_specs:
         with pytest.raises(ParseError, match="Missing 'argument_specs' key"):
             parser.parse_file(spec_file)
 
-    def test_validate_structure_success(self, sample_role_path):
+    def test_validate_structure_success(self, sample_role_path: Path) -> None:
         """Test successful role structure validation."""
         parser = ArgumentSpecParser()
 
@@ -85,7 +87,7 @@ argument_specs:
         assert result["spec_file"] == spec_file
         assert "main" in result["specs"]
 
-    def test_validate_structure_missing_meta(self, temp_dir):
+    def test_validate_structure_missing_meta(self, temp_dir: Path) -> None:
         """Test validation with missing meta directory."""
         parser = ArgumentSpecParser()
         role_path = temp_dir / "invalid-role"
@@ -94,14 +96,16 @@ argument_specs:
         with pytest.raises(ValidationError, match=r"Required directory missing.*meta"):
             parser.validate_structure(role_path)
 
-    def test_validate_structure_missing_specs_file(self, sample_role_path):
+    def test_validate_structure_missing_specs_file(
+        self, sample_role_path: Path
+    ) -> None:
         """Test validation with missing argument_specs file."""
         parser = ArgumentSpecParser()
 
         with pytest.raises(ValidationError, match=r"No argument_specs\.yml found"):
             parser.validate_structure(sample_role_path)
 
-    def test_validate_structure_non_main_entry(self, sample_role_path):
+    def test_validate_structure_non_main_entry(self, sample_role_path: Path) -> None:
         """Test validation with non-main entry point (should now work)."""
         parser = ArgumentSpecParser()
 
@@ -118,7 +122,7 @@ argument_specs:
         assert "other" in result["specs"]
         assert result["role_name"] == "test-role"
 
-    def test_normalize_description_list(self):
+    def test_normalize_description_list(self) -> None:
         """Test description normalization from list."""
         parser = ArgumentSpecParser()
 
@@ -128,7 +132,7 @@ argument_specs:
         # List items become paragraphs, like in option descriptions
         assert result == "Line 1\n\nLine 2\n\nLine 3"
 
-    def test_normalize_description_string(self):
+    def test_normalize_description_string(self) -> None:
         """Test description normalization from string."""
         parser = ArgumentSpecParser()
 
@@ -137,7 +141,7 @@ argument_specs:
 
         assert result == "Single line description"
 
-    def test_normalize_author_string(self):
+    def test_normalize_author_string(self) -> None:
         """Test author normalization from string."""
         parser = ArgumentSpecParser()
 
@@ -146,7 +150,7 @@ argument_specs:
 
         assert result == ["John Doe"]
 
-    def test_normalize_author_list(self):
+    def test_normalize_author_list(self) -> None:
         """Test author normalization from list."""
         parser = ArgumentSpecParser()
 
@@ -155,7 +159,9 @@ argument_specs:
 
         assert result == ["John Doe", "Jane Smith"]
 
-    def test_normalize_options_with_nested_options(self, sample_role_path):
+    def test_normalize_options_with_nested_options(
+        self, sample_role_path: Path
+    ) -> None:
         """Test options normalization with nested options."""
         parser = ArgumentSpecParser()
 
@@ -181,7 +187,9 @@ argument_specs:
         assert "sub_var" in options["complex_var"]["options"]
         assert options["complex_var"]["options"]["sub_var"]["default"] == "test"
 
-    def test_normalize_description_multiline_block_scalar(self, sample_role_path):
+    def test_normalize_description_multiline_block_scalar(
+        self, sample_role_path: Path
+    ) -> None:
         """Test description normalization with YAML block scalar style (|)."""
         parser = ArgumentSpecParser()
 

@@ -11,7 +11,7 @@ from ansible_docsmith.cli import app
 class TestEndToEnd:
     """Test complete workflows."""
 
-    def test_generate_converts_ansible_markup(self, temp_dir):
+    def test_generate_converts_ansible_markup(self, temp_dir: Path) -> None:
         """Ansible markup in descriptions is converted in README and defaults."""
         runner = CliRunner()
 
@@ -57,7 +57,7 @@ class TestEndToEnd:
             encoding="utf-8"
         ) == defaults_before
 
-    def test_generate_documents_nested_options(self, temp_dir):
+    def test_generate_documents_nested_options(self, temp_dir: Path) -> None:
         """Nested options are documented in defaults comments (issue #21)."""
         runner = CliRunner()
 
@@ -96,7 +96,9 @@ class TestEndToEnd:
         defaults = (role_path / "defaults" / "main.yml").read_text(encoding="utf-8")
         assert "Dict attributes" not in defaults
 
-    def test_generate_command_dry_run(self, sample_role_with_specs_and_defaults):
+    def test_generate_command_dry_run(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test generate command in dry run mode."""
         runner = CliRunner()
 
@@ -115,7 +117,7 @@ class TestEndToEnd:
         assert "DRY RUN MODE" in result.stdout
         assert "✅ Documentation generation complete!" in result.stdout
 
-    def test_validate_command(self, sample_role_with_specs_and_defaults):
+    def test_validate_command(self, sample_role_with_specs_and_defaults: Path) -> None:
         """Test validate command."""
         runner = CliRunner()
 
@@ -127,7 +129,7 @@ class TestEndToEnd:
         assert "✅ Validation passed!" in result.stdout
         assert "test-role" in result.stdout
 
-    def test_generate_documents_all_entry_points(self, temp_dir):
+    def test_generate_documents_all_entry_points(self, temp_dir: Path) -> None:
         """Multi-entry-point roles get one README section per entry point."""
         runner = CliRunner()
 
@@ -162,7 +164,7 @@ class TestEndToEnd:
         assert result.exit_code == 0
         assert (role_path / "README.md").read_text(encoding="utf-8") == before
 
-    def test_generate_collection(self, temp_dir):
+    def test_generate_collection(self, temp_dir: Path) -> None:
         """A collection path processes all roles plus the collection README."""
         runner = CliRunner()
 
@@ -216,7 +218,7 @@ class TestEndToEnd:
         assert result.exit_code == 1
         assert (collection / "README.md").read_text(encoding="utf-8") == readme_before
 
-    def test_validate_collection(self, temp_dir):
+    def test_validate_collection(self, temp_dir: Path) -> None:
         """Collection validation covers all roles and the collection README."""
         runner = CliRunner()
 
@@ -245,7 +247,7 @@ class TestEndToEnd:
         result = runner.invoke(app, ["validate", str(collection), "--strict"])
         assert result.exit_code == 1
 
-    def test_generate_mixed_main_and_other_entry_points(self, temp_dir):
+    def test_generate_mixed_main_and_other_entry_points(self, temp_dir: Path) -> None:
         """'main' keeps short anchors; other entry points get prefixed ones."""
         runner = CliRunner()
 
@@ -278,7 +280,7 @@ class TestEndToEnd:
         assert '<a id="variable-foo_state"></a>' in readme
         assert '<a id="install-variable-foo_state"></a>' in readme
 
-    def test_generate_single_entry_point_keeps_layout(self, temp_dir):
+    def test_generate_single_entry_point_keeps_layout(self, temp_dir: Path) -> None:
         """Single-entry-point roles keep the historical heading and anchors."""
         runner = CliRunner()
 
@@ -294,7 +296,7 @@ class TestEndToEnd:
         assert '<a id="variable-acmesh_domain"></a>' in readme
         assert "entry point<a id=" not in readme
 
-    def test_generate_check_mode(self, temp_dir):
+    def test_generate_check_mode(self, temp_dir: Path) -> None:
         """--check reports outdated documentation without writing files."""
         runner = CliRunner()
 
@@ -340,7 +342,7 @@ class TestEndToEnd:
         result = runner.invoke(app, ["generate", str(role_path), "--check"])
         assert result.exit_code == 0
 
-    def test_validate_strict_fails_on_warnings(self):
+    def test_validate_strict_fails_on_warnings(self) -> None:
         """--strict turns warnings into a non-zero exit code."""
         runner = CliRunner()
 
@@ -384,7 +386,7 @@ class TestEndToEnd:
         )
         return role_path
 
-    def test_validate_strict_passes_without_warnings(self, temp_dir):
+    def test_validate_strict_passes_without_warnings(self, temp_dir: Path) -> None:
         """--strict does not change the result of a warning-free role."""
         runner = CliRunner()
         role_path = self._create_clean_role(temp_dir, "A clean description.")
@@ -394,7 +396,7 @@ class TestEndToEnd:
         assert result.exit_code == 0
         assert "✅ Validation passed!" in result.stdout
 
-    def test_validate_reports_invalid_markup(self, temp_dir):
+    def test_validate_reports_invalid_markup(self, temp_dir: Path) -> None:
         """Invalid Ansible markup in descriptions shows up as a warning."""
         runner = CliRunner()
         role_path = self._create_clean_role(temp_dir, "Bad M(ref) here.")
@@ -407,8 +409,8 @@ class TestEndToEnd:
         assert result.exit_code == 1
 
     def test_generate_command_with_actual_files(
-        self, sample_role_with_specs_and_defaults
-    ):
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test generate command that actually creates files."""
         runner = CliRunner()
 
@@ -439,7 +441,7 @@ class TestEndToEnd:
             or "Email address for ACME" in defaults_content
         )
 
-    def test_validate_invalid_role(self, sample_role_path):
+    def test_validate_invalid_role(self, sample_role_path: Path) -> None:
         """Test validate command on invalid role."""
         runner = CliRunner()
 
@@ -450,7 +452,9 @@ class TestEndToEnd:
         output = result.stdout + (result.stderr or "")
         assert "argument_specs.yml" in output or "Validation failed" in output
 
-    def test_generate_readme_only(self, sample_role_with_specs_and_defaults):
+    def test_generate_readme_only(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test generate command with README only."""
         runner = CliRunner()
 
@@ -467,7 +471,9 @@ class TestEndToEnd:
         assert result.exit_code == 0
         assert "README=True, Defaults=False" in result.stdout
 
-    def test_generate_defaults_only(self, sample_role_with_specs_and_defaults):
+    def test_generate_defaults_only(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
         """Test generate command with defaults only."""
         runner = CliRunner()
 
@@ -484,7 +490,9 @@ class TestEndToEnd:
         assert result.exit_code == 0
         assert "README=False, Defaults=True" in result.stdout
 
-    def test_validate_role_without_defaults_fails(self, sample_role_with_specs):
+    def test_validate_role_without_defaults_fails(
+        self, sample_role_with_specs: Path
+    ) -> None:
         """
         Test that validation fails when defaults are missing for variables with
         defaults in specs.
@@ -502,8 +510,8 @@ class TestEndToEnd:
         )
 
     def test_generate_with_custom_template(
-        self, sample_role_with_specs_and_defaults, temp_dir
-    ):
+        self, sample_role_with_specs_and_defaults: Path, temp_dir: Path
+    ) -> None:
         """Test generate command with custom README template."""
         runner = CliRunner()
 
@@ -536,8 +544,8 @@ This is a custom template for {{ role_name }}.
         assert "Documentation generation complete!" in result.stdout
 
     def test_generate_with_invalid_template_extension(
-        self, sample_role_with_specs_and_defaults, temp_dir
-    ):
+        self, sample_role_with_specs_and_defaults: Path, temp_dir: Path
+    ) -> None:
         """Test generate command with invalid template file extension."""
         runner = CliRunner()
 
@@ -559,8 +567,8 @@ This is a custom template for {{ role_name }}.
         assert "must have .j2 extension" in result.stdout
 
     def test_generate_with_invalid_template_syntax(
-        self, sample_role_with_specs_and_defaults, temp_dir
-    ):
+        self, sample_role_with_specs_and_defaults: Path, temp_dir: Path
+    ) -> None:
         """Test generate command with template file containing invalid Jinja2 syntax."""
         runner = CliRunner()
 
@@ -582,7 +590,7 @@ This is a custom template for {{ role_name }}.
         output = result.stdout + (result.stderr or "")
         assert "Template error" in output
 
-    def test_validate_role_with_readme_missing_markers(self, temp_dir):
+    def test_validate_role_with_readme_missing_markers(self, temp_dir: Path) -> None:
         """Test validation fails when README exists but lacks required markers."""
         runner = CliRunner()
 

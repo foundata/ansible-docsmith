@@ -7,14 +7,14 @@ from ansible_docsmith.cli import app
 runner = CliRunner()
 
 
-def test_version():
+def test_version() -> None:
     """Test version command."""
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert "Ansible-DocSmith version:" in result.stdout
 
 
-def test_help():
+def test_help() -> None:
     """Test help command."""
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0

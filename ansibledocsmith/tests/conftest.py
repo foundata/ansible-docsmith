@@ -2,13 +2,14 @@
 
 import shutil
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
 
 @pytest.fixture
-def temp_dir():
+def temp_dir() -> Iterator[Path]:
     """Create a temporary directory for tests."""
     temp_path = Path(tempfile.mkdtemp())
     yield temp_path
@@ -16,7 +17,7 @@ def temp_dir():
 
 
 @pytest.fixture
-def sample_role_path(temp_dir):
+def sample_role_path(temp_dir: Path) -> Path:
     """Create a sample role structure for testing."""
     role_path = temp_dir / "test-role"
     role_path.mkdir()
@@ -30,13 +31,15 @@ def sample_role_path(temp_dir):
 
 
 @pytest.fixture
-def sample_role_fixture_path():
+def sample_role_fixture_path() -> Path:
     """Get path to the simple example role fixture."""
     return Path(__file__).parent / "fixtures" / "example-role-simple"
 
 
 @pytest.fixture
-def sample_role_with_specs(sample_role_path, sample_role_fixture_path):
+def sample_role_with_specs(
+    sample_role_path: Path, sample_role_fixture_path: Path
+) -> Path:
     """Create a sample role with argument_specs.yml from fixtures."""
     # Copy the comprehensive argument_specs.yml from fixtures
     fixture_spec = sample_role_fixture_path / "meta" / "argument_specs.yml"
@@ -47,8 +50,8 @@ def sample_role_with_specs(sample_role_path, sample_role_fixture_path):
 
 @pytest.fixture
 def sample_role_with_specs_and_defaults(
-    sample_role_with_specs, sample_role_fixture_path
-):
+    sample_role_with_specs: Path, sample_role_fixture_path: Path
+) -> Path:
     """Create a sample role with both argument specs and defaults from fixtures."""
     # Copy the comprehensive defaults file from fixtures
     fixture_defaults = sample_role_fixture_path / "defaults" / "main.yml"

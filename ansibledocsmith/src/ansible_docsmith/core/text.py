@@ -76,7 +76,7 @@ class HTMLStripper(HTMLParser):
         return "".join(self.text)
 
     @classmethod
-    def strip_tags(cls, html_text: str) -> str:
+    def strip_tags(cls, html_text: str | None) -> str:
         """Strip HTML tags from text and return clean text."""
         if not html_text:
             return ""

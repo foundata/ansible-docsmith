@@ -1,5 +1,8 @@
 """Tests for template management."""
 
+from pathlib import Path
+from typing import Any
+
 import pytest
 
 from ansible_docsmith.templates import TemplateManager
@@ -8,13 +11,13 @@ from ansible_docsmith.templates import TemplateManager
 class TestTemplateManager:
     """Test the TemplateManager class."""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test template manager initialization."""
         tm = TemplateManager()
         assert tm.template_dir is not None
         assert tm.env is not None
 
-    def test_list_templates(self):
+    def test_list_templates(self) -> None:
         """Test listing available templates."""
         tm = TemplateManager()
         templates = tm.list_templates("readme")
@@ -22,7 +25,7 @@ class TestTemplateManager:
         assert isinstance(templates, list)
         assert "default" in templates
 
-    def test_get_template(self):
+    def test_get_template(self) -> None:
         """Test getting template content."""
         tm = TemplateManager()
 
@@ -38,7 +41,7 @@ class TestTemplateManager:
         assert "## Role variables" in content
         assert "{% for entry_point, entry_spec in specs.items() %}" in content
 
-    def test_render_template(self):
+    def test_render_template(self) -> None:
         """Test rendering template with context."""
         tm = TemplateManager()
 
@@ -63,7 +66,7 @@ class TestTemplateManager:
                 "options": {},
             }
         }
-        context = {
+        context: dict[str, Any] = {
             "role_name": "test-role",
             "specs": {
                 "main": {
@@ -85,7 +88,7 @@ class TestTemplateManager:
         assert "test_var" in result.lower()
         assert "a test variable" in result.lower()
 
-    def test_render_template_no_options(self):
+    def test_render_template_no_options(self) -> None:
         """Test rendering template with no options."""
         tm = TemplateManager()
 
@@ -100,7 +103,7 @@ class TestTemplateManager:
         tm.add_filter("format_description", lambda x: x)
         tm.add_filter("code_escape", lambda x: f"`{x}`")
 
-        context = {
+        context: dict[str, Any] = {
             "role_name": "empty-role",
             "specs": {
                 "main": {
@@ -119,7 +122,7 @@ class TestTemplateManager:
 
         assert "no variables are defined for this role" in result.lower()
 
-    def test_custom_template_dir(self, temp_dir):
+    def test_custom_template_dir(self, temp_dir: Path) -> None:
         """Test using custom template directory."""
         # Create custom template directory
         custom_templates = temp_dir / "custom"
@@ -139,14 +142,14 @@ class TestTemplateManager:
         assert "# test" in result.lower()
         assert "minimal template" in result.lower()
 
-    def test_nonexistent_template(self):
+    def test_nonexistent_template(self) -> None:
         """Test handling of non-existent templates."""
         tm = TemplateManager()
 
         with pytest.raises(Exception):  # Jinja2 will raise TemplateNotFound
             tm.render_template("nonexistent", "readme", role_name="test")
 
-    def test_empty_template_directory(self, temp_dir):
+    def test_empty_template_directory(self, temp_dir: Path) -> None:
         """Test handling of empty template directory."""
         empty_dir = temp_dir / "empty"
         empty_dir.mkdir()
@@ -156,7 +159,7 @@ class TestTemplateManager:
 
         assert templates == []
 
-    def test_single_template_file(self, temp_dir):
+    def test_single_template_file(self, temp_dir: Path) -> None:
         """Test using single template file."""
         # Create a test template file
         template_file = temp_dir / "custom.md.j2"
@@ -172,7 +175,7 @@ class TestTemplateManager:
         # Clean up
         manager.cleanup()
 
-    def test_single_template_file_invalid_syntax(self, temp_dir):
+    def test_single_template_file_invalid_syntax(self, temp_dir: Path) -> None:
         """Test single template file with invalid Jinja2 syntax."""
         # Create a template file with invalid syntax
         template_file = temp_dir / "invalid.md.j2"
@@ -182,13 +185,14 @@ class TestTemplateManager:
         with pytest.raises(ValueError, match="Invalid template syntax"):
             TemplateManager(template_file=template_file)
 
-    def test_single_template_file_cleanup(self, temp_dir):
+    def test_single_template_file_cleanup(self, temp_dir: Path) -> None:
         """Test that temporary directories are cleaned up."""
         template_file = temp_dir / "test.md.j2"
         template_file.write_text("Test template")
 
         manager = TemplateManager(template_file=template_file)
         temp_dir_path = manager._temp_dir
+        assert temp_dir_path is not None
 
         # Temporary directory should exist
         assert temp_dir_path.exists()
@@ -197,7 +201,7 @@ class TestTemplateManager:
         manager.cleanup()
         assert not temp_dir_path.exists()
 
-    def test_template_file_not_exists(self, temp_dir):
+    def test_template_file_not_exists(self, temp_dir: Path) -> None:
         """Test handling of non-existent template file."""
         non_existent = temp_dir / "missing.md.j2"
 
