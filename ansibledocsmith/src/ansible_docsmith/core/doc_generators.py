@@ -6,6 +6,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from typing_extensions import override
+
 from ..constants import TABLE_DESCRIPTION_MAX_LENGTH
 from ..templates import TemplateManager
 from .exceptions import TemplateError
@@ -93,7 +95,7 @@ class BaseDocumentationGenerator(ABC):
         # Add format-specific filters to the Jinja environment
         self._setup_filters()
 
-    def _setup_filters(self):
+    def _setup_filters(self) -> None:
         """Setup format-specific filters."""
         filters = self._get_filters()
         for name, filter_func in filters.items():
@@ -231,7 +233,8 @@ class BaseDocumentationGenerator(ABC):
 class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
     """Generate Markdown documentation from argument specs."""
 
-    def _get_filters(self) -> dict[str, Callable]:
+    @override
+    def _get_filters(self) -> dict[str, Callable[[Any], str]]:
         """Get Markdown-specific filters."""
         return {
             "ansible_escape": self._ansible_escape_filter,
@@ -241,10 +244,12 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
             "format_table_description": self._format_table_description_filter,
         }
 
+    @override
     def _get_format_type(self) -> str:
         """Get the format type for Markdown generator."""
         return "markdown"
 
+    @override
     def _ansible_escape_filter(self, value: Any) -> str:
         """Escape Ansible variable syntax for Markdown."""
         if value is None:
@@ -252,16 +257,19 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
         value_str = str(value)
         return value_str.replace("{{", "\\{\\{").replace("}}", "\\}\\}")
 
+    @override
     def _code_escape_filter(self, value: Any, table: bool = False) -> str:
         """Escape code for Markdown inline code spans."""
         if value is None:
             return "N/A"
         return self._wrap_inline_code(str(value), table)
 
+    @override
     def _wrap_inline_code(self, text: str, table: bool = False) -> str:
         """Build a CommonMark-valid inline code span for arbitrary content."""
         return md_code_span(text, table)
 
+    @override
     def _format_table_description_filter(
         self,
         description: Any,
@@ -326,7 +334,8 @@ class MarkdownDocumentationGenerator(BaseDocumentationGenerator):
 class RSTDocumentationGenerator(BaseDocumentationGenerator):
     """Generate reStructuredText documentation from argument specs."""
 
-    def _get_filters(self) -> dict[str, Callable]:
+    @override
+    def _get_filters(self) -> dict[str, Callable[[Any], str]]:
         """Get reStructuredText-specific filters."""
         return {
             "ansible_escape": self._ansible_escape_filter,
@@ -337,10 +346,12 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
             "csv_escape": self._csv_escape_filter,
         }
 
+    @override
     def _get_format_type(self) -> str:
         """Get the format type for RST generator."""
         return "rst"
 
+    @override
     def _ansible_escape_filter(self, value: Any) -> str:
         """Escape Ansible variable syntax for reStructuredText."""
         if value is None:
@@ -349,17 +360,20 @@ class RSTDocumentationGenerator(BaseDocumentationGenerator):
         # RST doesn't need special escaping for Ansible variables
         return value_str
 
+    @override
     def _code_escape_filter(self, value: Any, table: bool = False) -> str:
         """Escape code for reStructuredText inline literals."""
         if value is None:
             return "N/A"
         return self._wrap_inline_code(str(value), table)
 
+    @override
     def _wrap_inline_code(self, text: str, table: bool = False) -> str:
         """Wrap text in an RST inline literal (double backticks)."""
         _ = table  # RST tables use csv_escape; no delimiter escaping needed
         return rst_inline_literal(text)
 
+    @override
     def _format_table_description_filter(
         self,
         description: Any,

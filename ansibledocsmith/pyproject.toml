@@ -112,7 +112,6 @@ warn_unreachable = true                     # Extends strict mode.
 module = [
     "ansible_docsmith.cli",
     "ansible_docsmith.core.defaults_comments",
-    "ansible_docsmith.core.doc_generators",
     "ansible_docsmith.core.processor",
     "ansible_docsmith.templates",
 ]
