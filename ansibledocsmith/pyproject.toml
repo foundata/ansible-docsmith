@@ -74,25 +74,35 @@ target-version = "py311"
 [tool.ruff.lint]
 # https://docs.astral.sh/ruff/settings/#lint_select
 select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
-    "Q",  # flake8-quotes
+    "E4",  # pycodestyle import errors
+    "E7",  # pycodestyle statement errors
+    "E9",  # pycodestyle runtime errors
+    "F",   # Pyflakes
+    "I",   # import sorting
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "RUF", # Ruff-specific rules
 ]
 ignore = [
-    "B008",  # Allow function calls in argument defaults for Typer
-    "B904",  # Allow raise without from for CLI error handling
-    "B017",  # Allow asserting on Exception in tests
+    # TODO: Replace with explicit `raise ... from` in the error-handling pass.
+    "B904",  # raise without `from` in except clauses.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/ansible_docsmith/cli.py" = [
+    "B008",    # Typer relies on function calls in argument defaults.
+    "RUF001",  # Deliberate "ℹ" glyph in user-facing CLI output.
+]
+"tests/**/*.py" = [
+    "B017",    # Tests deliberately assert on Exception.
+    "RUF059",  # Tests unpack result tuples and assert on a subset.
 ]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
-line-ending = "auto"
+line-ending = "lf"
 docstring-code-format = true
 docstring-code-line-length = 88

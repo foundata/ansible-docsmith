@@ -13,13 +13,13 @@ from .parser import ArgumentSpecParser
 from .processor import RoleProcessor
 
 __all__ = [
-    "RoleProcessor",
+    "AnsibleDocSmithError",
     "ArgumentSpecParser",
     "DefaultsCommentGenerator",
-    "AnsibleDocSmithError",
-    "ValidationError",
+    "FileOperationError",
     "ParseError",
     "ProcessingError",
+    "RoleProcessor",
     "TemplateError",
-    "FileOperationError",
+    "ValidationError",
 ]

@@ -91,14 +91,14 @@ argument_specs:
         role_path = temp_dir / "invalid-role"
         role_path.mkdir()
 
-        with pytest.raises(ValidationError, match="Required directory missing.*meta"):
+        with pytest.raises(ValidationError, match=r"Required directory missing.*meta"):
             parser.validate_structure(role_path)
 
     def test_validate_structure_missing_specs_file(self, sample_role_path):
         """Test validation with missing argument_specs file."""
         parser = ArgumentSpecParser()
 
-        with pytest.raises(ValidationError, match="No argument_specs.yml found"):
+        with pytest.raises(ValidationError, match=r"No argument_specs\.yml found"):
             parser.validate_structure(sample_role_path)
 
     def test_validate_structure_non_main_entry(self, sample_role_path):
