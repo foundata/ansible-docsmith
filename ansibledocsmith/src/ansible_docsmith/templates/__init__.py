@@ -82,9 +82,9 @@ class TemplateManager:
             temp_env = Environment()
             temp_env.parse(content)
         except TemplateSyntaxError as e:
-            raise ValueError(f"Invalid template syntax in {template_file}: {e}")
+            raise ValueError(f"Invalid template syntax in {template_file}: {e}") from e
         except Exception as e:
-            raise ValueError(f"Error reading template file {template_file}: {e}")
+            raise ValueError(f"Error reading template file {template_file}: {e}") from e
 
     def cleanup(self) -> None:
         """Clean up temporary directories if they exist."""

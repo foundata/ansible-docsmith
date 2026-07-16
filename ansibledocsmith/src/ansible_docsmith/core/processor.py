@@ -190,7 +190,7 @@ class RoleProcessor:
         except ValidationError:
             raise
         except Exception as e:
-            raise ProcessingError(f"Validation failed: {e}")
+            raise ProcessingError(f"Validation failed: {e}") from e
 
     def process_role(
         self,

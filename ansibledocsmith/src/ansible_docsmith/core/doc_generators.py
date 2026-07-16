@@ -165,7 +165,7 @@ class BaseDocumentationGenerator(ABC):
             )
 
         except Exception as e:
-            raise TemplateError(f"Failed to generate documentation: {e}")
+            raise TemplateError(f"Failed to generate documentation: {e}") from e
 
     @abstractmethod
     def _ansible_escape_filter(self, value: Any) -> str:

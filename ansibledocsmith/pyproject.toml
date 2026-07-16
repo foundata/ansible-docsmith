@@ -85,10 +85,6 @@ select = [
     "UP",  # pyupgrade
     "RUF", # Ruff-specific rules
 ]
-ignore = [
-    # TODO: Replace with explicit `raise ... from` in the error-handling pass.
-    "B904",  # raise without `from` in except clauses.
-]
 
 [tool.ruff.lint.per-file-ignores]
 "src/ansible_docsmith/cli.py" = [

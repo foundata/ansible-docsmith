@@ -90,9 +90,9 @@ class DefaultsCommentGenerator:
             return "\n".join(result_lines) + "\n"
 
         except YAMLError as e:
-            raise FileOperationError(f"Failed to parse {defaults_path}: {e}")
+            raise FileOperationError(f"Failed to parse {defaults_path}: {e}") from e
         except Exception as e:
-            raise FileOperationError(f"Failed to add comments: {e}")
+            raise FileOperationError(f"Failed to add comments: {e}") from e
 
     def _get_variable_from_line(self, line: str) -> str | None:
         """Extract a top-level variable name from a YAML line.

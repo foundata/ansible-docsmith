@@ -179,7 +179,7 @@ def generate(
                 )
         except ValueError as e:
             LOGGER.error("Template error: %s", e)
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
         # Process the collection or role
         if is_collection:
@@ -226,7 +226,7 @@ def generate(
     except (ValidationError, ProcessingError) as e:
         LOGGER.error("Processing error: %s", e)
         console.print()  # Trailing newline
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         LOGGER.error("Unexpected error: %s", e)
         if verbose:
@@ -234,7 +234,7 @@ def generate(
 
             traceback.print_exc()
         console.print()  # Trailing newline
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command()
@@ -325,7 +325,7 @@ def validate(
     except ValidationError as e:
         LOGGER.error("Validation failed: %s", e)
         console.print()  # Trailing newline
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         LOGGER.error("Unexpected error: %s", e)
         if verbose:
@@ -333,7 +333,7 @@ def validate(
 
             traceback.print_exc()
         console.print()  # Trailing newline
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _validate_collection(

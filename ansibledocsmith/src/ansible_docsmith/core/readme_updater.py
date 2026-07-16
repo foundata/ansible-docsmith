@@ -104,7 +104,7 @@ class ReadmeUpdater:
             return True
 
         except Exception as e:
-            raise FileOperationError(f"Failed to update README: {e}")
+            raise FileOperationError(f"Failed to update README: {e}") from e
 
     def _get_updated_content(self, readme_path: Path, new_content: str) -> str:
         """Get the updated content without writing to file."""

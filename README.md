@@ -82,7 +82,7 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
 
 [![PyPI package version](https://img.shields.io/pypi/v/ansible-docsmith.svg?logo=pypi)](https://pypi.org/project/ansible-docsmith)
 
-DocSmith needs Python ≥ v3.11. It is available on [PyPI](https://pypi.org/project/ansible-docsmith/) and can be installed with the package manager of your choice. The minimum is Python 3.11 (rather than the newer 3.12 baseline used for most of our projects) so DocSmith runs on [Debian 12 "Bookworm"](https://packages.debian.org/bookworm/python3), This is a deliberate support decision.
+DocSmith needs Python ≥ v3.11. It is available on [PyPI](https://pypi.org/project/ansible-docsmith/) and can be installed with the package manager of your choice. The minimum is Python 3.11 (rather than the newer 3.12 baseline used for most of our projects) so DocSmith runs on [Debian 12 "Bookworm"](https://packages.debian.org/bookworm/python3).
 
 **Using [`uv`](https://docs.astral.sh/uv/getting-started/installation/) (recommended):**
 

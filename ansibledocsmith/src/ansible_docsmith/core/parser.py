@@ -33,12 +33,12 @@ class ArgumentSpecParser:
 
             return self._normalize_specs(data["argument_specs"])
 
-        except FileNotFoundError:
-            raise ParseError(f"File not found: {file_path}")
+        except FileNotFoundError as e:
+            raise ParseError(f"File not found: {file_path}") from e
         except YAMLError as e:
-            raise ParseError(f"YAML parsing error in {file_path}: {e}")
+            raise ParseError(f"YAML parsing error in {file_path}: {e}") from e
         except Exception as e:
-            raise ParseError(f"Unexpected error parsing {file_path}: {e}")
+            raise ParseError(f"Unexpected error parsing {file_path}: {e}") from e
 
     def _normalize_specs(self, specs: dict[str, Any]) -> dict[str, Any]:
         """Normalize and validate argument specs structure."""
