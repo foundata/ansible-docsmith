@@ -26,6 +26,7 @@ dependencies = [
     { name = "rich" },
     { name = "ruamel-yaml" },
     { name = "typer" },
+    { name = "typing-extensions" },
 ]
 
 [package.dev-dependencies]
@@ -44,6 +45,7 @@ requires-dist = [
     { name = "rich", specifier = ">=14.1.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.14" },
     { name = "typer", specifier = ">=0.16.0" },
+    { name = "typing-extensions", specifier = ">=4.4" },
 ]
 
 [package.metadata.requires-dev]

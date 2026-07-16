@@ -23,6 +23,7 @@ dependencies = [
     "rich>=14.1.0",
     "ruamel-yaml>=0.18.14",
     "typer>=0.16.0",
+    "typing-extensions>=4.4",  # `override` backport for Python 3.11.
 ]
 
 # https://pypi.org/classifiers/
@@ -113,7 +114,6 @@ module = [
     "ansible_docsmith.core.defaults_comments",
     "ansible_docsmith.core.doc_generators",
     "ansible_docsmith.core.processor",
-    "ansible_docsmith.core.text",
     "ansible_docsmith.core.toc",
     "ansible_docsmith.templates",
 ]

@@ -5,6 +5,8 @@ import re
 from html.parser import HTMLParser
 from typing import Any
 
+from typing_extensions import override
+
 # Tokens that must never be split by table-cell truncation: Markdown
 # links and inline code spans (left), RST hyperlinks and inline literals
 # (right), each with trailing punctuation attached.
@@ -32,7 +34,7 @@ def normalize_description(description: Any) -> str:
 
 
 def truncate_preserving_tokens(
-    text: str, max_length: int, token_pattern: re.Pattern
+    text: str, max_length: int, token_pattern: re.Pattern[str]
 ) -> str:
     """Truncate at a word boundary without splitting atomic markup tokens.
 
@@ -53,18 +55,19 @@ def truncate_preserving_tokens(
 class HTMLStripper(HTMLParser):
     """HTML parser that strips all tags and returns clean text."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.reset()
         self.strict = False
         self.convert_charrefs = True
-        self.text = []
+        self.text: list[str] = []
 
-    def handle_data(self, data):
+    @override
+    def handle_data(self, data: str) -> None:
         """Handle text data between HTML tags."""
         self.text.append(data)
 
-    def get_text(self):
+    def get_text(self) -> str:
         """Return the cleaned text."""
         return "".join(self.text)
 
