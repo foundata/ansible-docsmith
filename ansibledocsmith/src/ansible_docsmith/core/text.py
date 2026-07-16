@@ -1,11 +1,14 @@
 """Shared text utilities for documentation generation."""
 
 import html
+import logging
 import re
 from html.parser import HTMLParser
 from typing import Any
 
 from typing_extensions import override
+
+LOGGER = logging.getLogger(__name__)
 
 # Tokens that must never be split by table-cell truncation: Markdown
 # links and inline code spans (left), RST hyperlinks and inline literals
@@ -30,6 +33,7 @@ def normalize_description(description: Any) -> str:
     try:
         return str(description).strip()
     except Exception:
+        LOGGER.debug("Could not stringify description", exc_info=True)
         return ""
 
 
@@ -84,4 +88,5 @@ class HTMLStripper(HTMLParser):
             return html.unescape(stripper.get_text())
         except Exception:
             # Fallback to regex if HTML is malformed
+            LOGGER.debug("HTML parsing failed; using regex fallback", exc_info=True)
             return re.sub(r"<[^>]+>", "", html_text)

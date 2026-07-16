@@ -1,5 +1,6 @@
 """Table of Contents generators for Markdown and reStructuredText."""
 
+import logging
 import re
 from abc import ABC, abstractmethod
 from typing import Any
@@ -8,6 +9,8 @@ from markdown_it.tree import SyntaxTreeNode
 from typing_extensions import override
 
 from .markdown_ast import parse_markdown
+
+LOGGER = logging.getLogger(__name__)
 
 
 class BaseTocGenerator(ABC):
@@ -132,6 +135,9 @@ class MarkdownTocGenerator(BaseTocGenerator):
 
         except Exception:
             # Fallback to regex-based extraction if AST parsing fails
+            LOGGER.debug(
+                "Markdown AST parsing failed; using regex fallback", exc_info=True
+            )
             return self._extract_headings_fallback(content)
 
     def _extract_text_from_node(self, node: SyntaxTreeNode) -> str:

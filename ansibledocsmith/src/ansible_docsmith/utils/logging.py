@@ -6,10 +6,15 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 
-def setup_logging(verbose: bool = False) -> logging.Logger:
-    """Setup logging with rich handler for better output."""
+def setup_logging(verbose: bool = False) -> None:
+    """Configure the package logger with a Rich handler.
 
-    # Create logger
+    Called once at the application entry point. Modules obtain their own
+    loggers via ``logging.getLogger(__name__)``, which propagate to this
+    configured ``ansible_docsmith`` package logger.
+    """
+
+    # Configure the package-root logger
     logger = logging.getLogger("ansible_docsmith")
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
 
@@ -41,5 +46,3 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
 
     # Prevent propagation to root logger
     logger.propagate = False
-
-    return logger

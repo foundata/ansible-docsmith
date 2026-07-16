@@ -1,5 +1,6 @@
 """Main processor for ansible-docsmith operations."""
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,8 @@ from .exceptions import ProcessingError, ValidationError
 from .markup import lint_ansible_markup
 from .parser import ArgumentSpecParser
 from .readme_updater import ReadmeUpdater
+
+LOGGER = logging.getLogger(__name__)
 
 
 def detect_format_from_role(role_path: Path) -> str:
@@ -339,7 +342,10 @@ class RoleProcessor:
                 if data and isinstance(data, dict):
                     return set(data.keys())
         except Exception:
-            pass  # Ignore parsing errors, handled elsewhere
+            # Parsing errors are reported by the dedicated validators
+            LOGGER.debug(
+                "Could not read defaults file %s", defaults_path, exc_info=True
+            )
         return set()
 
     def _extract_defaults_values_from_file(self, defaults_path: Path) -> dict[str, Any]:
@@ -350,7 +356,10 @@ class RoleProcessor:
                 if data and isinstance(data, dict):
                     return data
         except Exception:
-            pass  # Ignore parsing errors, handled elsewhere
+            # Parsing errors are reported by the dedicated validators
+            LOGGER.debug(
+                "Could not read defaults file %s", defaults_path, exc_info=True
+            )
         return {}
 
     def _validate_unknown_keys(self, original_specs: dict[str, Any]) -> list[str]:
@@ -466,6 +475,7 @@ class RoleProcessor:
                 specs = data.get("argument_specs", {})
                 return specs if isinstance(specs, dict) else {}
         except Exception:
+            LOGGER.debug("Could not parse specs file %s", spec_file, exc_info=True)
             return {}
 
     def _validate_mutually_exclusive_keys(

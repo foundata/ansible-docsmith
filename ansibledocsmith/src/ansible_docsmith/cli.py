@@ -4,6 +4,7 @@ Ansible-DocSmith CLI - Generate Ansible role documentation from argument_specs.y
 """
 
 import difflib
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,7 @@ app = typer.Typer(
     add_completion=True,
 )
 console = Console()
+LOGGER = logging.getLogger(__name__)
 
 
 def _display_header() -> None:
@@ -113,7 +115,7 @@ def generate(
 ) -> None:
     """Generate comprehensive documentation for an Ansible role."""
 
-    logger = setup_logging(verbose)
+    setup_logging(verbose)
     _display_header()
 
     # Check mode never writes files
@@ -176,7 +178,7 @@ def generate(
                     defaults_comments_nested=defaults_comments_nested,
                 )
         except ValueError as e:
-            logger.error(f"Template error: {e}")
+            LOGGER.error("Template error: %s", e)
             raise typer.Exit(1)
 
         # Process the collection or role
@@ -222,11 +224,11 @@ def generate(
         # Intentional exit with a specific code; do not treat as error
         raise
     except (ValidationError, ProcessingError) as e:
-        logger.error(f"Processing error: {e}")
+        LOGGER.error("Processing error: %s", e)
         console.print()  # Trailing newline
         raise typer.Exit(1)
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        LOGGER.error("Unexpected error: %s", e)
         if verbose:
             import traceback
 
@@ -270,7 +272,7 @@ def validate(
 ) -> None:
     """Validate argument_specs.yml structure and content."""
 
-    logger = setup_logging(verbose)
+    setup_logging(verbose)
     _display_header()
 
     console.print(f"[green]Validating:[/green] {role_path}")
@@ -321,11 +323,11 @@ def validate(
         # Intentional exit with a specific code; do not treat as error
         raise
     except ValidationError as e:
-        logger.error(f"Validation failed: {e}")
+        LOGGER.error("Validation failed: %s", e)
         console.print()  # Trailing newline
         raise typer.Exit(1)
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        LOGGER.error("Unexpected error: %s", e)
         if verbose:
             import traceback
 
