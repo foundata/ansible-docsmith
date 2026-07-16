@@ -36,7 +36,7 @@ This file provides information for maintainers and contributors to `ansible-docs
 1. Clone the repository:
    ```bash
    git clone https://github.com/foundata/ansible-docsmith.git
-   cd ansible-docsmith/ansibledocsmith
+   cd ansible-docsmith
    ```
 2. Set up development environment:
    Install dependencies using `uv` (recommended):
@@ -74,44 +74,50 @@ This file provides information for maintainers and contributors to `ansible-docs
 
 ```
 ansible-docsmith/
-├── [...]
-├── DEVELOPMENT.md              # This file
-├── [...]
-└── ansibledocsmith/            # Python package directory
-    ├── pyproject.toml          # Project configuration
-    ├── uv.lock                 # Dependency lock file
-    ├── src/ansible_docsmith/   # Main package
-    │   ├── __init__.py
-    │   ├── cli.py              # CLI interface
-    │   ├── constants.py        # Global constants
-    │   ├── core/               # Core functionality
-    │   │   ├── __init__.py
-    │   │   ├── collection.py   # Collection detection and processing
-    │   │   ├── defaults_comments.py # Comment blocks for entry-point files
-    │   │   ├── doc_generators.py    # README documentation generators (MD, RST)
-    │   │   ├── exceptions.py   # Custom exceptions
-    │   │   ├── markdown_ast.py # Shared Markdown parsing (markdown-it-py)
-    │   │   ├── markup.py       # Ansible markup conversion
-    │   │   ├── parser.py       # YAML parsing
-    │   │   ├── processor.py    # Main processing logic
-    │   │   ├── readme_updater.py # Managed README sections
-    │   │   ├── text.py         # Shared text utilities
-    │   │   └── toc.py          # Table of Contents generators
-    │   ├── templates/          # Jinja2 templates & manager
-    │   │   ├── __init__.py     # Template manager
-    │   │   └── readme/
-    │   │       ├── __init__.py
-    │   │       └── default.md.j2
-    │   │       └── default.rst.j2
-    │   └── utils/              # Utility functions
-    │       ├── __init__.py
-    │       └── logging.py
-    └── tests/                  # Test suite
-        ├── __init__.py
-        ├── conftest.py         # Test configuration
-        ├── fixtures/           # Test data (example roles)
-        ├── integration/        # End-to-end tests
-        └── unit/               # Unit tests
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── DEVELOPMENT.md               # This file
+├── README.md
+├── REUSE.toml
+├── LICENSES/                    # License texts (SPDX)
+├── assets/                      # Logos and screenshots
+├── .python-version
+├── pyproject.toml               # Project configuration
+├── uv.lock                      # Dependency lock file
+├── scripts/
+│   └── release-check.sh         # Local release gate (checks + build + smoke)
+├── src/ansible_docsmith/        # Main package
+│   ├── __init__.py
+│   ├── cli.py                   # CLI interface
+│   ├── constants.py             # Global constants
+│   ├── core/                    # Core functionality
+│   │   ├── __init__.py
+│   │   ├── collection.py        # Collection detection and processing
+│   │   ├── defaults_comments.py # Comment blocks for entry-point files
+│   │   ├── doc_generators.py    # README documentation generators (MD, RST)
+│   │   ├── exceptions.py        # Custom exceptions
+│   │   ├── markdown_ast.py      # Shared Markdown parsing (markdown-it-py)
+│   │   ├── markup.py            # Ansible markup conversion
+│   │   ├── parser.py            # YAML parsing
+│   │   ├── processor.py         # Main processing logic
+│   │   ├── readme_updater.py    # Managed README sections
+│   │   ├── text.py              # Shared text utilities
+│   │   └── toc.py               # Table of Contents generators
+│   ├── templates/               # Jinja2 templates & manager
+│   │   ├── __init__.py          # Template manager
+│   │   └── readme/
+│   │       ├── __init__.py
+│   │       ├── default.md.j2
+│   │       └── default.rst.j2
+│   └── utils/                   # Utility functions
+│       ├── __init__.py
+│       └── logging.py
+└── tests/                       # Test suite
+    ├── __init__.py
+    ├── conftest.py              # Test configuration
+    ├── fixtures/                # Test data (example roles)
+    ├── integration/             # End-to-end tests
+    └── unit/                    # Unit tests
 ```
 
 
@@ -155,7 +161,7 @@ uv run ruff check --select E,W,F .
 uv run ruff format . && uv run ruff check --fix .
 ```
 
-The project has Ruff configured in [`ansibledocsmith/pyproject.toml`](./ansibledocsmith/pyproject.toml)
+The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
 
 
 ## Testing<a id="testing"></a>
@@ -309,7 +315,7 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 
 1. Run the release checks and only continue if everything passes:
    ```bash
-   ./ansibledocsmith/scripts/release-check.sh
+   ./scripts/release-check.sh
    ```
    This runs formatting, linting, type checks and the test suite on every
    supported Python version, then builds the wheel and source distribution and
@@ -317,18 +323,18 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 2. Determine the next version number. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 3. Update several files to match the new release version:
    - [`CHANGELOG.md`](./CHANGELOG.md): Insert a section for the new release. Do not forget the comparison link at the end of the file.
-   - [`ansibledocsmith/uv.lock`](./ansibledocsmith/pyproject.toml): the `version` variable.
-   - [`ansibledocsmith/pyproject.toml`](./ansibledocsmith/pyproject.toml): the `version` variable.
-   - [`ansibledocsmith/src/ansible_docsmith/__init__.py`](./ansibledocsmith/src/ansible_docsmith/__init__.py): the `__version__` variable.
+   - [`uv.lock`](./uv.lock): the `version` variable.
+   - [`pyproject.toml`](./pyproject.toml): the `version` variable.
+   - [`src/ansible_docsmith/__init__.py`](./src/ansible_docsmith/__init__.py): the `__version__` variable.
    - The following snippet can help with the Python files (but double check `uv.lock` that only the package's own version gets replaced)
      ```bash
      old_version="<FIXME version>" # FIXME major.minor.patch
      new_version="<FIXME version>" # FIXME major.minor.patch
 
      files=(
-      "./ansibledocsmith/uv.lock"
-      "./ansibledocsmith/pyproject.toml"
-      "./ansibledocsmith/src/ansible_docsmith/__init__.py"
+      "./uv.lock"
+      "./pyproject.toml"
+      "./src/ansible_docsmith/__init__.py"
      )
 
      old_version_regex="${old_version//./\\.}"
@@ -349,9 +355,9 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    version="<FIXME version>" # FIXME major.minor.patch
    git add \
      "./CHANGELOG.md" \
-     "./ansibledocsmith/uv.lock" \
-     "./ansibledocsmith/pyproject.toml" \
-     "./ansibledocsmith/src/ansible_docsmith/__init__.py"
+     "./uv.lock" \
+     "./pyproject.toml" \
+     "./src/ansible_docsmith/__init__.py"
    git commit -m "Release preparations: v${version}"
 
    git tag "v${version}" "$(git rev-parse --verify HEAD)" -m "version ${version}"

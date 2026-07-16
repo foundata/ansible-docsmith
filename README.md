@@ -126,8 +126,8 @@ That's it. The entry-point variable files below the `/defaults` directory of you
 
 Example files:
 
-* Markdown: [`README.md`](./ansibledocsmith/tests/fixtures/example-role-simple-toc/README.md?plain=1)
-* reStructuredText: [`README.rst`](./ansibledocsmith/tests/fixtures/example-role-simple-toc-rst/README.rst?plain=1) (difference to Markdown: `.. ` comments, `.. contents:: **Table of Contents**` directive)
+* Markdown: [`README.md`](./tests/fixtures/example-role-simple-toc/README.md?plain=1)
+* reStructuredText: [`README.rst`](./tests/fixtures/example-role-simple-toc-rst/README.rst?plain=1) (difference to Markdown: `.. ` comments, `.. contents:: **Table of Contents**` directive)
 
 
 ### Generate or update documentation<a id="usage-generate"></a>
@@ -266,7 +266,7 @@ The role has no configurable variables.
 {% endif %}
 ```
 
-**Check out the [`readme/default.md.j2`](./ansibledocsmith/src/ansible_docsmith/templates/readme/default.md.j2)** template that DocSmith uses as an advanced example with conditional sections. Copying this file is often the easiest way to get started.
+**Check out the [`readme/default.md.j2`](./src/ansible_docsmith/templates/readme/default.md.j2)** template that DocSmith uses as an advanced example with conditional sections. Copying this file is often the easiest way to get started.
 
 **Most important available template variables:**
 - `role_name`: Name of the Ansible role.
