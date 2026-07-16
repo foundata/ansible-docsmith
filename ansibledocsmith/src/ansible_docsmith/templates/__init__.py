@@ -2,7 +2,9 @@
 
 import shutil
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, TemplateSyntaxError, select_autoescape
 
@@ -20,7 +22,7 @@ class TemplateManager:
             template_file: Single template file. If provided, creates temporary
                 directory structure.
         """
-        self._temp_dir = None
+        self._temp_dir: Path | None = None
 
         if template_file:
             self.template_dir = self._setup_single_template_file(template_file)
@@ -49,10 +51,11 @@ class TemplateManager:
         self._validate_template_syntax(template_file)
 
         # Create temporary directory
-        self._temp_dir = Path(tempfile.mkdtemp(prefix="ansible_docsmith_template_"))
+        temp_dir = Path(tempfile.mkdtemp(prefix="ansible_docsmith_template_"))
+        self._temp_dir = temp_dir
 
         # Always use readme subdirectory (template type)
-        readme_dir = self._temp_dir / "readme"
+        readme_dir = temp_dir / "readme"
         readme_dir.mkdir()
 
         # Determine template extension based on file extension
@@ -62,9 +65,9 @@ class TemplateManager:
             template_dest = readme_dir / "default.md.j2"
         shutil.copy2(template_file, template_dest)
 
-        return self._temp_dir
+        return temp_dir
 
-    def _validate_template_syntax(self, template_file: Path):
+    def _validate_template_syntax(self, template_file: Path) -> None:
         """Validate Jinja2 template syntax.
 
         Args:
@@ -83,13 +86,13 @@ class TemplateManager:
         except Exception as e:
             raise ValueError(f"Error reading template file {template_file}: {e}")
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up temporary directories if they exist."""
         if self._temp_dir and self._temp_dir.exists():
             shutil.rmtree(self._temp_dir)
             self._temp_dir = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Clean up temporary directories on deletion."""
         self.cleanup()
 
@@ -102,7 +105,7 @@ class TemplateManager:
             lstrip_blocks=True,
         )
 
-    def add_filter(self, name: str, filter_func) -> None:
+    def add_filter(self, name: str, filter_func: Callable[..., Any]) -> None:
         """Add custom filter to the Jinja environment."""
         self.env.filters[name] = filter_func
 
@@ -134,7 +137,7 @@ class TemplateManager:
         template_name: str,
         template_type: str = "readme",
         format_type: str = "markdown",
-        **context,
+        **context: Any,
     ) -> str:
         """Render template with given context.
 
