@@ -97,6 +97,8 @@ class ArgumentSpecParser:
                 "elements": param_spec.get("elements"),
                 "options": self._normalize_options(param_spec.get("options", {})),
                 "version_added": param_spec.get("version_added"),
+                "no_log": param_spec.get("no_log", False),
+                "aliases": param_spec.get("aliases", []),
             }
 
         return normalized

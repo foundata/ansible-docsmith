@@ -158,6 +158,12 @@ class DefaultsCommentGenerator:
         required = var_spec.get("required", False)
         details.append(f"# {indent}- Required: {'Yes' if required else 'No'}")
 
+        # Sensitive (no_log)
+        if var_spec.get("no_log"):
+            details.append(
+                f"# {indent}- Sensitive: Yes (no_log, values are masked in logs)"
+            )
+
         # Default value
         default = var_spec.get("default")
         if default is not None:
@@ -169,6 +175,14 @@ class DefaultsCommentGenerator:
             formatted_choices = ", ".join(str(choice) for choice in choices)
             details.extend(
                 self._wrap_detail_bullet("Choices", formatted_choices, indent)
+            )
+
+        # Aliases
+        aliases = var_spec.get("aliases")
+        if aliases:
+            formatted_aliases = ", ".join(str(alias) for alias in aliases)
+            details.extend(
+                self._wrap_detail_bullet("Aliases", formatted_aliases, indent)
             )
 
         # List elements

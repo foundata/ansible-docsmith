@@ -14,11 +14,17 @@
 
 :Type: ``{{ option_spec.type }}``
 :Required: {{ 'Yes' if option_spec.required else 'No' }}
+{% if option_spec.no_log %}
+:Sensitive: Yes (``no_log``, values are masked in logs)
+{% endif %}
 {% if option_spec.default is not none %}
 :Default: {{ option_spec.default | format_default }}
 {% endif %}
 {% if option_spec.choices %}
 :Choices: {{ option_spec.choices | map('string') | map('code_escape') | join(', ') }}
+{% endif %}
+{% if option_spec.aliases %}
+:Aliases: {{ option_spec.aliases | map('string') | map('code_escape') | join(', ') }}
 {% endif %}
 {% if option_spec.elements %}
 :List Elements: ``{{ option_spec.elements }}``
@@ -64,7 +70,7 @@ The following variables can be configured for this {{ "entry point" if multiple_
    :widths: 20, 10, 10, 15, 45
 
 {% for var_name, var_spec in entry_options.items() %}
-   "``{{ var_name | ansible_escape }}``", "``{{ var_spec.type }}``", "{{ 'Yes' if var_spec.required else 'No' }}", "{{ var_spec.default | format_default | csv_escape }}", "{{ var_spec.description | format_table_description(var_name, anchor_prefix=var_anchor_prefix) | csv_escape }}"
+   "``{{ var_name | ansible_escape }}``{{ ' 🔒' if var_spec.no_log else '' }}", "``{{ var_spec.type }}``", "{{ 'Yes' if var_spec.required else 'No' }}", "{{ var_spec.default | format_default | csv_escape }}", "{{ var_spec.description | format_table_description(var_name, anchor_prefix=var_anchor_prefix) | csv_escape }}"
 {% endfor %}
 
 
@@ -78,11 +84,17 @@ The following variables can be configured for this {{ "entry point" if multiple_
 
 :Type: ``{{ var_spec.type }}``
 :Required: {{ 'Yes' if var_spec.required else 'No' }}
+{% if var_spec.no_log %}
+:Sensitive: Yes (``no_log``, values are masked in logs)
+{% endif %}
 {% if var_spec.default is not none %}
 :Default: {{ var_spec.default | format_default }}
 {% endif %}
 {% if var_spec.choices %}
 :Choices: {{ var_spec.choices | map('string') | map('code_escape') | join(', ') }}
+{% endif %}
+{% if var_spec.aliases %}
+:Aliases: {{ var_spec.aliases | map('string') | map('code_escape') | join(', ') }}
 {% endif %}
 {% if var_spec.elements %}
 :List Elements: ``{{ var_spec.elements }}``

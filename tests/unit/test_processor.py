@@ -607,6 +607,48 @@ argument_specs:
         assert '<a id="without-anchor"></a>' in joined
         assert "'With anchor'" not in joined
 
+    def test_validate_sensitive_candidates(self, temp_dir: Path) -> None:
+        """Secret-looking names without no_log produce a notice (issue #24)."""
+        processor = RoleProcessor()
+
+        spec_file = temp_dir / "argument_specs.yml"
+        spec_file.write_text(
+            """---
+argument_specs:
+  main:
+    options:
+      demo_password:
+        type: "str"
+        description: "Unmarked secret."
+      demo_api_token:
+        type: "str"
+        no_log: true
+        description: "Marked secret."
+      demo_conf:
+        type: "dict"
+        description: "Config."
+        options:
+          smtp_secret:
+            type: "str"
+            description: "Nested unmarked secret."
+      demo_hostname:
+        type: "str"
+        description: "Not a secret."
+""",
+            encoding="utf-8",
+        )
+
+        notices = processor._validate_sensitive_candidates(
+            processor._parse_original_specs(spec_file)
+        )
+
+        joined = "\n".join(notices)
+        assert len(notices) == 2
+        assert "'demo_password'" in joined
+        assert "'demo_conf.smtp_secret'" in joined
+        assert "demo_api_token" not in joined
+        assert "demo_hostname" not in joined
+
     def test_validate_markup_reports_invalid_constructs(self, temp_dir: Path) -> None:
         """Invalid Ansible markup in descriptions produces warnings."""
         processor = RoleProcessor()

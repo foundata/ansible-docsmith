@@ -214,6 +214,8 @@ ansible-docsmith generate /path/to/collection --check
 # - WARNING: Invalid Ansible markup in descriptions (like "M()" without a FQCN).
 # - NOTICE:  Potential mismatches, where variables are listed in "argument_specs.yml"
 #            but not in "defaults/", for user awareness.
+# - NOTICE:  Variables whose name suggests a secret (like "*_password", "*_token")
+#            but do not set "no_log: true".
 ansible-docsmith validate /path/to/role
 
 # Treat warnings as errors (exit code 1). Useful for CI/CD pipelines and

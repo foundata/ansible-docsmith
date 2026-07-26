@@ -1,6 +1,7 @@
 """Main processor for ansible-docsmith operations."""
 
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -170,6 +171,10 @@ class RoleProcessor:
                 # Add Ansible markup linting
                 markup_warnings = self._validate_markup(original_specs)
                 role_data["warnings"].extend(markup_warnings)
+
+                # Add secret-name heuristic (notice only)
+                sensitive_notices = self._validate_sensitive_candidates(original_specs)
+                role_data["notices"].extend(sensitive_notices)
 
             if validate_readme:
                 # Add README marker validation
@@ -404,6 +409,43 @@ class RoleProcessor:
                 self._check_unknown_option_keys(entry_point, options, warnings, path="")
 
         return warnings
+
+    def _validate_sensitive_candidates(
+        self, original_specs: dict[str, Any]
+    ) -> list[str]:
+        """Notice options whose name suggests a secret but lack no_log.
+
+        Purely heuristic (name-based), therefore only a notice: values of
+        such variables may end up in logs unless the spec sets
+        ``no_log: true``.
+        """
+        notices: list[str] = []
+        secret_name = re.compile(r"(^|_)(password|passphrase|token|secret|key)$")
+
+        def _walk(options: dict[str, Any], entry_point: str, path: str) -> None:
+            for var_name, var_spec in options.items():
+                if not isinstance(var_spec, dict):
+                    continue
+                display_name = f"{path}{var_name}"
+                if secret_name.search(var_name) and not var_spec.get("no_log"):
+                    notices.append(
+                        f"Entry point '{entry_point}': Variable '{display_name}' "
+                        f"looks like a secret but does not set 'no_log: true' "
+                        f"in argument_specs.yml; its values may appear in logs "
+                        f"(may be intentional)."
+                    )
+                nested = var_spec.get("options")
+                if isinstance(nested, dict):
+                    _walk(nested, entry_point, f"{display_name}.")
+
+        for entry_point, spec in original_specs.items():
+            if not isinstance(spec, dict):
+                continue
+            options = spec.get("options", {})
+            if isinstance(options, dict):
+                _walk(options, entry_point, path="")
+
+        return notices
 
     def _validate_markup(self, original_specs: dict[str, Any]) -> list[str]:
         """Lint Ansible markup in all descriptions of the argument specs.

@@ -70,6 +70,53 @@ class TestOptionAnchors:
         assert anchors["shared_var"] is None
 
 
+SENSITIVE_SPECS: dict[str, Any] = {
+    "main": {
+        "short_description": "",
+        "description": "",
+        "author": [],
+        "options": {
+            "api_token": {
+                "type": "str",
+                "required": False,
+                "default": None,
+                "description": "API token.",
+                "choices": [],
+                "elements": None,
+                "options": {},
+                "version_added": None,
+                "no_log": True,
+                "aliases": ["token"],
+            }
+        },
+    }
+}
+
+
+class TestSensitiveRendering:
+    """README rendering of no_log and aliases (issue #24)."""
+
+    def test_markdown_rendering(self, tmp_path: Path) -> None:
+        generator = MarkdownDocumentationGenerator()
+        result = generator.generate_role_documentation(
+            SENSITIVE_SPECS, "test-role", tmp_path
+        )
+
+        assert "| `api_token` 🔒 |" in result
+        assert "- **Sensitive**: Yes (`no_log`, values are masked in logs)" in result
+        assert "- **Aliases**: `token`" in result
+
+    def test_rst_rendering(self, tmp_path: Path) -> None:
+        generator = RSTDocumentationGenerator()
+        result = generator.generate_role_documentation(
+            SENSITIVE_SPECS, "test-role", tmp_path
+        )
+
+        assert '"``api_token`` 🔒"' in result
+        assert ":Sensitive: Yes (``no_log``, values are masked in logs)" in result
+        assert ":Aliases: ``token``" in result
+
+
 class TestDocumentationGenerator:
     """Test the DocumentationGenerator class (alias for MarkdownDocGenerator)."""
 
@@ -805,6 +852,52 @@ class TestDefaultsCommentGenerator:
         cleaned = generator._remove_existing_variable_comments(content, options)
 
         assert "# keep this comment" in cleaned
+
+    def test_block_comment_marks_sensitive_and_aliases(self) -> None:
+        """no_log and aliases are rendered in comment blocks (issue #24)."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "API token for the service.",
+                "type": "str",
+                "required": False,
+                "no_log": True,
+                "aliases": ["token", "apikey"],
+            }
+        )
+
+        assert comment_lines == [
+            "# API token for the service.",
+            "#",
+            "# - Type: str",
+            "# - Required: No",
+            "# - Sensitive: Yes (no_log, values are masked in logs)",
+            "# - Aliases: token, apikey",
+        ]
+
+    def test_block_comment_marks_sensitive_in_nested_options(self) -> None:
+        """no_log is rendered for nested dict attributes as well."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Config.",
+                "type": "dict",
+                "options": {
+                    "smtp_secret": {
+                        "type": "str",
+                        "no_log": True,
+                        "description": "SMTP secret.",
+                    }
+                },
+            }
+        )
+
+        assert (
+            "#     - Sensitive: Yes (no_log, values are masked in logs)"
+            in comment_lines
+        )
 
     def test_long_choices_are_wrapped(self) -> None:
         """Long choice lists wrap at the 80-column budget (issue #31)."""

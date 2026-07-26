@@ -132,6 +132,26 @@ argument_specs:
         # List items become paragraphs, like in option descriptions
         assert result == "Line 1\n\nLine 2\n\nLine 3"
 
+    def test_normalize_options_passes_no_log_and_aliases(self) -> None:
+        """no_log and aliases survive normalization (issue #24)."""
+        parser = ArgumentSpecParser()
+
+        normalized = parser._normalize_options(
+            {
+                "api_token": {
+                    "type": "str",
+                    "no_log": True,
+                    "aliases": ["token", "apikey"],
+                },
+                "plain_var": {"type": "str"},
+            }
+        )
+
+        assert normalized["api_token"]["no_log"] is True
+        assert normalized["api_token"]["aliases"] == ["token", "apikey"]
+        assert normalized["plain_var"]["no_log"] is False
+        assert normalized["plain_var"]["aliases"] == []
+
     def test_normalize_description_string(self) -> None:
         """Test description normalization from string."""
         parser = ArgumentSpecParser()
