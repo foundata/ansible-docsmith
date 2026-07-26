@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The positional CLI argument of `generate` and `validate` is displayed as `path` instead of `role_path`, matching the fact that it accepts roles and collections (#30). As it is positional, invocations are unaffected. The status output now says "Processing collection:" for collections, and the collection-detection message refers to the `roles/` directory instead of echoing a possibly confusing path.
+
 ### Fixed
 
 - Long `# - Choices:` lines in generated `defaults/` comment blocks are now wrapped at the same 80-column budget as descriptions, with continuation lines aligned below the content (#31). Long single-line `Default:` values and `List elements:` share the new wrapping; a single token longer than the budget (like a URL) stays whole. This lets roles with many choices drop `yaml[line-length]` ignore entries for their defaults files.

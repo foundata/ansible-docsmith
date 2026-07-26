@@ -58,7 +58,7 @@ def main(
 
 @app.command()
 def generate(
-    role_path: Path = typer.Argument(
+    path: Path = typer.Argument(
         ...,
         help="Path to an Ansible role or collection directory",
         exists=True,
@@ -137,7 +137,9 @@ def generate(
         console.print("[red]Error: TOC bullet style must be '*' or '-'[/red]")
         raise typer.Exit(1)
 
-    console.print(f"[bold green]Processing role:[/bold green] {role_path}")
+    is_collection = detect_project_type(path) == "collection"
+    kind = "collection" if is_collection else "role"
+    console.print(f"[bold green]Processing {kind}:[/bold green] {path}")
     console.print(
         f"[blue]Options:[/blue] README={output_readme}, "
         f"Defaults={update_defaults}, Dry-run={dry_run}"
@@ -149,19 +151,18 @@ def generate(
     if dry_run:
         console.print("[yellow]DRY RUN MODE - No files will be modified[/yellow]")
 
+    if is_collection:
+        console.print(
+            "[blue]Detected collection layout[/blue] (roles below roles/ directory)"
+        )
+
     try:
         # Initialize processor
-        is_collection = detect_project_type(role_path) == "collection"
-        if is_collection:
-            console.print(
-                f"[blue]Detected collection layout[/blue] "
-                f"(roles below {role_path / 'roles'})"
-            )
 
         try:
             if is_collection:
                 collection_processor = CollectionProcessor(
-                    collection_path=role_path,
+                    collection_path=path,
                     dry_run=dry_run,
                     template_readme=template_readme,
                     toc_bullet_style=readme_toc_list_bulletpoints,
@@ -174,7 +175,7 @@ def generate(
                     template_readme=template_readme,
                     toc_bullet_style=readme_toc_list_bulletpoints,
                     format_type=format_type,
-                    role_path=role_path,
+                    role_path=path,
                     defaults_comments_nested=defaults_comments_nested,
                 )
         except ValueError as e:
@@ -189,7 +190,7 @@ def generate(
             )
         else:
             results = processor.process_role(
-                role_path=role_path,
+                role_path=path,
                 generate_readme=output_readme,
                 update_defaults=update_defaults,
             )
@@ -239,7 +240,7 @@ def generate(
 
 @app.command()
 def validate(
-    role_path: Path = typer.Argument(
+    path: Path = typer.Argument(
         ...,
         help="Path to an Ansible role or collection directory",
         exists=True,
@@ -275,7 +276,7 @@ def validate(
     setup_logging(verbose)
     _display_header()
 
-    console.print(f"[green]Validating:[/green] {role_path}")
+    console.print(f"[green]Validating:[/green] {path}")
 
     try:
         # Validate format type
@@ -285,9 +286,9 @@ def validate(
             )
             raise typer.Exit(1)
 
-        if detect_project_type(role_path) == "collection":
+        if detect_project_type(path) == "collection":
             _validate_collection(
-                role_path,
+                path,
                 format_type=format_type,
                 validate_readme=validate_readme,
                 validate_argument_specs=validate_argument_specs,
@@ -296,11 +297,11 @@ def validate(
             return
 
         # Initialize processor
-        processor = RoleProcessor(format_type=format_type, role_path=role_path)
+        processor = RoleProcessor(format_type=format_type, role_path=path)
 
         # Validate the role
         role_data = processor.validate_role(
-            role_path,
+            path,
             validate_readme=validate_readme,
             validate_argument_specs=validate_argument_specs,
         )
@@ -349,7 +350,7 @@ def _validate_collection(
     )
     console.print(
         f"[blue]Detected collection layout[/blue] "
-        f"({len(processor.roles)} role(s) below {collection_path / 'roles'})"
+        f"({len(processor.roles)} role(s) below roles/ directory)"
     )
 
     summary = processor.validate_collection(
