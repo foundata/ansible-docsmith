@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Variables with `no_log: true` are marked as sensitive in the generated documentation (#24): a marker in the README variable table, a "Sensitive: Yes (`no_log`, values are masked in logs)" bullet in the variable sections, and a matching `# - Sensitive:` line in `defaults/` comment blocks. Nested options are covered as well.
 - `aliases` of a variable are now rendered in the README variable sections and `defaults/` comment blocks (#24; the key was previously accepted but dropped).
 - `validate` emits a notice when a variable name suggests a secret (like `*_password`, `*_token`, `*_secret`, `*_key`) but the spec does not set `no_log: true` (#24). As a heuristic, it is a notice only and never fails validation, not even with `--strict`.
+- The README documents the exit codes of all commands and the marker contract (#26).
 
 ### Changed
 

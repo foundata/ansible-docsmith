@@ -34,6 +34,7 @@ DocSmith is a documentation generator. It reads a role's [`meta/argument_specs.y
   - [Generate or update documentation](#usage-generate)
   - [Collections](#usage-collections)
   - [Validate `argument_specs.yml` and `/defaults`](#usage-validate)
+  - [Exit codes](#usage-exit-codes)
   - [Custom templates](#usage-custom-templates)
 - [Licensing, copyright](#licensing-copyright)
   - [Trademarks](#trademarks)
@@ -123,6 +124,12 @@ pipx install ansible-docsmith
    to generate a complete ToC of *all* headings of the README, including hand-written ones (optional). Headings with an explicit anchor (like `## Usage<a id="usage"></a>`) are linked exactly; for other headings, the anchor is derived from the heading text and `validate` emits a notice, as the derivation cannot be guaranteed to match your rendering platform for exotic titles.
 
 That's it. The entry-point variable files below the `/defaults` directory of your role do *not* need additional preparations. The tool will automatically (re)place formatted inline comment blocks above variables defined there.
+
+**The marker contract** in short:
+
+- **All content between a START and END marker pair is owned by DocSmith** and gets replaced on every `generate` run. Everything outside the markers is never touched.
+- **A lone marker is always an error**, no matter the type: a `START` without its `END` (or vice versa) fails validation instead of guessing where the managed section ends. This applies to `MAIN`, `TOC`, `TOC-FULL` and the role-named markers in collection READMEs alike.
+- **A missing README is fine**: `generate` creates one from a basic skeleton, markers included. However, an *existing* README **without** the mandatory `MAIN` markers is a hard validation error, so DocSmith cannot accidentally overwrite hand-written content in a README that was never prepared for it.
 
 Example files:
 
@@ -237,6 +244,24 @@ ansible-docsmith validate --help
 
 # Verbose output for debugging
 ansible-docsmith validate /path/to/role --verbose
+```
+
+
+### Exit codes<a id="usage-exit-codes"></a>
+
+All commands use conventional exit codes, so DocSmith can be wired into scripts, CI/CD pipelines and pre-commit hooks without output parsing:
+
+| Exit code | Meaning |
+|-----------|---------|
+| `0`       | Success. Warnings and notices alone do *not* fail a run (unless `--strict` is used). `generate --check` returns `0` when the documentation is up to date. |
+| `1`       | Validation or processing error (like missing `MAIN` markers, inconsistencies between `argument_specs.yml` and `defaults/`). Also: warnings when `validate --strict` is used, and pending changes when `generate --check` is used. |
+| `2`       | Command line usage error (unknown option, non-existing path). |
+
+Notices are informational and never affect the exit code. A typical gate:
+
+```bash
+ansible-docsmith validate /path/to/role --strict && \
+    ansible-docsmith generate /path/to/role --check
 ```
 
 
