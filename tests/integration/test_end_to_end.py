@@ -218,6 +218,27 @@ class TestEndToEnd:
         assert result.exit_code == 1
         assert (collection / "README.md").read_text(encoding="utf-8") == readme_before
 
+    def test_results_table_relative_paths_and_unchanged(self, temp_dir: Path) -> None:
+        """The results table shows subpaths and consistent 'Unchanged' actions."""
+        runner = CliRunner()
+
+        fixture = Path(__file__).parent.parent / "fixtures" / "example-collection"
+        collection = temp_dir / "example-collection"
+        shutil.copytree(fixture, collection)
+
+        result = runner.invoke(app, ["generate", str(collection)])
+        assert result.exit_code == 0
+        # Paths are shown relative to the submitted collection path
+        assert "roles/first/README.md" in result.stdout
+        assert "roles/first/defaults/main.yml" in result.stdout
+
+        # A second run without changes reports everything as Unchanged
+        result = runner.invoke(app, ["generate", str(collection)])
+        assert result.exit_code == 0
+        assert "Unchanged" in result.stdout
+        assert "Updated" not in result.stdout
+        assert "Comments added" not in result.stdout
+
     def test_validate_collection(self, temp_dir: Path) -> None:
         """Collection validation covers all roles and the collection README."""
         runner = CliRunner()

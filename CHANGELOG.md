@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The "Processing Results" table now reports `Unchanged` for *all* files a `generate` run did not modify (role READMEs and entry-point files previously always claimed `Updated` / `Comments added`), and unchanged files are no longer rewritten, preserving their modification times (#29).
+- The "Processing Results" table shows file paths relative to the submitted role/collection path (like `roles/first/defaults/main.yml`), so collection runs state which role a file belongs to (#29).
 - The positional CLI argument of `generate` and `validate` is displayed as `path` instead of `role_path`, matching the fact that it accepts roles and collections (#30). As it is positional, invocations are unaffected. The status output now says "Processing collection:" for collections, and the collection-detection message refers to the `roles/` directory instead of echoing a possibly confusing path.
 
 ### Fixed

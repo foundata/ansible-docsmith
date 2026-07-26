@@ -128,10 +128,10 @@ class TestRoleProcessor:
         assert len(result.errors) >= 1
         assert any("validation failed" in error.lower() for error in result.errors)
 
-    def test_process_readme_reports_created_then_updated(
+    def test_process_readme_reports_created_updated_unchanged(
         self, sample_role_with_specs_and_defaults: Path
     ) -> None:
-        """A new README is reported as 'Created', an existing one as 'Updated'."""
+        """README actions: 'Created', then 'Unchanged', 'Updated' on change."""
         processor = RoleProcessor()
         role_path = sample_role_with_specs_and_defaults
         assert not (role_path / "README.md").exists()
@@ -143,11 +143,51 @@ class TestRoleProcessor:
         readme_ops = [op for op in result.operations if "README" in str(op[0])]
         assert readme_ops[0][1] == "Created"
 
+        # A second run without changes must not report (or write) an update
+        mtime_before = (role_path / "README.md").stat().st_mtime_ns
+        result = processor.process_role(
+            role_path, generate_readme=True, update_defaults=False
+        )
+        readme_ops = [op for op in result.operations if "README" in str(op[0])]
+        assert readme_ops[0][1] == "Unchanged"
+        assert (role_path / "README.md").stat().st_mtime_ns == mtime_before
+
+        # After a spec change, the README is reported as updated
+        spec_file = role_path / "meta" / "argument_specs.yml"
+        spec_file.write_text(
+            spec_file.read_text(encoding="utf-8").replace(
+                "Primary domain name", "CHANGED domain name"
+            ),
+            encoding="utf-8",
+        )
         result = processor.process_role(
             role_path, generate_readme=True, update_defaults=False
         )
         readme_ops = [op for op in result.operations if "README" in str(op[0])]
         assert readme_ops[0][1] == "Updated"
+
+    def test_process_defaults_reports_unchanged(
+        self, sample_role_with_specs_and_defaults: Path
+    ) -> None:
+        """Defaults files without an actual diff are reported as 'Unchanged'."""
+        processor = RoleProcessor()
+        role_path = sample_role_with_specs_and_defaults
+
+        result = processor.process_role(
+            role_path, generate_readme=False, update_defaults=True
+        )
+        defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
+        assert defaults_ops[0][1] == "Comments added"
+
+        # Second run: no diff, no write
+        defaults_path = role_path / "defaults" / "main.yml"
+        mtime_before = defaults_path.stat().st_mtime_ns
+        result = processor.process_role(
+            role_path, generate_readme=False, update_defaults=True
+        )
+        defaults_ops = [op for op in result.operations if "main.yml" in str(op[0])]
+        assert defaults_ops[0][1] == "Unchanged"
+        assert defaults_path.stat().st_mtime_ns == mtime_before
 
     def test_process_defaults_reports_skip_for_empty_file(
         self, sample_role_with_specs: Path

@@ -256,15 +256,22 @@ class RoleProcessor:
             if existed_before:
                 original_content = readme_path.read_text(encoding="utf-8")
 
-            # Compute the new content once; write it unless in dry-run mode
+            # Compute the new content once; write it (unless in dry-run
+            # mode) only when it actually differs
             new_content = readme_updater._get_updated_content(readme_path, doc_content)
             results.readme_content = new_content
+            changed = new_content != original_content
             if self.dry_run:
                 results.file_diffs.append((readme_path, original_content, new_content))
-            else:
+            elif changed:
                 readme_path.write_text(new_content, encoding="utf-8", newline="\n")
 
-            action = "Updated" if existed_before else "Created"
+            if not existed_before:
+                action = "Created"
+            elif changed:
+                action = "Updated"
+            else:
+                action = "Unchanged"
             results.operations.append((readme_path, action, "✅"))
 
         except Exception as e:
@@ -299,18 +306,20 @@ class RoleProcessor:
                     if defaults_path.exists():
                         original_content = defaults_path.read_text(encoding="utf-8")
 
+                    changed = updated_content != original_content
                     # Store diff information for dry-run display
                     if self.dry_run:
                         results.file_diffs.append(
                             (defaults_path, original_content, updated_content)
                         )
-                    else:
+                    elif changed:
                         # Write updated content directly (no backup)
                         defaults_path.write_text(
                             updated_content, encoding="utf-8", newline="\n"
                         )
 
-                    results.operations.append((defaults_path, "Comments added", "✅"))
+                    action = "Comments added" if changed else "Unchanged"
+                    results.operations.append((defaults_path, action, "✅"))
                 else:
                     results.operations.append(
                         (defaults_path, "Skipped (no variables found)", "⚠️")

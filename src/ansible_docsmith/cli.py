@@ -196,7 +196,7 @@ def generate(
             )
 
         # Display results
-        _display_results(results, dry_run)
+        _display_results(results, dry_run, base_path=path)
 
         if results.errors:
             console.print("\n[red]❌ Processing completed with errors[/red]")
@@ -394,8 +394,17 @@ def _validate_collection(
     console.print()  # Trailing newline
 
 
-def _display_results(results: ProcessingResults, dry_run: bool) -> None:
-    """Display processing results in a rich table."""
+def _display_results(
+    results: ProcessingResults, dry_run: bool, base_path: Path | None = None
+) -> None:
+    """Display processing results in a rich table.
+
+    Args:
+        results: The processing results to display
+        dry_run: Whether the run was a dry run (affects the table title)
+        base_path: Base for displaying file paths relative to the
+            submitted role/collection path (full path as fallback)
+    """
 
     if not results.operations and not results.errors and not results.warnings:
         console.print("[yellow]No operations performed yet[/yellow]")
@@ -407,8 +416,14 @@ def _display_results(results: ProcessingResults, dry_run: bool) -> None:
     table.add_column("Status", style="green")
 
     for file_path, action, status in results.operations:
-        # Show relative path for readability
-        display_path = str(file_path.name) if file_path.name else str(file_path)
+        # Show the path relative to the submitted role/collection path,
+        # so collection runs show which role a file belongs to
+        try:
+            display_path = (
+                str(file_path.relative_to(base_path)) if base_path else str(file_path)
+            )
+        except ValueError:
+            display_path = str(file_path)
         table.add_row(display_path, action, status)
 
     if table.rows:
