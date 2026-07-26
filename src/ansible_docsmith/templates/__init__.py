@@ -58,8 +58,11 @@ class TemplateManager:
         readme_dir = temp_dir / "readme"
         readme_dir.mkdir()
 
-        # Determine template extension based on file extension
-        if template_file.suffix in [".rst", ".txt"]:
+        # Determine the target format from the file name. Template files
+        # usually end in ".<format>.j2", so the plain suffix ".j2" must
+        # not decide; look at the full name instead.
+        name = template_file.name.lower()
+        if name.endswith((".rst.j2", ".txt.j2", ".rst", ".txt")):
             template_dest = readme_dir / "default.rst.j2"
         else:
             template_dest = readme_dir / "default.md.j2"

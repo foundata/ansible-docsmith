@@ -175,6 +175,23 @@ class TestTemplateManager:
         # Clean up
         manager.cleanup()
 
+    def test_single_template_file_rst(self, temp_dir: Path) -> None:
+        """A .rst.j2 template file is installed as the RST template."""
+        template_file = temp_dir / "custom.rst.j2"
+        template_file.write_text("CUSTOM {{ role_name }}")
+
+        manager = TemplateManager(template_file=template_file)
+
+        # Registered for the RST format, not as Markdown
+        result = manager.render_template(
+            "default", "readme", format_type="rst", role_name="test-role"
+        )
+        assert result == "CUSTOM test-role"
+        assert (manager.template_dir / "readme" / "default.rst.j2").exists()
+        assert not (manager.template_dir / "readme" / "default.md.j2").exists()
+
+        manager.cleanup()
+
     def test_single_template_file_invalid_syntax(self, temp_dir: Path) -> None:
         """Test single template file with invalid Jinja2 syntax."""
         # Create a template file with invalid syntax

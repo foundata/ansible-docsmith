@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `aliases` of a variable are now rendered in the README variable sections and `defaults/` comment blocks (#24; the key was previously accepted but dropped).
 - `validate` emits a notice when a variable name suggests a secret (like `*_password`, `*_token`, `*_secret`, `*_key`) but the spec does not set `no_log: true` (#24). As a heuristic, it is a notice only and never fails validation, not even with `--strict`.
 - The README documents the exit codes of all commands and the marker contract (#26).
+- The README documents the full template context contract for custom templates: all available variables (including `specs` for all entry points and `anchor_ns` for collection embeds), all filters with their signatures, and stability expectations (#27).
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Custom reStructuredText templates work now: `--template-readme` with a `*.rst.j2` file was mistakenly registered as a Markdown template, making generation fail for RST roles (found while working on #27).
 - Long `# - Choices:` lines in generated `defaults/` comment blocks are now wrapped at the same 80-column budget as descriptions, with continuation lines aligned below the content (#31). Long single-line `Default:` values and `List elements:` share the new wrapping; a single token longer than the budget (like a URL) stays whole. This lets roles with many choices drop `yaml[line-length]` ignore entries for their defaults files.
 - Removed the deprecated `License :: OSI Approved :: ...` trove classifier that duplicated the SPDX `license`/`license-files` metadata and triggered a PEP 639 deprecation warning during builds (#25).
 

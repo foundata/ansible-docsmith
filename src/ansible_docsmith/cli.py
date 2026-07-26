@@ -107,7 +107,7 @@ def generate(
     template_readme: Path | None = typer.Option(
         None,
         "--template-readme",
-        help="Path to custom README template file (.md.j2)",
+        help="Path to custom README template file (.md.j2 or .rst.j2)",
         exists=True,
         file_okay=True,
         dir_okay=False,

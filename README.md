@@ -267,7 +267,7 @@ ansible-docsmith validate /path/to/role --strict && \
 
 ### Custom templates<a id="usage-custom-templates"></a>
 
-You can customize the generated Markdown output by providing your own [Jinja2 template](https://jinja.palletsprojects.com/en/stable/templates/). The rendered content will be inserted between the `<!-- ANSIBLE DOCSMITH MAIN START -->` and `<!-- ANSIBLE DOCSMITH MAIN END -->` markers in the role's `README.md` file.
+You can customize the generated output by providing your own [Jinja2 template](https://jinja.palletsprojects.com/en/stable/templates/). The rendered content will be inserted between the `ANSIBLE DOCSMITH MAIN START` and `END` markers in the role's README. Name the file `*.md.j2` for Markdown or `*.rst.j2` for reStructuredText, matching the README format of the role.
 
 ```bash
 # Use a custom template for README generation
@@ -295,18 +295,34 @@ The role has no configurable variables.
 
 **Check out the [`readme/default.md.j2`](./src/ansible_docsmith/templates/readme/default.md.j2)** template that DocSmith uses as an advanced example with conditional sections. Copying this file is often the easiest way to get started.
 
-**Most important available template variables:**
-- `role_name`: Name of the Ansible role.
-- `has_options`: Boolean indicating if variables are defined.
-- `options`: Dictionary of all role variables with their specifications.
-- `entry_points`: List of all Ansible role entry-point names.
+**Available template variables** (the context contract):
 
-**Most important available Jinja2 filters:**
-- `ansible_escape`: Escapes characters for Ansible/YAML contexts.
-- `code_escape`: Escapes content for code blocks.
-- `format_default`: Formats default values appropriately.
-- `format_description`: Formats multi-line descriptions.
-- `format_table_description`: Formats descriptions for table cells.
+| Variable | Type | Description |
+|----------|------|-------------|
+| `specs` | `dict` | All entry points in spec file order: entry point name → normalized spec. This is the recommended way to render complete documentation (the built-in templates iterate it). |
+| `role_name` | `str` | Name of the Ansible role (directory name). |
+| `role_path` | `Path` | Path to the role directory. |
+| `entry_points` | `list[str]` | All entry-point names, in spec file order. |
+| `anchor_ns` | `str` | Anchor namespace to prepend to every anchor and internal link the template generates. Empty for role READMEs; `<role>-` when the content is embedded into a collection README via `MAIN <role>` markers. Use it like the built-in templates do, or embedded content of several roles may collide. |
+| `primary_entry_point` | `str` | *Backwards compatibility:* name of the first entry point. |
+| `primary_spec` | `dict` | *Backwards compatibility:* spec of the first entry point (keys: `short_description`, `description`, `author`, `version_added`, `options`). |
+| `options` | `dict` | *Backwards compatibility:* variables of the first entry point only. |
+| `has_options` | `bool` | *Backwards compatibility:* whether the first entry point defines variables. |
+
+Each entry in an `options` dictionary maps a variable name to its normalized specification with the keys `type`, `required`, `default`, `description`, `choices`, `elements`, `options` (nested sub-options, same structure), `version_added`, `no_log` and `aliases`.
+
+**Available Jinja2 filters** (signatures show the optional arguments):
+
+| Filter | Description |
+|--------|-------------|
+| `format_description(value)` | Formats a description (string or list of paragraphs) for regular display, including [Ansible markup](https://docs.ansible.com/projects/ansible/latest/dev_guide/ansible_markup.html) conversion. |
+| `format_table_description(value, variable_name=None, max_length=250, anchor_prefix="variable-")` | Formats a description for a table cell: markup conversion, HTML stripping, single-line folding and truncation with a `[…]` link to `#<anchor_prefix><variable_name>`. Set `max_length=0` to disable truncation. |
+| `format_default(value, table=False)` | Formats a default value as inline code (`N/A` for `None`). Pass `true` inside Markdown table cells so pipes get escaped. |
+| `code_escape(value, table=False)` | Renders a value as inline code, handling backticks correctly. Pass `true` inside Markdown table cells. |
+| `ansible_escape(value)` | Escapes Ansible Jinja2 syntax (`{{ }}`) so it renders literally (Markdown only). |
+| `csv_escape(value)` | Escapes double quotes for `csv-table` cells (reStructuredText templates only). |
+
+**Stability:** the variables and filters documented above are the supported contract and only change with a major release (deprecated values like `options` may then disappear). Anything else you might discover by reading DocSmith's internals — undocumented context values, filter internals, module layout — can change in any release.
 
 If you are creative, you may even maintain non-obvious parts of your `README.md` between the markers:
 
