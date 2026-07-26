@@ -853,6 +853,47 @@ class TestDefaultsCommentGenerator:
 
         assert "# keep this comment" in cleaned
 
+    def test_block_comment_preserves_blockquotes(self) -> None:
+        """Block quotes keep their '>' marker in comments (issue #28)."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Intro text.\n\n> Quoted warning\n> spanning lines.",
+                "type": "str",
+                "required": False,
+            }
+        )
+
+        assert "# > Quoted warning spanning lines." in comment_lines
+
+    def test_block_comment_wraps_long_blockquotes(self) -> None:
+        """Wrapped quote lines keep the '>' prefix and stay in budget."""
+        generator = DefaultsCommentGenerator()
+
+        long_quote = "> " + "quoted words repeated " * 8
+        comment_lines = generator._format_block_comment(
+            {"description": long_quote.strip(), "type": "str", "required": False}
+        )
+
+        quote_lines = [line for line in comment_lines if line.startswith("# >")]
+        assert len(quote_lines) >= 2
+        assert all(len(line) <= 80 for line in quote_lines)
+
+    def test_block_comment_preserves_escaped_markdown(self) -> None:
+        """Backslash escapes survive the re-formatting (issue #28)."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Use \\*literal asterisks\\* and *real emphasis*.",
+                "type": "str",
+                "required": False,
+            }
+        )
+
+        assert "# Use \\*literal asterisks\\* and *real emphasis*." in comment_lines
+
     def test_block_comment_marks_sensitive_and_aliases(self) -> None:
         """no_log and aliases are rendered in comment blocks (issue #24)."""
         generator = DefaultsCommentGenerator()

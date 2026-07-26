@@ -176,6 +176,10 @@ class RoleProcessor:
                 sensitive_notices = self._validate_sensitive_candidates(original_specs)
                 role_data["notices"].extend(sensitive_notices)
 
+                # Add notices for constructs YAML comments cannot keep
+                flattening_notices = self._validate_comment_flattening(original_specs)
+                role_data["notices"].extend(flattening_notices)
+
             if validate_readme:
                 # Add README marker validation
                 readme_errors = self._validate_readme_markers(role_path)
@@ -409,6 +413,60 @@ class RoleProcessor:
                 self._check_unknown_option_keys(entry_point, options, warnings, path="")
 
         return warnings
+
+    def _validate_comment_flattening(self, original_specs: dict[str, Any]) -> list[str]:
+        """Notice Markdown constructs that YAML comment blocks cannot keep.
+
+        The defaults comment renderer reduces images to their alt text
+        and drops raw HTML blocks and thematic breaks. The README keeps
+        all of them, so this is only a notice.
+        """
+        from .markdown_ast import parse_markdown
+        from .text import normalize_description
+
+        kind_labels = {
+            "image": "images (reduced to their alt text)",
+            "html_block": "raw HTML blocks (dropped)",
+            "hr": "thematic breaks '---' (dropped)",
+        }
+        notices: list[str] = []
+
+        def _lint(description: Any, location: str) -> None:
+            text = normalize_description(description)
+            if not text:
+                return
+            found = {
+                node.type for node in parse_markdown(text).walk()
+            } & kind_labels.keys()
+            if found:
+                labels = ", ".join(kind_labels[kind] for kind in sorted(found))
+                notices.append(
+                    f"{location}: Description contains {labels}, which the "
+                    f"comment blocks in defaults/ files cannot render fully. "
+                    f"The README keeps them (may be intentional)."
+                )
+
+        def _walk_options(options: dict[str, Any], entry_point: str, path: str) -> None:
+            for var_name, var_spec in options.items():
+                if not isinstance(var_spec, dict):
+                    continue
+                display_name = f"{path}{var_name}"
+                _lint(
+                    var_spec.get("description"),
+                    f"Entry point '{entry_point}', variable '{display_name}'",
+                )
+                nested = var_spec.get("options")
+                if isinstance(nested, dict):
+                    _walk_options(nested, entry_point, f"{display_name}.")
+
+        for entry_point, spec in original_specs.items():
+            if not isinstance(spec, dict):
+                continue
+            options = spec.get("options", {})
+            if isinstance(options, dict):
+                _walk_options(options, entry_point, path="")
+
+        return notices
 
     def _validate_sensitive_candidates(
         self, original_specs: dict[str, Any]

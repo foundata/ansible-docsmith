@@ -160,6 +160,14 @@ class MarkdownTocGenerator(BaseTocGenerator):
             if current_node.type == "code_inline":
                 # For inline code, add backticks to preserve formatting
                 text_parts.append(f"`{current_node.content}`")
+            elif current_node.type == "text_special":
+                # Keep backslash escapes in their source form (ToC lines
+                # are Markdown, so the escape stays meaningful there)
+                text_parts.append(
+                    current_node.markup
+                    if current_node.info == "escape"
+                    else current_node.content
+                )
             elif current_node.type in ("text", "html_inline"):
                 text_parts.append(current_node.content)
 

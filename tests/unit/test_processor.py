@@ -607,6 +607,45 @@ argument_specs:
         assert '<a id="without-anchor"></a>' in joined
         assert "'With anchor'" not in joined
 
+    def test_validate_comment_flattening_notices(self, temp_dir: Path) -> None:
+        """Constructs that comments cannot keep produce a notice (issue #28)."""
+        processor = RoleProcessor()
+
+        spec_file = temp_dir / "argument_specs.yml"
+        spec_file.write_text(
+            """---
+argument_specs:
+  main:
+    options:
+      demo_image:
+        type: "str"
+        description: "See ![diagram](docs/diagram.png) for details."
+      demo_conf:
+        type: "dict"
+        description: "Config."
+        options:
+          inner:
+            type: "str"
+            description: "Before.\\n\\n---\\n\\nAfter the break."
+      demo_plain:
+        type: "str"
+        description: "Nothing special, *emphasis* and `code` are fine."
+""",
+            encoding="utf-8",
+        )
+
+        notices = processor._validate_comment_flattening(
+            processor._parse_original_specs(spec_file)
+        )
+
+        joined = "\n".join(notices)
+        assert len(notices) == 2
+        assert "'demo_image'" in joined
+        assert "images (reduced to their alt text)" in joined
+        assert "'demo_conf.inner'" in joined
+        assert "thematic breaks" in joined
+        assert "demo_plain" not in joined
+
     def test_validate_sensitive_candidates(self, temp_dir: Path) -> None:
         """Secret-looking names without no_log produce a notice (issue #24)."""
         processor = RoleProcessor()

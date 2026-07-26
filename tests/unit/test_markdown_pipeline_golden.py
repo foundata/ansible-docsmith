@@ -56,6 +56,8 @@ DESCRIPTION_CORPUS = {
     "bare_url": "See https://example.com now.",
     "emphasis_strong": "*em* and **strong**.",
     "blockquote": "> quoted text",
+    "blockquote_multi_paragraph": "> para one\n>\n> para two",
+    "blockquote_nested": "> outer\n> > inner quote",
     "thematic_break": "before\n\n---\n\nafter",
     "image": "An ![alt text](img.png) image.",
     "escaped_star": "\\*not emphasis\\*",

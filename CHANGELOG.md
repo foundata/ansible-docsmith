@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Block quotes in variable descriptions keep their `>` marker in `defaults/` comment blocks instead of being flattened to plain text (#28).
+- Backslash-escaped Markdown in descriptions (like `\*literal asterisks\*`) is re-emitted in its escaped source form in `defaults/` comment blocks and generated ToC entries, so it can no longer be mistaken for emphasis markers (#28).
+- `validate` now emits a notice when a description contains constructs that `defaults/` comment blocks cannot render fully — images (reduced to their alt text), raw HTML blocks and thematic breaks (both dropped); the README keeps them (#28).
 - Custom reStructuredText templates work now: `--template-readme` with a `*.rst.j2` file was mistakenly registered as a Markdown template, making generation fail for RST roles (found while working on #27).
 - Long `# - Choices:` lines in generated `defaults/` comment blocks are now wrapped at the same 80-column budget as descriptions, with continuation lines aligned below the content (#31). Long single-line `Default:` values and `List elements:` share the new wrapping; a single token longer than the budget (like a URL) stays whole. This lets roles with many choices drop `yaml[line-length]` ignore entries for their defaults files.
 - Removed the deprecated `License :: OSI Approved :: ...` trove classifier that duplicated the SPDX `license`/`license-files` metadata and triggered a PEP 639 deprecation warning during builds (#25).

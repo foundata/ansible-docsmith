@@ -608,6 +608,22 @@ class DefaultsCommentGenerator:
         elif node.type in ("bullet_list", "ordered_list"):
             # For lists, respect the AST list type and nesting
             return self._format_list_node(node, max_width, indent_level)
+        elif node.type == "blockquote":
+            # Preserve block quotes: format the quoted blocks with a
+            # reduced width, then prefix every line with "> " (empty
+            # separator lines between quoted paragraphs become ">")
+            inner_width = max_width - 2 if max_width > 0 else 0
+            quoted_parts = []
+            for child in node.children:
+                formatted = self._format_ast_node(child, inner_width, indent_level)
+                if formatted:
+                    quoted_parts.append(formatted)
+            lines: list[str] = []
+            for index, part in enumerate(quoted_parts):
+                if index:
+                    lines.append(">")
+                lines.extend(f"> {line}" if line else ">" for line in part.split("\n"))
+            return "\n".join(lines)
         elif node.type in ("fence", "code_block"):
             # For code blocks (fenced or indented), preserve content exactly
             # including language info and existing indentation; always
@@ -659,6 +675,13 @@ class DefaultsCommentGenerator:
                 text_parts.append(self._format_inline_content(child))
             elif child.type == "text":
                 text_parts.append(child.content)
+            elif child.type == "text_special":
+                # Backslash escapes keep their original source form so
+                # that e.g. "\*literal asterisks\*" cannot be mistaken
+                # for emphasis markers; entities render as their character
+                text_parts.append(
+                    child.markup if child.info == "escape" else child.content
+                )
             elif child.type == "softbreak":
                 text_parts.append(" ")
             elif child.type == "code_inline":
