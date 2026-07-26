@@ -15,6 +15,10 @@ from .markdown_ast import parse_markdown
 from .markup import convert_ansible_markup
 from .text import normalize_description
 
+# Total line budget for generated comment lines, including the "# "
+# prefix. Descriptions are wrapped to the same budget (max_width=78).
+COMMENT_LINE_LENGTH = 80
+
 
 class DefaultsCommentGenerator:
     """Add block comments above variables in entry-point files from argument specs."""
@@ -163,12 +167,16 @@ class DefaultsCommentGenerator:
         choices = var_spec.get("choices")
         if choices:
             formatted_choices = ", ".join(str(choice) for choice in choices)
-            details.append(f"# {indent}- Choices: {formatted_choices}")
+            details.extend(
+                self._wrap_detail_bullet("Choices", formatted_choices, indent)
+            )
 
         # List elements
         elements = var_spec.get("elements")
         if elements:
-            details.append(f"# {indent}- List elements: {elements}")
+            details.extend(
+                self._wrap_detail_bullet("List elements", str(elements), indent)
+            )
 
         # Nested options ("dict attributes"), see issue #21
         suboptions = var_spec.get("options")
@@ -222,11 +230,42 @@ class DefaultsCommentGenerator:
 
         return lines
 
+    def _wrap_detail_bullet(self, label: str, text: str, indent: str) -> list[str]:
+        """Wrap a '# {indent}- {label}: {text}' bullet at the line budget.
+
+        Continuation lines align below the bullet content. A single token
+        longer than the remaining budget (like a long URL) stays on its
+        own line rather than being cut.
+        """
+        first_prefix = f"# {indent}- {label}: "
+        cont_prefix = f"# {indent}  "
+
+        if len(first_prefix) + len(text) <= COMMENT_LINE_LENGTH:
+            return [f"{first_prefix}{text}"]
+
+        wrapped: list[str] = []
+        current = ""
+        capacity = COMMENT_LINE_LENGTH - len(first_prefix)
+        for word in text.split():
+            candidate = f"{current} {word}" if current else word
+            if len(candidate) <= capacity or not current:
+                current = candidate
+            else:
+                wrapped.append(current)
+                current = word
+                capacity = COMMENT_LINE_LENGTH - len(cont_prefix)
+        if current:
+            wrapped.append(current)
+
+        return [f"{first_prefix}{wrapped[0]}"] + [
+            f"{cont_prefix}{line}" for line in wrapped[1:]
+        ]
+
     def _format_default_comment(self, default: Any, indent: str = "") -> list[str]:
         """Format a default value as one or more comment lines."""
         formatted_default = self._format_default_value(default)
         if "\n" not in formatted_default:
-            return [f"# {indent}- Default: {formatted_default}"]
+            return self._wrap_detail_bullet("Default", formatted_default, indent)
 
         return [
             f"# {indent}- Default:",

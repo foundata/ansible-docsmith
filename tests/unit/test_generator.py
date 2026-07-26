@@ -806,6 +806,122 @@ class TestDefaultsCommentGenerator:
 
         assert "# keep this comment" in cleaned
 
+    def test_long_choices_are_wrapped(self) -> None:
+        """Long choice lists wrap at the 80-column budget (issue #31)."""
+        generator = DefaultsCommentGenerator()
+
+        choices = [
+            "btree",
+            "cdb",
+            "cidr",
+            "dbm",
+            "environ",
+            "fail",
+            "hash",
+            "inline",
+            "internal",
+            "lmdb",
+            "ldap",
+            "memcache",
+            "mongodb",
+            "mysql",
+            "netinfo",
+            "nis",
+            "nisplus",
+            "pcre",
+            "pipemap",
+            "pgsql",
+            "proxy",
+            "randmap",
+            "regexp",
+            "sdbm",
+            "socketmap",
+            "sqlite",
+            "static",
+            "tcp",
+            "texthash",
+            "unionmap",
+            "unix",
+        ]
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Lookup table type.",
+                "type": "str",
+                "required": False,
+                "choices": choices,
+            }
+        )
+
+        assert all(len(line) <= 80 for line in comment_lines)
+        # First line carries the label, continuations align below the content
+        choices_lines = [
+            line
+            for line in comment_lines
+            if line.startswith("# - Choices:") or line.startswith("#   ")
+        ]
+        assert choices_lines[0].startswith("# - Choices: btree, cdb,")
+        assert choices_lines[1].startswith("#   ")
+        # All values survive the wrapping
+        joined = " ".join(line.lstrip("# ") for line in choices_lines)
+        for choice in choices:
+            assert choice in joined
+
+    def test_long_choices_wrap_with_nested_indent(self) -> None:
+        """Choice wrapping respects the deeper indent of dict attributes."""
+        generator = DefaultsCommentGenerator()
+
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Top.",
+                "type": "dict",
+                "options": {
+                    "table_type": {
+                        "type": "str",
+                        "description": "Lookup table type.",
+                        "choices": [f"choice_value_{i:02d}" for i in range(12)],
+                    }
+                },
+            }
+        )
+
+        assert all(len(line) <= 80 for line in comment_lines)
+        start = next(
+            line for line in comment_lines if "- Choices: choice_value_00" in line
+        )
+        assert start.startswith("#     - Choices: ")
+        continuation = comment_lines[comment_lines.index(start) + 1]
+        assert continuation.startswith("#       choice_value_")
+
+    def test_oversized_single_token_stays_whole(self) -> None:
+        """A single token longer than the budget is not cut."""
+        generator = DefaultsCommentGenerator()
+
+        long_url = "https://example.com/" + "x" * 90
+        lines = generator._wrap_detail_bullet("Default", long_url, "")
+
+        assert lines == [f"# - Default: {long_url}"] or (
+            lines[0] == "# - Default:" and long_url in "".join(lines)
+        )
+        # The token itself is never split
+        assert any(long_url in line for line in lines)
+
+    def test_long_single_line_default_is_wrapped(self) -> None:
+        """Long single-line default values wrap like choices do."""
+        generator = DefaultsCommentGenerator()
+
+        long_default = "word " * 30
+        comment_lines = generator._format_block_comment(
+            {
+                "description": "Var.",
+                "type": "str",
+                "required": False,
+                "default": long_default.strip(),
+            }
+        )
+
+        assert all(len(line) <= 80 for line in comment_lines)
+        assert any(line.startswith("# - Default: word") for line in comment_lines)
+
     def test_block_comment_documents_nested_options(self) -> None:
         """Nested options (dict attributes) are documented, see issue #21."""
         generator = DefaultsCommentGenerator()

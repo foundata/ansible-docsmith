@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Long `# - Choices:` lines in generated `defaults/` comment blocks are now wrapped at the same 80-column budget as descriptions, with continuation lines aligned below the content (#31). Long single-line `Default:` values and `List elements:` share the new wrapping; a single token longer than the budget (like a URL) stays whole. This lets roles with many choices drop `yaml[line-length]` ignore entries for their defaults files.
 - Removed the deprecated `License :: OSI Approved :: ...` trove classifier that duplicated the SPDX `license`/`license-files` metadata and triggered a PEP 639 deprecation warning during builds (#25).
 
 
