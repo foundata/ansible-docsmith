@@ -39,7 +39,7 @@ IMPORT_NAME="ansible_docsmith"
 COMMAND_NAME="ansible-docsmith"
 
 WORK_DIR="$(mktemp -d)"
-trap 'rm -rf "$WORK_DIR"' EXIT
+trap 'rm -rf "$WORK_DIR"; git -C "$PKG_DIR" worktree prune >/dev/null 2>&1 || true' EXIT
 
 log() { printf '\n=== %s ===\n' "$*"; }
 
@@ -75,10 +75,48 @@ run_tests_matrix() {
 }
 
 build_artifacts() {
-    log "Build wheel and source distribution"
+    # Build from a pristine checkout of HEAD: the developer tree carries
+    # ignored litter (tool caches, editor droppings) that must never decide
+    # what ships. Local uncommitted changes are deliberately not built; a
+    # release is a commit, not a working tree.
+    log "Build wheel and source distribution (clean checkout of HEAD)"
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "note: local changes present; artifacts are built from HEAD without them"
+    fi
+    local clean_dir="${WORK_DIR}/clean-src"
+    git worktree add --detach --quiet "$clean_dir" HEAD
     rm -rf dist
-    uv build
+    (cd "$clean_dir" && uv build --out-dir "${PKG_DIR}/dist")
+    git worktree remove --force "$clean_dir"
     ls -1 dist
+
+    log "Artifact hygiene (no caches or bytecode inside)"
+    uv run python - dist/* <<'PY'
+import sys
+import tarfile
+import zipfile
+
+bad: list[str] = []
+for name in sys.argv[1:]:
+    if name.endswith(".whl"):
+        entries = zipfile.ZipFile(name).namelist()
+    else:
+        with tarfile.open(name) as archive:
+            entries = archive.getnames()
+    for entry in entries:
+        parts = entry.split("/")
+        if any(
+            part == "__pycache__" or (part.startswith(".") and "cache" in part)
+            for part in parts
+        ) or entry.endswith(".pyc"):
+            bad.append(f"{name}: {entry}")
+if bad:
+    print("error: developer litter inside release artifacts:", file=sys.stderr)
+    for line in bad:
+        print(f"  {line}", file=sys.stderr)
+    raise SystemExit(1)
+print(f"clean: {len(sys.argv) - 1} artifact(s) checked")
+PY
 }
 
 smoke_test_matrix() {
@@ -110,6 +148,18 @@ smoke_test_matrix() {
             exit 1
         fi
         echo "import ok: ${IMPORT_NAME} ${installed_version}"
+
+        # Distribution metadata must agree with the runtime version; the
+        # __version__ check above cannot see a stale pyproject version.
+        local meta_version
+        meta_version="$("$venv/bin/python" -c \
+            "from importlib.metadata import version; print(version('${DIST_NAME}'))")"
+        if [ "$meta_version" != "$installed_version" ]; then
+            echo "error: version skew: metadata ${meta_version}," \
+                 "runtime ${installed_version}" >&2
+            exit 1
+        fi
+        echo "metadata ok: ${DIST_NAME} ${meta_version}"
 
         # Command-line smoke test against the installed console script.
         "$venv/bin/${COMMAND_NAME}" --version >/dev/null
