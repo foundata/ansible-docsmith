@@ -378,6 +378,10 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    uv build
    ls -1 "./dist" # a wheel and a source distribution, both carrying the new version
    ```
+   Validate exactly these files before uploading; the release check in step 1 ran before the version bump and the README preparation, so it never saw them. This verifies the version, the tag on `HEAD`, the prepared README and that the working tree carries no other changes:
+   ```sh
+   scripts/release-check.sh --artifacts
+   ```
    Uploading needs a PyPI API token with upload rights for the project. `uv publish` reads it from `UV_PUBLISH_TOKEN`; keep the value out of the shell history and out of command lines visible in the process list:
    ```sh
    printf 'PyPI API token: '

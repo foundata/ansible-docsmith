@@ -12,8 +12,16 @@
 #
 # Usage:
 #   scripts/release-check.sh [PYTHON_VERSION ...]
+#   scripts/release-check.sh --artifacts
 #
 # Without arguments the supported version matrix below is used.
+#
+# --artifacts validates the artifacts currently in dist/ without rebuilding
+# them: the exact files "uv publish" would upload. The main gate runs before
+# the version bump and the PyPI README preparation, so it never sees those;
+# this mode checks litter, version and tag agreement, the prepared README
+# and that the working tree differs from HEAD in nothing but that README.
+# Run it directly before uploading.
 
 set -euo pipefail
 
@@ -24,7 +32,10 @@ export UV_LINK_MODE=copy
 # Supported Python versions (keep in sync with pyproject classifiers and the
 # README). Override by passing versions as arguments.
 SUPPORTED_PYTHONS=("3.11" "3.12" "3.13")
-if [ "$#" -gt 0 ]; then
+ARTIFACTS_ONLY="no"
+if [ "${1:-}" = "--artifacts" ]; then
+    ARTIFACTS_ONLY="yes"
+elif [ "$#" -gt 0 ]; then
     SUPPORTED_PYTHONS=("$@")
 fi
 
@@ -89,7 +100,10 @@ build_artifacts() {
     (cd "$clean_dir" && uv build --out-dir "${PKG_DIR}/dist")
     git worktree remove --force "$clean_dir"
     ls -1 dist
+    check_artifact_hygiene
+}
 
+check_artifact_hygiene() {
     log "Artifact hygiene (no caches or bytecode inside)"
     uv run python - dist/* <<'PY'
 import sys
@@ -117,6 +131,119 @@ if bad:
     raise SystemExit(1)
 print(f"clean: {len(sys.argv) - 1} artifact(s) checked")
 PY
+}
+
+validate_artifacts() {
+    # Pre-publish validation of dist/ exactly as it lies there. The rebuild
+    # after the version bump and the README preparation happens from the
+    # working tree on purpose (the prepared README only exists there), so
+    # these are the only checks the uploaded bytes ever get.
+    if ! ls dist/*.whl >/dev/null 2>&1; then
+        echo "error: no artifacts in dist/ -- run 'uv build' first" >&2
+        exit 1
+    fi
+    check_artifact_hygiene
+
+    log "Tree state, version, tag and prepared README"
+    uv run python - dist/* <<'PY'
+import re
+import subprocess
+import sys
+import tarfile
+import zipfile
+from pathlib import Path
+
+errors: list[str] = []
+
+# The working tree may differ from the tagged HEAD in exactly the prepared
+# README; anything else would ship untested content.
+status = subprocess.run(
+    ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+).stdout
+for line in status.splitlines():
+    code, path = line[:2], line[3:]
+    if code.strip() == "M" and path == "README.md":
+        continue
+    if code == "??":
+        if path.startswith("src/"):
+            errors.append(f"untracked file would enter the artifacts: {path}")
+        continue
+    errors.append(f"tree differs from HEAD beyond the prepared README: {line}")
+
+match = re.search(
+    r'__version__ = "([^"]+)"',
+    Path("src/ansible_docsmith/__init__.py").read_text(),
+)
+version = match.group(1) if match else ""
+if not version:
+    errors.append("cannot read __version__ from src/ansible_docsmith/__init__.py")
+tags = subprocess.run(
+    ["git", "tag", "--points-at", "HEAD"], capture_output=True, text=True, check=True
+).stdout.split()
+if version and f"v{version}" not in tags:
+    errors.append(
+        f"no v{version} tag on HEAD (found: {tags or 'none'}); "
+        "artifacts must be built from the tagged release state"
+    )
+
+def metadata_text(artifact: str) -> str:
+    if artifact.endswith(".whl"):
+        with zipfile.ZipFile(artifact) as bundle:
+            meta = next(n for n in bundle.namelist() if n.endswith(".dist-info/METADATA"))
+            return bundle.read(meta).decode("utf-8", errors="replace")
+    with tarfile.open(artifact) as bundle:
+        meta = next(n for n in bundle.getnames() if n.endswith("/PKG-INFO"))
+        member = bundle.extractfile(meta)
+        assert member is not None
+        return member.read().decode("utf-8", errors="replace")
+
+relative_link = re.compile(r"\]\((?!https?://|#|mailto:)")
+for artifact in sys.argv[1:]:
+    text = metadata_text(artifact)
+    headers, _, description = text.partition("\n\n")
+    meta_version = ""
+    for line in headers.splitlines():
+        if line.startswith("Version:"):
+            meta_version = line.split(":", 1)[1].strip()
+    if meta_version != version:
+        errors.append(f"{artifact}: metadata version {meta_version} != {version}")
+    if version and version not in Path(artifact).name:
+        errors.append(f"{artifact}: file name does not carry version {version}")
+    # The PyPI page is this description; relative links break on pypi.org.
+    if len(description) < 5000:
+        errors.append(
+            f"{artifact}: description is {len(description)} chars; "
+            "looks unprepared (see the release checklist)"
+        )
+    hits = relative_link.findall(description)
+    if hits:
+        errors.append(
+            f"{artifact}: description contains {len(hits)} relative link(s); "
+            "run the README preparation first"
+        )
+
+if errors:
+    for line in errors:
+        print(f"error: {line}", file=sys.stderr)
+    raise SystemExit(1)
+print(f"consistent: {len(sys.argv) - 1} artifact(s) at {version}, tag v{version} on HEAD")
+PY
+
+    log "Install + smoke test of the artifacts (clean environment)"
+    local venv="${WORK_DIR}/venv-artifacts"
+    uv venv "$venv" >/dev/null
+    uv pip install --python "$venv/bin/python" dist/*.whl >/dev/null
+    "$venv/bin/${COMMAND_NAME}" --version >/dev/null
+    local runtime_version meta_version
+    runtime_version="$("$venv/bin/python" -c "import ${IMPORT_NAME}; print(${IMPORT_NAME}.__version__)")"
+    meta_version="$("$venv/bin/python" -c "from importlib.metadata import version; print(version('${DIST_NAME}'))")"
+    if [ "$meta_version" != "$runtime_version" ]; then
+        echo "error: version skew after install: runtime ${runtime_version}," \
+             "metadata ${meta_version}" >&2
+        exit 1
+    fi
+    echo "install ok: ${DIST_NAME} ${meta_version}"
+    log "Artifacts are ready to publish"
 }
 
 smoke_test_matrix() {
@@ -170,6 +297,11 @@ smoke_test_matrix() {
 
 main() {
     require_uv
+    if [ "$ARTIFACTS_ONLY" = "yes" ]; then
+        echo "Artifact validation for ${DIST_NAME}"
+        validate_artifacts
+        return
+    fi
     echo "Release check for ${DIST_NAME}"
     echo "Python versions: ${SUPPORTED_PYTHONS[*]}"
     ensure_pythons
