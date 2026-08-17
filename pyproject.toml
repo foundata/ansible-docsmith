@@ -56,6 +56,13 @@ Repository = "https://foundata.com/en/projects/ansible-docsmith/#source"
 Issues = "https://foundata.com/en/projects/ansible-docsmith/#issues"
 Changelog = "https://foundata.com/en/projects/ansible-docsmith/#changelog"
 
+[tool.uv.build-backend]
+# Developer-tree litter must never ship: uv_build excludes __pycache__ by
+# itself but not other tool caches sitting inside src/ (this bit the
+# scanmole-gui 1.0.0 wheel).
+source-exclude = ["**/.mypy_cache", "**/.ruff_cache", "**/.pytest_cache"]
+wheel-exclude = ["**/.mypy_cache", "**/.ruff_cache", "**/.pytest_cache"]
+
 [build-system]
 requires = ["uv_build>=0.11.0,<0.12.0"]
 build-backend = "uv_build"
