@@ -34,13 +34,13 @@ This file provides information for maintainers and contributors to `ansible-docs
 ## Getting started<a id="getting-started"></a>
 
 1. Clone the repository:
-   ```bash
+   ```sh
    git clone https://github.com/foundata/ansible-docsmith.git
    cd ansible-docsmith
    ```
 2. Set up development environment:
    Install dependencies using `uv` (recommended):
-   ```bash
+   ```sh
    # Install all dependencies including development dependencies
    uv sync --all-groups
 
@@ -48,7 +48,7 @@ This file provides information for maintainers and contributors to `ansible-docs
    uv sync
    ```
    Or using `pip` (fallback):
-   ```bash
+   ```sh
    # Create virtual environment
    python -m venv .venv
    source .venv/bin/activate
@@ -58,7 +58,7 @@ This file provides information for maintainers and contributors to `ansible-docs
    pip install pytest  # For testing
    ```
 3. Test that the installation works:
-   ```bash
+   ```sh
    # Show help
    uv run ansible-docsmith --help
 
@@ -140,7 +140,7 @@ The linting and formatting tool can take care of most of the rules (see next sec
 
 The project uses [Ruff](https://docs.astral.sh/ruff/) for both linting and formatting. Ruff is installed as a development dependency:
 
-```bash
+```sh
 # Format code (equivalent to Black)
 uv run ruff format .
 
@@ -156,7 +156,7 @@ uv run ruff check --select E,W,F .
 
 **Important**: Always run formatting and linting before committing:
 
-```bash
+```sh
 # Format and lint in one go
 uv run ruff format . && uv run ruff check --fix .
 ```
@@ -170,7 +170,7 @@ The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
 
 Execute the test suite to verify your changes:
 
-```bash
+```sh
 # Run all tests
 uv run pytest
 uv run python -m pytest # alternative call
@@ -182,7 +182,7 @@ uv run python -m pytest -v # alternative call
 
 More examples:
 
-```bash
+```sh
 # Run a specific test file
 uv run pytest tests/unit/test_generator.py
 
@@ -212,7 +212,7 @@ Test your changes with real-world scenarios:
 
 Always use `--dry-run` when testing with fixture files to prevent modifications!
 
-```bash
+```sh
 # Test with example role fixture (read-only)
 uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 uv run ansible-docsmith generate tests/fixtures/example-role-multiple-entry-points --dry-run
@@ -237,7 +237,7 @@ uv run ansible-docsmith generate tests/fixtures/example-role-multiple-entry-poin
 
 If you need to test actual file creation/modification, create a temporary copy:
 
-```bash
+```sh
 # Create temporary copies for testing
 cp -r tests/fixtures/example-role-* /tmp
 
@@ -274,12 +274,12 @@ When adding new features or fixing bugs:
 ### Before making changes<a id="before-making-changes"></a>
 
 1. **Create a feature branch**:
-   ```bash
+   ```sh
    git checkout -b feature/your-feature-name
    ```
 
 2. **Ensure tests pass**:
-   ```bash
+   ```sh
    uv run pytest
    ```
 
@@ -295,7 +295,7 @@ When adding new features or fixing bugs:
 
 Always run this checklist before committing:
 
-```bash
+```sh
 # 1. Format code
 uv run ruff format .
 
@@ -314,7 +314,7 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 ## Releases<a id="releases"></a>
 
 1. Run the release checks and only continue if everything passes:
-   ```bash
+   ```sh
    ./scripts/release-check.sh
    ```
    This runs formatting, linting, type checks and the test suite on every
@@ -327,9 +327,9 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    - [`pyproject.toml`](./pyproject.toml): the `version` variable.
    - [`src/ansible_docsmith/__init__.py`](./src/ansible_docsmith/__init__.py): the `__version__` variable.
    - The following snippet can help with the Python files (but double check `uv.lock` that only the package's own version gets replaced)
-     ```bash
-     old_version="<FIXME version>" # FIXME major.minor.patch
-     new_version="<FIXME version>" # FIXME major.minor.patch
+     ```sh
+     old_version="<FIXME version>" # major.minor.patch
+     new_version="<FIXME version>" # major.minor.patch
 
      files=(
       "./uv.lock"
@@ -351,14 +351,14 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
      ```
 
 4. If everything is fine: commit the changes, tag the release and push:
-   ```bash
-   version="<FIXME version>" # FIXME major.minor.patch
+   ```sh
+   version="<FIXME version>" # major.minor.patch
    git add \
      "./CHANGELOG.md" \
      "./uv.lock" \
      "./pyproject.toml" \
      "./src/ansible_docsmith/__init__.py"
-   git commit -m "Release preparations: v${version}"
+   git commit -m "release: prepare ${version}"
 
    git tag "v${version}" "$(git rev-parse --verify HEAD)" -m "version ${version}"
    git show "v${version}"
@@ -366,16 +366,44 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    git push origin main --follow-tags
    ```
    If something minor went wrong (like missing `CHANGELOG.md` update), delete the tag and start over:
-   ```bash
+   ```sh
    git tag -d "v${version}" # delete the old tag locally
    git push origin ":refs/tags/v${version}" # delete the old tag remotely
    ```
    This is *only* possible if there was no [GitHub release](https://github.com/foundata/ansible-docsmith/releases/). Use a new patch version number otherwise.
-5. Use [GitHub's release feature](https://github.com/foundata/ansible-docsmith/releases/new), select the tag you pushed and create a new release:
-   * Use `v<version>` as title
-   * A description is optional. In doubt, use `See CHANGELOG.md for more information about this release.`
-6. Check if the GitHub API delivers the correct version as `latest`:
-   ```bash
+5. Prepare the `README.md` that ships with the artifacts by rewriting its relative links as absolute GitHub URLs (see Wiki "Process: Release Python artifacts"; an internal `foundata` helper script is available for this). These changes are made only in the working tree between the tag and the upload; nothing is ever committed. This is why the step belongs here rather than before step 4.
+6. Build the package and publish it to [PyPI](https://pypi.org/project/ansible-docsmith/). The build in step 1 ran before the version bump, so `dist/` still holds artifacts of the old version and has to be rebuilt:
+   ```sh
+   rm -rf "./dist"
+   uv build
+   ls -1 "./dist" # a wheel and a source distribution, both carrying the new version
+   ```
+   Uploading needs a PyPI API token with upload rights for the project. `uv publish` reads it from `UV_PUBLISH_TOKEN`; keep the value out of the shell history and out of command lines visible in the process list:
+   ```sh
+   printf 'PyPI API token: '
+   read -rs UV_PUBLISH_TOKEN
+   printf '\n'
+   export UV_PUBLISH_TOKEN
+
+   uv publish
+   unset UV_PUBLISH_TOKEN
+   ```
+   A version number can be uploaded only once. A broken release cannot be replaced, only [yanked](https://pypi.org/help/#yanked), and the fix needs a new patch version.
+
+   Throw the prepared `README.md` away once the upload succeeded:
+   ```sh
+   git restore "./README.md"
+   git status # expect a clean working tree
+   ```
+7. Verify that the published package installs and runs from PyPI:
+   ```sh
+   uv run --isolated --no-project --with "ansible-docsmith==${version}" -- ansible-docsmith --version
+   ```
+8. Use [GitHub's release feature](https://github.com/foundata/ansible-docsmith/releases/new), select the tag you pushed and create a new release:
+   - Use `v<version>` as title
+   - A description is optional. In doubt, use `See CHANGELOG.md for more information about this release.`
+9. Check if the GitHub API delivers the correct version as `latest`:
+   ```sh
    curl -s -L https://api.github.com/repos/foundata/ansible-docsmith/releases/latest | jq -r '.tag_name' | sed -e 's/^v//g'
    ```
 
