@@ -10,12 +10,13 @@ This file provides information for maintainers and contributors to `ansible-docs
 - [Project structure](#project-structure)
 - [Development standards](#development-standards)
   - [Code formatting and linting](#code-linting)
+  - [Commit messages and scopes](#commit-scopes)
 - [Testing](#testing)
   - [Running tests](#running-tests)
-   - [Manual testing examples](#manual-testing)
+  - [Manual testing examples](#manual-testing)
   - [Test structure](#test-structure)
   - [Writing tests](#writing-tests)
-- [Recommended development Workflow](#development-workflow)
+- [Recommended development workflow](#development-workflow)
   - [Before making changes](#before-making-changes)
   - [Making changes](#making-changes)
   - [Before committing](#before-committing)
@@ -29,6 +30,7 @@ This file provides information for maintainers and contributors to `ansible-docs
 - **Python 3.11 or later** - Required for running the application.
 - **Git** - For version control
 - **[`uv`](https://docs.astral.sh/uv/getting-started/installation/)** - Python package manager (recommended) or `pip` as fallback
+- **[shfmt](https://github.com/mvdan/sh)** and **[shellcheck](https://www.shellcheck.net/)** for `scripts/release-check.sh`'s self-check. Fedora: `sudo dnf install shfmt ShellCheck`. Debian 13+ / Ubuntu 24.04+: `sudo apt install shfmt shellcheck`. The release gate fails without them.
 
 
 ## Getting started<a id="getting-started"></a>
@@ -121,7 +123,7 @@ ansible-docsmith/
 ```
 
 
-## Development Standards<a id="development-standard"></a>
+## Development standards<a id="development-standards"></a>
 
 This project follows these coding standards and rules:
 
@@ -162,6 +164,25 @@ uv run ruff format . && uv run ruff check --fix .
 ```
 
 The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
+
+Shell scripts follow [`guidelines/shell-scripting-style-guide.md`](https://github.com/foundata/guidelines) and are checked with the tools and option sets it prescribes. `scripts/release-check.sh` runs them over every shipped script, including itself, so the quickest way to check a shell-script change is to run that step.
+
+
+### Commit messages and scopes<a id="commit-scopes"></a>
+
+Commit messages follow the foundata guideline (`guidelines/git-commits.md`): `<scope>: <description>`, imperative, lowercase description, body only for context the diff cannot preserve. Scopes in use:
+
+| Scope | Area |
+|---|---|
+| `cli` | `src/ansible_docsmith/cli.py` |
+| `core` | `src/ansible_docsmith/core/` (collection, parsing, processing, markup, README/entry-point generation) |
+| `templates` | `src/ansible_docsmith/templates/` |
+| `utils` | `src/ansible_docsmith/utils/` |
+| `tests` | the test suite |
+| `build`, `dependencies` | packaging, lockfile |
+| `licensing`, `release`, `repository`/`repo` | licensing files, release preparation, repository-wide concerns |
+
+`docs` is not a scope: the foundata guideline lists it among the Conventional Commits types a scope must not be written as. A commit that only changes documentation still uses the scope of the subsystem it documents (`core: record the marker contract`), or a cross-cutting scope such as `repository` when the documentation is not about one subsystem.
 
 
 ## Testing<a id="testing"></a>
@@ -317,9 +338,11 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    ```sh
    ./scripts/release-check.sh
    ```
-   This runs formatting, linting, type checks and the test suite on every
-   supported Python version, then builds the wheel and source distribution and
-   smoke-tests the installed artifact (import and CLI). See also [Testing](#testing).
+   This runs formatting, linting, type checks, the shell-script checks (`shfmt`
+   and `shellcheck` over every shipped script, plus a dialect parse) and the
+   test suite on every supported Python version, then builds the wheel and
+   source distribution and smoke-tests the installed artifact (import and
+   CLI). See also [Testing](#testing).
 2. Determine the next version number. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 3. Update several files to match the new release version:
    - [`CHANGELOG.md`](./CHANGELOG.md): Insert a section for the new release. Do not forget the comparison link at the end of the file.
