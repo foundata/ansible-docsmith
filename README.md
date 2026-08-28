@@ -372,6 +372,8 @@ The [`REUSE.toml`](./REUSE.toml) file provides detailed licensing and copyright 
 * Red Hat® is a trademark of Red Hat, Inc., registered in the US and other countries.
 * Ansible® is a trademark of Red Hat, Inc., registered in the US and other countries.
 
+Their use here is purely descriptive and does not imply any affiliation with or endorsement by the trademark holders.
+
 
 ## Author information<a id="author-information"></a>
 
