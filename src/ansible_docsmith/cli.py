@@ -5,6 +5,7 @@ Ansible-DocSmith CLI - Generate Ansible role documentation from argument_specs.y
 
 import difflib
 import logging
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,21 @@ app = typer.Typer(
 )
 console = Console()
 LOGGER = logging.getLogger(__name__)
+
+
+class _FormatType(StrEnum):
+    """README formats accepted by the command line."""
+
+    AUTO = "auto"
+    MARKDOWN = "markdown"
+    RST = "rst"
+
+
+class _TocBulletStyle(StrEnum):
+    """Markdown bullet styles accepted by the command line."""
+
+    ASTERISK = "*"
+    HYPHEN = "-"
 
 
 def _display_header() -> None:
@@ -68,8 +84,8 @@ def generate(
     output_readme: bool = typer.Option(
         True, "--readme/--no-readme", help="Generate/update README documentation"
     ),
-    format_type: str = typer.Option(
-        "auto",
+    format_type: _FormatType = typer.Option(
+        _FormatType.AUTO,
         "--format",
         help="Output format: 'auto', 'markdown' or 'rst' (auto detects from files)",
         case_sensitive=False,
@@ -97,7 +113,7 @@ def generate(
     verbose: bool = typer.Option(
         False, "-v", "--verbose", help="Enable verbose logging"
     ),
-    readme_toc_list_bulletpoints: str | None = typer.Option(
+    readme_toc_list_bulletpoints: _TocBulletStyle | None = typer.Option(
         None,
         "--readme-toc-list-bulletpoints",
         help=(
@@ -122,19 +138,9 @@ def generate(
     if check:
         dry_run = True
 
-    # Validate format type
-    if format_type.lower() not in ["auto", "markdown", "rst"]:
-        console.print("[red]Error: Format must be 'auto', 'markdown' or 'rst'[/red]")
-        raise typer.Exit(1)
-
     # Validate template file extension if provided
     if template_readme and not template_readme.name.endswith(".j2"):
         console.print("[red]Error: Template file must have .j2 extension[/red]")
-        raise typer.Exit(1)
-
-    # Validate TOC bullet style if provided
-    if readme_toc_list_bulletpoints and readme_toc_list_bulletpoints not in ["*", "-"]:
-        console.print("[red]Error: TOC bullet style must be '*' or '-'[/red]")
         raise typer.Exit(1)
 
     is_collection = detect_project_type(path) == "collection"
@@ -247,8 +253,8 @@ def validate(
         file_okay=False,
         dir_okay=True,
     ),
-    format_type: str = typer.Option(
-        "auto",
+    format_type: _FormatType = typer.Option(
+        _FormatType.AUTO,
         "--format",
         help="Expected format: 'auto', 'markdown' or 'rst' (auto detects from files)",
         case_sensitive=False,
@@ -279,13 +285,6 @@ def validate(
     console.print(f"[green]Validating:[/green] {path}")
 
     try:
-        # Validate format type
-        if format_type.lower() not in ["auto", "markdown", "rst"]:
-            console.print(
-                "[red]Error: Format must be 'auto', 'markdown' or 'rst'[/red]"
-            )
-            raise typer.Exit(1)
-
         if detect_project_type(path) == "collection":
             _validate_collection(
                 path,
