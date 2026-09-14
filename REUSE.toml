@@ -1,6 +1,6 @@
 version = 1
 SPDX-PackageName = "Ansible DocSmith: role documentation automation (helper using argument_specs.yml)"
-SPDX-PackageDownloadLocation = "https://github.com/foundata/ansible-docsmith"
+SPDX-PackageDownloadLocation = "https://foundata.com/en/projects/ansible-docsmith/#releases"
 SPDX-PackageSupplier = "foundata GmbH (https://foundata.com)"
 SPDX-PackageComment = """
 This project may include calls to Application Programming Interfaces

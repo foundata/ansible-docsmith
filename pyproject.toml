@@ -107,7 +107,7 @@ select = [
 python_version = "3.11"
 strict = true
 enable_error_code = ["explicit-override"]  # Extends strict mode.
-warn_unreachable = true                     # Extends strict mode.
+warn_unreachable = true                    # Extends strict mode.
 
 [tool.pytest.ini_options]
 addopts = [
