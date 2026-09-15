@@ -394,19 +394,20 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 3. Update several files to match the new release version:
    - [`CHANGELOG.md`](./CHANGELOG.md): Insert a section for the new release. Do
      not forget the comparison link at the end of the file.
-   - [`uv.lock`](./uv.lock): the `version` variable.
+   - [`uv.lock`](./uv.lock): updated by running `uv lock` after the
+     `pyproject.toml` bump, never edited by hand. It records a version per
+     package, so a hand-edited lockfile can claim a dependency version that was
+     never resolved.
    - [`pyproject.toml`](./pyproject.toml): the `version` variable.
    - [`src/ansible_docsmith/__init__.py`](./src/ansible_docsmith/__init__.py):
      the `__version__` variable.
-   - The following snippet can help with the Python files (but double check
-     `uv.lock` that only the package's own version gets replaced)
+   - The following snippet can help with the Python files:
 
      ```sh
      old_version="<FIXME version>" # major.minor.patch
      new_version="<FIXME version>" # major.minor.patch
 
      files=(
-      "./uv.lock"
       "./pyproject.toml"
       "./src/ansible_docsmith/__init__.py"
      )
@@ -422,6 +423,8 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
        grep -B 1 -E "^([[:space:]]*(__version__|version)[[:space:]]*[:=][[:space:]]*)\"?${new_version}\"?$" "$file" || true
        echo
      done
+
+     uv lock # the lockfile records the project version
      ```
 
 4. If everything is fine: commit the changes, tag the release and push:
