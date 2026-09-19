@@ -13,16 +13,12 @@
 #
 # Usage:
 #   scripts/release-check.sh [PYTHON_VERSION ...]
-#   scripts/release-check.sh --artifacts
 #
 # Without arguments the supported version matrix below is used.
 #
-# --artifacts validates the artifacts currently in dist/ without rebuilding
-# them: the exact files "uv publish" would upload. The main gate runs before
-# the version bump and the PyPI README preparation, so it never sees those;
-# this mode checks litter, version and tag agreement, the prepared README
-# and that the working tree differs from HEAD in nothing but that README.
-# Run it directly before uploading.
+# The release artifacts themselves are built and validated by
+# "uv run release build", which exports the committed revision, prepares the
+# README that ships in them and records their digests. See DEVELOPMENT.md.
 
 # Consistent environment for predictable tool and shell behavior.
 export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin}"
@@ -57,13 +53,10 @@ export UV_LINK_MODE=copy
 # Supported Python versions (keep in sync with pyproject classifiers and the
 # README). Override by passing versions as arguments.
 SUPPORTED_PYTHONS=("3.11" "3.12" "3.13")
-ARTIFACTS_ONLY="no"
-if [ "${1:-}" = "--artifacts" ]; then
-  ARTIFACTS_ONLY="yes"
-elif [ "$#" -gt 0 ]; then
+if [ "$#" -gt 0 ]; then
   SUPPORTED_PYTHONS=("$@")
 fi
-readonly SUPPORTED_PYTHONS ARTIFACTS_ONLY
+readonly SUPPORTED_PYTHONS
 
 # Resolve the package directory (this script lives in <pkg>/scripts/).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -144,13 +137,10 @@ ensure_pythons() {
 run_static_checks() {
   # Formatter, linter and type checker are version-independent here
   # (mypy targets the project minimum via pyproject), so run them once.
-  # scripts/ is included so the release tooling's own Python (the
-  # tree-state classifier below) is held to the same strictness as the
-  # package it ships.
   log "Static checks (format, lint, type check)"
   uv run ruff format --check .
   uv run ruff check .
-  uv run mypy src tests scripts
+  uv run mypy src tests
 }
 
 run_tests_matrix() {
@@ -210,120 +200,6 @@ print(f"clean: {len(sys.argv) - 1} artifact(s) checked")
 PY
 }
 
-validate_artifacts() {
-  # Pre-publish validation of dist/ exactly as it lies there. The rebuild
-  # after the version bump and the README preparation happens from the
-  # working tree on purpose (the prepared README only exists there), so
-  # these are the only checks the uploaded bytes ever get.
-  if ! ls dist/*.whl >/dev/null 2>&1; then
-    printf "error: no artifacts in dist/ -- run 'uv build' first\n" >&2
-    exit 1
-  fi
-  check_artifact_hygiene
-
-  log "Tree state, version, tag and prepared README"
-  uv run python - dist/* <<'PY'
-import re
-import subprocess
-import sys
-import tarfile
-import zipfile
-from pathlib import Path
-
-sys.path.insert(0, "scripts")
-from release_tree_state import classify_tree_state
-
-errors: list[str] = []
-
-# The working tree may differ from the tagged HEAD in exactly the prepared
-# README, and only by modification; a build backend's own file-inclusion
-# globs (license-files, package data, ...) can match an untracked path
-# anywhere, so every untracked path is refused regardless of location --
-# see scripts/release_tree_state.py for the exact rules.
-status = subprocess.run(
-    ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
-    capture_output=True,
-    text=True,
-    check=True,
-).stdout
-errors.extend(classify_tree_state(status))
-
-match = re.search(
-    r'__version__ = "([^"]+)"',
-    Path("src/ansible_docsmith/__init__.py").read_text(),
-)
-version = match.group(1) if match else ""
-if not version:
-    errors.append("cannot read __version__ from src/ansible_docsmith/__init__.py")
-tags = subprocess.run(
-    ["git", "tag", "--points-at", "HEAD"], capture_output=True, text=True, check=True
-).stdout.split()
-if version and f"v{version}" not in tags:
-    errors.append(
-        f"no v{version} tag on HEAD (found: {tags or 'none'}); "
-        "artifacts must be built from the tagged release state"
-    )
-
-def metadata_text(artifact: str) -> str:
-    if artifact.endswith(".whl"):
-        with zipfile.ZipFile(artifact) as bundle:
-            meta = next(n for n in bundle.namelist() if n.endswith(".dist-info/METADATA"))
-            return bundle.read(meta).decode("utf-8", errors="replace")
-    with tarfile.open(artifact) as bundle:
-        meta = next(n for n in bundle.getnames() if n.endswith("/PKG-INFO"))
-        member = bundle.extractfile(meta)
-        assert member is not None
-        return member.read().decode("utf-8", errors="replace")
-
-relative_link = re.compile(r"\]\((?!https?://|#|mailto:)")
-for artifact in sys.argv[1:]:
-    text = metadata_text(artifact)
-    headers, _, description = text.partition("\n\n")
-    meta_version = ""
-    for line in headers.splitlines():
-        if line.startswith("Version:"):
-            meta_version = line.split(":", 1)[1].strip()
-    if meta_version != version:
-        errors.append(f"{artifact}: metadata version {meta_version} != {version}")
-    if version and version not in Path(artifact).name:
-        errors.append(f"{artifact}: file name does not carry version {version}")
-    # The PyPI page is this description; relative links break on pypi.org.
-    if len(description) < 5000:
-        errors.append(
-            f"{artifact}: description is {len(description)} chars; "
-            "looks unprepared (see the release checklist)"
-        )
-    hits = relative_link.findall(description)
-    if hits:
-        errors.append(
-            f"{artifact}: description contains {len(hits)} relative link(s); "
-            "run the README preparation first"
-        )
-
-if errors:
-    for line in errors:
-        print(f"error: {line}", file=sys.stderr)
-    raise SystemExit(1)
-print(f"consistent: {len(sys.argv) - 1} artifact(s) at {version}, tag v{version} on HEAD")
-PY
-
-  log "Install + smoke test of the artifacts (clean environment)"
-  local venv="${WORK_DIR}/venv-artifacts"
-  uv venv "${venv}" >/dev/null
-  uv pip install --python "${venv}/bin/python" dist/*.whl >/dev/null
-  "${venv}/bin/${COMMAND_NAME}" --version >/dev/null
-  local runtime_version meta_version
-  runtime_version="$("${venv}/bin/python" -c "import ${IMPORT_NAME}; print(${IMPORT_NAME}.__version__)")"
-  meta_version="$("${venv}/bin/python" -c "from importlib.metadata import version; print(version('${DIST_NAME}'))")"
-  if [ "${meta_version}" != "${runtime_version}" ]; then
-    printf 'error: version skew after install: runtime %s, metadata %s\n' \
-      "${runtime_version}" "${meta_version}" >&2
-    exit 1
-  fi
-  printf 'install ok: %s %s\n' "${DIST_NAME}" "${meta_version}"
-  log "Artifacts are ready to publish"
-}
-
 smoke_test_matrix() {
   # An unmatched glob stays literal, so the -f test below is what
   # actually decides whether the wheel is there.
@@ -376,13 +252,7 @@ smoke_test_matrix() {
 }
 
 main() {
-  require_tools 'uv'
-  if [ "${ARTIFACTS_ONLY}" = "yes" ]; then
-    printf 'Artifact validation for %s\n' "${DIST_NAME}"
-    validate_artifacts
-    return
-  fi
-  require_tools 'shellcheck' 'shfmt'
+  require_tools 'uv' 'shellcheck' 'shfmt'
   printf 'Release check for %s\n' "${DIST_NAME}"
   printf 'Python versions: %s\n' "${SUPPORTED_PYTHONS[*]}"
   ensure_pythons

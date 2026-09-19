@@ -1,6 +1,10 @@
 """DocSmith for Ansible: automating role documentation (using argument_specs.yml)"""
 
-__version__ = "2.2.0"
+from importlib.metadata import version as _distribution_version
+
+# One hand-edited version site: pyproject.toml. Everything else reads it back
+# from the installed distribution metadata.
+__version__ = _distribution_version("ansible-docsmith")
 __author__ = "foundata GmbH"
 
 from .constants import (

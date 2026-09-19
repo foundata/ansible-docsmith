@@ -378,151 +378,124 @@ uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 
 ## Releases<a id="releases"></a>
 
+The release tooling is the `release` command from foundata's
+[releasing](https://github.com/foundata/releasing) package, a development
+dependency of this project. It reads the `[tool.releasing]` table in
+[`pyproject.toml`](./pyproject.toml).
+
 1. Run the release checks and only continue if everything passes:
 
    ```sh
    ./scripts/release-check.sh
    ```
 
-   This runs formatting, linting, type checks, the shell-script checks (`shfmt`
-   and `shellcheck` over every shipped script, plus a dialect parse) and the
-   test suite on every supported Python version, then builds the wheel and
-   source distribution and smoke-tests the installed artifact (import and
-   CLI). See also [Testing](#testing).
+   This runs formatting, linting, type checks, the shell-script checks
+   (`shfmt` and `shellcheck` over every shipped script, plus a dialect parse)
+   and the test suite on every supported Python version, then builds the wheel
+   and source distribution from a clean checkout of `HEAD` and smoke-tests the
+   installed artifact (import and CLI). See also [Testing](#testing).
 2. Determine the next version number. This project adheres to
    [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-3. Update several files to match the new release version:
-   - [`CHANGELOG.md`](./CHANGELOG.md): Insert a section for the new release. Do
-     not forget the comparison link at the end of the file.
-   - [`uv.lock`](./uv.lock): updated by running `uv lock` after the
-     `pyproject.toml` bump, never edited by hand. It records a version per
-     package, so a hand-edited lockfile can claim a dependency version that was
-     never resolved.
-   - [`pyproject.toml`](./pyproject.toml): the `version` variable.
-   - [`src/ansible_docsmith/__init__.py`](./src/ansible_docsmith/__init__.py):
-     the `__version__` variable.
-   - The following snippet can help with the Python files:
-
-     ```sh
-     old_version="<FIXME version>" # major.minor.patch
-     new_version="<FIXME version>" # major.minor.patch
-
-     files=(
-      "./pyproject.toml"
-      "./src/ansible_docsmith/__init__.py"
-     )
-
-     old_version_regex="${old_version//./\\.}"
-     version_pattern="^([[:space:]]*(__version__|version)[[:space:]]*[:=][[:space:]]*)\"?${old_version_regex}\"?$"
-
-     for file in "${files[@]}"; do
-       echo "Before: $file"
-       grep -B 1 -E "$version_pattern" "$file" || true
-       sed -i -E "s@${version_pattern}@\1\"${new_version}\"@" "$file"
-       echo "After: $file"
-       grep -B 1 -E "^([[:space:]]*(__version__|version)[[:space:]]*[:=][[:space:]]*)\"?${new_version}\"?$" "$file" || true
-       echo
-     done
-
-     uv lock # the lockfile records the project version
-     ```
-
-4. If everything is fine: commit the changes, tag the release and push:
+3. Move the version and the changelog to the new release:
 
    ```sh
    version="<FIXME version>" # major.minor.patch
-   git add \
-     "./CHANGELOG.md" \
-     "./uv.lock" \
-     "./pyproject.toml" \
-     "./src/ansible_docsmith/__init__.py"
+
+   uv run release version bump "${version}"
+   uv run release changelog release "${version}"
+   ```
+
+   `version bump` rewrites the `version` in
+   [`pyproject.toml`](./pyproject.toml) and runs `uv lock`, so the lockfile
+   records the new version. The package reads its own version from the
+   installed distribution metadata, so there is no second place to edit.
+   `changelog release` turns the entries under `Unreleased` in
+   [`CHANGELOG.md`](./CHANGELOG.md) into a dated section and updates the
+   comparison links at the end of the file.
+4. Review the changes and commit them. The tag will name this commit:
+
+   ```sh
+   git diff
+   git add --all
    git commit -m "release: prepare ${version}"
-
-   git tag "v${version}" "$(git rev-parse --verify HEAD)" -m "version ${version}"
-   git show "v${version}"
-
-   git push origin main --follow-tags
+   git status --short
    ```
 
-   If something minor went wrong (like missing `CHANGELOG.md` update), delete
-   the tag and start over:
+   The last command must print nothing.
+5. Build the distributions from the committed revision:
 
    ```sh
-   git tag -d "v${version}" # delete the old tag locally
-   git push origin ":refs/tags/v${version}" # delete the old tag remotely
+   uv run release build --out "../dist-${version}" --expect "${version}"
    ```
 
-   This is *only* possible if there was no
-   [GitHub release](https://github.com/foundata/ansible-docsmith/releases/). Use
-   a new patch version number otherwise.
-5. Prepare the `README.md` that ships with the artifacts by rewriting its
-   relative links as absolute GitHub URLs (see Wiki "Process: Release Python
-   artifacts"; an internal `foundata` helper script is available for this).
-   These changes are made only in the working tree between the tag and the
-   upload; nothing is ever committed. This is why the step belongs here rather
-   than before step 4.
-6. Build the package and publish it to
-   [PyPI](https://pypi.org/project/ansible-docsmith/). The build in step 1 ran
-   before the version bump, so `dist/` still holds artifacts of the old version
-   and has to be rebuilt:
+   The build exports the commit with `git archive` and prepares the
+   `README.md` that ships in the artifacts inside that export: its
+   repository-relative links become absolute GitHub URLs, so they resolve on
+   pypi.org. The committed README keeps its relative links and the working
+   tree is never modified. The source distribution is built from the export
+   and the wheel from that source distribution; both are checked and their
+   SHA-256 recorded in `artifacts.json`.
+6. Tag the revision that was built, then push the branch and the tag:
 
    ```sh
-   rm -rf "./dist"
-   uv build
-   ls -1 "./dist" # a wheel and a source distribution, both carrying the new version
+   uv run release tag create "${version}"
+   git push origin main
+   git push origin "refs/tags/v${version}"
    ```
 
-   Validate exactly these files before uploading; the release check in step 1
-   ran before the version bump and the README preparation, so it never saw them.
-   This verifies the version, the tag on `HEAD`, the prepared README and that
-   the working tree carries no other changes:
+   `tag create` refuses a dirty working tree or a version the sources and the
+   changelog disagree on. If something minor went wrong, delete the tag and
+   start over:
 
    ```sh
-   scripts/release-check.sh --artifacts
+   uv run release tag delete "${version}"
    ```
 
-   Uploading needs a PyPI API token with upload rights for the project.
-   `uv publish` reads it from `UV_PUBLISH_TOKEN`; keep the value out of the
-   shell history and out of command lines visible in the process list:
+   This is refused once a
+   [GitHub release](https://github.com/foundata/ansible-docsmith/releases/)
+   exists for the tag. Use a new patch version then.
+7. Publish exactly the files that were validated to
+   [PyPI](https://pypi.org/project/ansible-docsmith/):
 
    ```sh
+   uv run release artifacts verify "../dist-${version}/artifacts.json"
+
    printf 'PyPI API token: '
    read -rs UV_PUBLISH_TOKEN
    printf '\n'
    export UV_PUBLISH_TOKEN
 
-   uv publish
+   uv publish "../dist-${version}"/*.whl "../dist-${version}"/*.tar.gz
    unset UV_PUBLISH_TOKEN
    ```
+
+   `artifacts verify` re-checks the directory against its manifest, so the
+   upload cannot contain a file that was never validated. Uploading needs a
+   PyPI API token with upload rights for the project; `uv publish` reads it
+   from `UV_PUBLISH_TOKEN`, which keeps the value out of the shell history and
+   out of command lines visible in the process list.
 
    A version number can be uploaded only once. A broken release cannot be
    replaced, only [yanked](https://pypi.org/help/#yanked), and the fix needs a
    new patch version.
-
-   Throw the prepared `README.md` away once the upload succeeded:
-
-   ```sh
-   git restore "./README.md"
-   git status # expect a clean working tree
-   ```
-
-7. Verify that the published package installs and runs from PyPI:
+8. Create the GitHub release from the changelog section:
 
    ```sh
-   uv run --isolated --no-project --with "ansible-docsmith==${version}" -- ansible-docsmith --version
+   gh release create "v${version}" --title "v${version}" \
+     --notes-file <(uv run release changelog show "${version}")
    ```
 
-8. Use
-   [GitHub's release feature](https://github.com/foundata/ansible-docsmith/releases/new),
-   select the tag you pushed and create a new release:
-   - Use `v<version>` as title
-   - A description is optional. In doubt, use
-     `See CHANGELOG.md for more information about this release.`
-9. Check if the GitHub API delivers the correct version as `latest`:
+   The [web form](https://github.com/foundata/ansible-docsmith/releases/new)
+   does the same; use `v<version>` as the title.
+9. Verify what PyPI and GitHub now serve:
 
    ```sh
-   curl -s -L https://api.github.com/repos/foundata/ansible-docsmith/releases/latest | jq -r '.tag_name' | sed -e 's/^v//g'
+   uv run release verify "../dist-${version}/artifacts.json"
    ```
+
+   This checks that PyPI serves the exact files whose digests the build
+   recorded, that an isolated install reports the new version, and that the
+   GitHub API reports the new tag as the latest release.
 
 
 ## Troubleshooting<a id="troubleshooting"></a>
