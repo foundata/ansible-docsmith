@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Nothing worth mentioning right now.
+### Fixed
+
+- Invalid values for `--format` and `--readme-toc-list-bulletpoints` now fail
+  during argument parsing with exit code 2, before the command starts. This
+  matches the documented exit-code contract.
 
 
 ## [2.2.0] - 2026-07-26
