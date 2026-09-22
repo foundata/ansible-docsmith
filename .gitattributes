@@ -1,0 +1,17 @@
+# Attributes for this repository, see https://git-scm.com/docs/gitattributes
+#
+# Store every text file with LF in the repository and write LF into the
+# working tree on every platform, regardless of a contributor's local
+# core.autocrlf or core.eol setting. Files Git detects as binary are left
+# untouched.
+* text=auto eol=lf
+
+### Repository-specific exceptions
+
+# Recorded inputs and expected output. A converted line ending would change
+# what the generator is compared against.
+tests/fixtures/**                      -text
+tests/unit/markdown_pipeline_golden.json -text
+
+# Regenerate with uv lock, never merge.
+uv.lock -merge
