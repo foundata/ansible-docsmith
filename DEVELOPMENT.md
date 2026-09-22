@@ -435,16 +435,21 @@ dependency of this project. It reads the `[tool.releasing]` table in
    tree is never modified. The source distribution is built from the export
    and the wheel from that source distribution; both are checked and their
    SHA-256 recorded in `artifacts.json`.
-6. Tag the revision that was built, then push the branch and the tag:
+6. Tag the revision that was built, then publish the branch and the tag:
 
    ```sh
-   uv run release tag create "${version}"
-   git push origin main
-   git push origin "refs/tags/v${version}"
+   uv run release tag create "${version}" \
+     --manifest "../dist-${version}/artifacts.json"
+   uv run release push "${version}"
    ```
 
-   `tag create` refuses a dirty working tree or a version the sources and the
-   changelog disagree on. If something minor went wrong, delete the tag and
+   `tag create` refuses a dirty working tree, a version the sources and the
+   changelog disagree on and, with `--manifest`, a revision other than the one
+   those artifacts were built from. It also refuses a commit that credits a
+   tool as its author; the `Assisted-by:` disclosure this project uses is
+   allowed by `allowed-attribution` in [`pyproject.toml`](./pyproject.toml).
+   `push` sends the branch before the tag and refuses when the branch does not
+   contain the tagged commit. If something minor went wrong, delete the tag and
    start over:
 
    ```sh
@@ -458,35 +463,35 @@ dependency of this project. It reads the `[tool.releasing]` table in
    [PyPI](https://pypi.org/project/ansible-docsmith/):
 
    ```sh
-   uv run release artifacts verify "../dist-${version}/artifacts.json"
-
    printf 'PyPI API token: '
    read -rs UV_PUBLISH_TOKEN
    printf '\n'
    export UV_PUBLISH_TOKEN
 
-   uv publish "../dist-${version}"/*.whl "../dist-${version}"/*.tar.gz
+   uv run release publish "../dist-${version}/artifacts.json"
    unset UV_PUBLISH_TOKEN
    ```
 
-   `artifacts verify` re-checks the directory against its manifest, so the
-   upload cannot contain a file that was never validated. Uploading needs a
-   PyPI API token with upload rights for the project; `uv publish` reads it
-   from `UV_PUBLISH_TOKEN`, which keeps the value out of the shell history and
-   out of command lines visible in the process list.
+   `publish` re-checks every digest against the bytes on disk and uploads
+   exactly the files the manifest names, so a file beside them that nothing
+   validated is a refusal rather than an extra upload. Uploading needs a PyPI
+   API token with upload rights for the project; the index tool reads it from
+   `UV_PUBLISH_TOKEN`, which keeps the value out of the shell history and out
+   of command lines visible in the process list.
 
    A version number can be uploaded only once. A broken release cannot be
    replaced, only [yanked](https://pypi.org/help/#yanked), and the fix needs a
    new patch version.
-8. Create the GitHub release from the changelog section:
+8. Create the GitHub release from the changelog section and the manifest:
 
    ```sh
-   gh release create "v${version}" --title "v${version}" \
-     --notes-file <(uv run release changelog show "${version}")
+   uv run release forge release-create "${version}" \
+     --manifest "../dist-${version}/artifacts.json"
    ```
 
-   The [web form](https://github.com/foundata/ansible-docsmith/releases/new)
-   does the same; use `v<version>` as the title.
+   The notes are the changelog section for the version and the attached files
+   are the ones just published, so neither can drift from what was validated.
+   The write itself goes through `gh`, which owns the authenticated session.
 9. Verify what PyPI and GitHub now serve:
 
    ```sh
@@ -496,6 +501,15 @@ dependency of this project. It reads the `[tool.releasing]` table in
    This checks that PyPI serves the exact files whose digests the build
    recorded, that an isolated install reports the new version, and that the
    GitHub API reports the new tag as the latest release.
+
+   ```sh
+   uv run release status "${version}" \
+     --manifest "../dist-${version}/artifacts.json"
+   ```
+
+   `status` reports the same release as separate steps and exits non-zero
+   while any of them is unfinished, which is also how to resume after an
+   interruption anywhere above.
 
 
 ## Troubleshooting<a id="troubleshooting"></a>
