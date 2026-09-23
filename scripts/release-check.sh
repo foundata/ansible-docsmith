@@ -141,6 +141,7 @@ run_static_checks() {
   uv run ruff format --check .
   uv run ruff check .
   uv run mypy src tests
+  uv run python tests/check_markdown.py
 }
 
 run_tests_matrix() {

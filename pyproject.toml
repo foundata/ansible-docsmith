@@ -82,6 +82,7 @@ dev = [
     "pytest-cov>=5.0.0",
     "releasing>=4,<5",
     "ruff>=0.12.7",
+    "rumdl>=0.2.72",
 ]
 
 [tool.ruff]

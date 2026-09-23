@@ -190,6 +190,24 @@ uv run ruff format . && uv run ruff check --fix .
 
 The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
 
+Markdown follows
+[`guidelines/markdown-style-guide.md`](https://github.com/foundata/guidelines)
+and is checked with the invocation it prescribes, which
+[`tests/check_markdown.py`](./tests/check_markdown.py) carries so no local
+configuration can alter the result:
+
+```sh
+# Check every Markdown file outside tests/fixtures
+uv run python tests/check_markdown.py
+
+# Apply what has a safe automatic fix
+uv run python tests/check_markdown.py --format
+```
+
+The fixtures are excluded on purpose: they are the recorded input and expected
+output of the generator under test, and formatting them would rewrite the
+oracle the tests compare against.
+
 Shell scripts follow
 [`guidelines/shell-scripting-style-guide.md`](https://github.com/foundata/guidelines)
 and are checked with the tools and option sets it prescribes.

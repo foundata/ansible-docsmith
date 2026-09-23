@@ -12,6 +12,8 @@ and within
 [collections](https://docs.ansible.com/ansible/latest/collections_guide/index.html).
 
 
+<!-- rumdl-disable MD033 -->
+<!-- HTML for consistent rendering across limited platform parsers -->
 <div align="center" id="project-readme-header">
 <br>
 <br>
@@ -27,6 +29,7 @@ and within
 
 <br>
 </div>
+<!-- rumdl-enable MD033 -->
 
 
 ## Table of contents<a id="toc"></a>
@@ -66,6 +69,8 @@ and within
 
 ### Screenshots<a id="demo-screenshots"></a>
 
+<!-- rumdl-disable MD033 -->
+<!-- HTML for image dimensions, which Markdown cannot express -->
 [<img src="./assets/images/screenshots/ansible-docsmith-cli-01-help.png" alt="Screenshot: DocSmith CLI, help" height="128" />](./assets/images/screenshots/ansible-docsmith-cli-01-help.png)
 &#160;
 [<img src="./assets/images/screenshots/ansible-docsmith-cli-sshd-01-validate.png" alt="Screenshot: DocSmith CLI, validate; Results for foundata.sshd.run" height="128" />](./assets/images/screenshots/ansible-docsmith-cli-sshd-01-validate.png)
@@ -77,6 +82,7 @@ and within
 [<img src="./assets/images/screenshots/ansible-docsmith-readme-sshd-01-toc.png" alt="Screenshot: Part of a README.md ToC, generated with DocSmith" height="128" />](./assets/images/screenshots/ansible-docsmith-readme-sshd-01-toc.png)
 &#160;
 [<img src="./assets/images/screenshots/ansible-docsmith-readme-sshd-02-main.png" alt="Screenshot: Part of a README.md's main content describing role variables, generated with DocSmith" height="128" />](./assets/images/screenshots/ansible-docsmith-readme-sshd-02-main.png)
+<!-- rumdl-enable MD033 -->
 
 
 ## Features<a id="features"></a>
@@ -128,7 +134,7 @@ most of our projects) so DocSmith runs on
 ### Preparations<a id="usage-preparations"></a>
 
 1. If not already existing, simply **create an `argument_specs.yml`** for
-   [Ansible’s role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation).
+   [Ansible's role argument validation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#role-argument-validation).
    Try to add `description:` to your variables. The more complete your
    specification, the better the argument validation and documentation.
 2. **Add simple markers in your role's `README.md`** where DocSmith shall
