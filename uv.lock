@@ -583,16 +583,16 @@ wheels = [
 
 [[package]]
 name = "releasing"
-version = "4.1.0"
+version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pyyaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/d6/e8a9cfb75774ea536a8562ffb28c9dff4b93b68a0d9dc1f9bcd40b7b2ce9/releasing-4.1.0.tar.gz", hash = "sha256:772345cbe616b6e0bc49119bdf844f74844b56edac4175291e987eb0e0b289be", size = 76598, upload-time = "2026-09-23T00:13:56.473Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/27/c760b13a26f355bc97e818a0e02fc58b1b1c02c26f43de33630c5e064c5c/releasing-4.2.0.tar.gz", hash = "sha256:65226f0ec5ce464c5c4fee745425e00e690315ad8cdf3183185a1c615a127cbd", size = 77545, upload-time = "2026-09-24T01:55:19.313Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/46/89/2df6a1fb3278be1e44788c85606a74a25afc00fb57329ed9411374fbe24a/releasing-4.1.0-py3-none-any.whl", hash = "sha256:8454b234b1bcf010fe08fca10d31431ef7b0de535e71eee26d1e3680acbd2cb5", size = 87701, upload-time = "2026-09-23T00:13:54.993Z" },
+    { url = "https://files.pythonhosted.org/packages/90/1c/5d893b532c73a5856964c1773f03c821355911cf820e2e88900a456fe2b0/releasing-4.2.0-py3-none-any.whl", hash = "sha256:73c51d8907747826913daa31bb22a6483855885d1b86e2d54b5b60fd0f80269c", size = 88703, upload-time = "2026-09-24T01:55:17.99Z" },
 ]
 
 [[package]]
