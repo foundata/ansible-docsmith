@@ -4,9 +4,9 @@
 # Local, provider-independent release check for ansible-docsmith.
 #
 # Runs the full quality gate (format, lint, type check, tests) on every
-# supported Python version, then builds the wheel and source distribution,
-# installs the wheel into a clean throwaway environment and runs an import
-# and a command-line smoke test against the installed artifact.
+# supported Python version, then builds the wheel and source distribution with
+# `release build`, installs the wheel into a clean throwaway environment and
+# runs an import and a command-line smoke test against the installed artifact.
 #
 # This is intended to be run before tagging a release. It does not depend on
 # any CI service; CI (if added) should call the same steps.
@@ -16,9 +16,10 @@
 #
 # Without arguments the supported version matrix below is used.
 #
-# The release artifacts themselves are built and validated by
-# "uv run release build", which exports the committed revision, prepares the
-# README that ships in them and records their digests. See DEVELOPMENT.md.
+# The artifacts are built by `release build`, which exports the committed
+# revision, prepares the README that ships in them, refuses developer litter
+# inside them and records their digests. Building with it here means the gate
+# smoke-tests what a release uploads. See DEVELOPMENT.md.
 
 # Consistent environment for predictable tool and shell behavior.
 export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin}"
@@ -85,7 +86,8 @@ readonly COMMAND_NAME="ansible-docsmith"
 
 WORK_DIR="$(mktemp -d)"
 readonly WORK_DIR
-trap 'rm -rf "${WORK_DIR}"; git -C "${PKG_DIR}" worktree prune >/dev/null 2>&1 || true' EXIT
+readonly DIST_DIR="${WORK_DIR}/dist"
+trap 'rm -rf "${WORK_DIR}"' EXIT
 
 log() { printf '\n=== %s ===\n' "$*"; }
 
@@ -137,82 +139,46 @@ ensure_pythons() {
 run_static_checks() {
   # Formatter, linter and type checker are version-independent here
   # (mypy targets the project minimum via pyproject), so run them once.
+  # Every uv call in this gate passes --locked, so the first of them refuses
+  # a lockfile that no longer matches pyproject instead of quietly re-locking
+  # as a plain `uv run` would.
   log "Static checks (format, lint, type check)"
-  uv run ruff format --check .
-  uv run ruff check .
-  uv run mypy src tests
-  uv run python tests/check_markdown.py
+  uv run --locked ruff format --check .
+  uv run --locked ruff check .
+  uv run --locked mypy src tests
+  uv run --locked python tests/check_markdown.py
 }
 
 run_tests_matrix() {
   for py in "${SUPPORTED_PYTHONS[@]}"; do
     log "Tests on Python ${py}"
-    uv run --python "${py}" --isolated pytest -q
+    uv run --locked --python "${py}" --isolated pytest -q
   done
 }
 
 build_artifacts() {
-  # Build from a pristine checkout of HEAD: the developer tree carries
-  # ignored litter (tool caches, editor droppings) that must never decide
-  # what ships. Local uncommitted changes are deliberately not built; a
+  # Build with `release build`: it exports the committed revision, so the
+  # developer tree's ignored litter (tool caches, editor droppings) never
+  # decides what ships, and it refuses an artifact that carries caches or
+  # bytecode. Local uncommitted changes are deliberately not built; a
   # release is a commit, not a working tree.
-  log "Build wheel and source distribution (clean checkout of HEAD)"
-  local tree_status
-  tree_status="$(git status --porcelain)"
-  if [ -n "${tree_status}" ]; then
-    printf 'note: local changes present; artifacts are built from HEAD without them\n'
-  fi
-  local clean_dir="${WORK_DIR}/clean-src"
-  git worktree add --detach --quiet "${clean_dir}" HEAD
-  rm -rf dist
-  (cd "${clean_dir}" && uv build --out-dir "${PKG_DIR}/dist")
-  git worktree remove --force "${clean_dir}"
-  ls -1 dist
-  check_artifact_hygiene
-}
-
-check_artifact_hygiene() {
-  log "Artifact hygiene (no caches or bytecode inside)"
-  uv run python - dist/* <<'PY'
-import sys
-import tarfile
-import zipfile
-
-bad: list[str] = []
-for name in sys.argv[1:]:
-    if name.endswith(".whl"):
-        entries = zipfile.ZipFile(name).namelist()
-    else:
-        with tarfile.open(name) as archive:
-            entries = archive.getnames()
-    for entry in entries:
-        parts = entry.split("/")
-        if any(
-            part == "__pycache__" or (part.startswith(".") and "cache" in part)
-            for part in parts
-        ) or entry.endswith(".pyc"):
-            bad.append(f"{name}: {entry}")
-if bad:
-    print("error: developer litter inside release artifacts:", file=sys.stderr)
-    for line in bad:
-        print(f"  {line}", file=sys.stderr)
-    raise SystemExit(1)
-print(f"clean: {len(sys.argv) - 1} artifact(s) checked")
-PY
+  log "Build wheel and source distribution (release build)"
+  uv run --locked release build --out "${DIST_DIR}"
+  ls -1 "${DIST_DIR}"
 }
 
 smoke_test_matrix() {
   # An unmatched glob stays literal, so the -f test below is what
   # actually decides whether the wheel is there.
-  local -a wheels=(dist/*.whl)
+  local -a wheels=("${DIST_DIR}"/*.whl)
   local wheel="${wheels[0]}"
   if [ ! -f "${wheel}" ]; then
-    printf 'error: no wheel found in dist/\n' >&2
+    printf 'error: no wheel found in %s\n' "${DIST_DIR}" >&2
     exit 1
   fi
 
   local expected_version
-  expected_version="$(uv run python -c "import ${IMPORT_NAME}; print(${IMPORT_NAME}.__version__)")"
+  expected_version="$(uv run --locked python -c "import ${IMPORT_NAME}; print(${IMPORT_NAME}.__version__)")"
 
   for py in "${SUPPORTED_PYTHONS[@]}"; do
     log "Install + smoke test on Python ${py} (clean environment)"
