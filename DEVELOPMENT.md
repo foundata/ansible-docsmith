@@ -192,9 +192,10 @@ The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
 
 Markdown follows
 [`guidelines/markdown-style-guide.md`](https://github.com/foundata/guidelines)
-and is checked with the invocation it prescribes, which
-[`tests/check_markdown.py`](./tests/check_markdown.py) carries so no local
-configuration can alter the result:
+and is checked with [`.rumdl.toml`](./.rumdl.toml), a verbatim copy of the
+guide's file that [`tests/check_markdown.py`](./tests/check_markdown.py) names
+explicitly, so no other configuration can alter the result;
+`tests/unit/test_markdown_gate.py` compares the copy with the guide:
 
 ```sh
 # Check every Markdown file outside tests/fixtures

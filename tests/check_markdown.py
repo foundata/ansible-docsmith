@@ -6,56 +6,10 @@ import argparse
 import subprocess
 from pathlib import Path
 
-# The guide's `rumdl check` flags, argument for argument, from
-# markdown-style-guide.md of the foundata guidelines. Both verbs share every
-# flag there, so one copy serves the check and the format run. Keep this in
-# sync with the guide rather than tuning it here.
-RULES = (
-    "--no-config",
-    "--deny-config-warnings",
-    "--extend-enable",
-    "MD060,MD070,MD072,MD073,MD080,MD082,MD083,MD084,MD085,MD087,MD088,MD090",
-    "--config",
-    'MD003.style="atx"',
-    "--config",
-    'MD004.style="dash"',
-    "--config",
-    "MD007.indent=2",
-    "--config",
-    "MD012.maximum=3",
-    "--config",
-    "MD013.line-length=80",
-    "--config",
-    "MD013.reflow=true",
-    "--config",
-    'MD013.reflow-mode="default"',
-    "--config",
-    "MD013.code-blocks=false",
-    "--config",
-    "MD013.code-spans=false",
-    "--config",
-    "MD013.tables=false",
-    "--config",
-    "MD024.siblings-only=true",
-    "--config",
-    'MD029.style="ordered"',
-    "--config",
-    'MD033.allowed-elements=["a","br"]',
-    "--config",
-    'MD046.style="fenced"',
-    "--config",
-    'MD060.style="aligned"',
-    "--config",
-    'MD060.column-align-header="center"',
-    "--config",
-    "MD060.loose-last-column=true",
-    "--config",
-    'MD072.key-order=["title", "name", "draft", "date", "description", "categories", "category", "tags", "author"]',
-    "--config",
-    "MD080.levels=[1,2]",
-    "--config",
-    "MD082.allow-parent-headings=true",
-)
+# The guide's .rumdl.toml, copied verbatim; tests/unit/test_markdown_gate.py
+# compares the copy with the guide. Naming the file explicitly makes rumdl
+# ignore any other configuration it would discover.
+CONFIG = ".rumdl.toml"
 
 # Recorded inputs and expected output of the Markdown generator under test:
 # byte-exact oracles, plus one deliberately non-conformant input. Linting them
@@ -74,7 +28,9 @@ def main() -> int:
         [
             "rumdl",
             "fmt" if args.format else "check",
-            *RULES,
+            "--config",
+            CONFIG,
+            "--deny-config-warnings",
             "--no-cache",
             "--exclude",
             FIXTURES,
