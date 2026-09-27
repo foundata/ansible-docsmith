@@ -2918,6 +2918,35 @@ but no headings at all."""
         assert headings[1]["text"] == "Section Title"
         assert headings[2]["text"] == "Subsection"
 
+    def test_link_prefix_gets_relative_marker(self) -> None:
+        """Test that repository paths are linked with a leading "./"."""
+        generator = MarkdownTocGenerator()
+        headings = [{"text": "Role variables", "level": 2, "anchor": "variables"}]
+
+        result = generator._generate_toc_lines(headings, "*", "roles/run/README.md")
+
+        assert result == "* [Role variables](./roles/run/README.md#variables)"
+
+    def test_link_prefix_empty_keeps_plain_anchor(self) -> None:
+        """Test that links within the same document keep a bare anchor."""
+        generator = MarkdownTocGenerator()
+        headings = [{"text": "Role variables", "level": 2, "anchor": "variables"}]
+
+        result = generator._generate_toc_lines(headings, "*")
+
+        assert result == "* [Role variables](#variables)"
+        assert "./#" not in result
+
+    def test_link_prefix_keeps_explicit_base(self) -> None:
+        """Test that prefixes stating their own base are left unchanged."""
+        generator = MarkdownTocGenerator()
+        headings = [{"text": "Role variables", "level": 2, "anchor": "variables"}]
+
+        for prefix in ("./roles/run/README.md", "../other/README.md"):
+            result = generator._generate_toc_lines(headings, "*", prefix)
+
+            assert result == f"* [Role variables]({prefix}#variables)"
+
 
 class TestRSTTocGenerator:
     """Test the RSTTocGenerator class."""
@@ -2995,6 +3024,16 @@ Final content.
         ]
 
         assert result == "\n".join(expected_lines)
+
+    def test_rst_link_prefix_has_no_relative_marker(self) -> None:
+        """Test that the "./" rule stays Markdown-only, as reST differs."""
+        generator = RSTTocGenerator()
+        headings = [{"text": "Role variables", "level": 2, "anchor": "variables"}]
+
+        result = generator._generate_toc_lines(headings, "*", "roles/run/README.rst")
+
+        assert "* `Role variables <roles/run/README.rst#variables>`__" in result
+        assert "./" not in result
 
     def test_rst_detect_bullet_style(self) -> None:
         """Test auto-detecting bullet style from RST content."""
