@@ -446,7 +446,7 @@ between the markers:
 ## Licensing, copyright<a id="licensing-copyright"></a>
 
 <!--REUSE-IgnoreStart-->
-Copyright (c) 2025, 2026 [foundata GmbH](https://foundata.com/)
+Copyright (c) 2025, 2026, [foundata GmbH](https://foundata.com/)
 (<https://foundata.com>)
 
 This project is licensed under the GNU General Public License v3.0 or later
@@ -480,8 +480,8 @@ endorsement by the trademark holders.
 
 ## Author information<a id="author-information"></a>
 
-This project was created and is maintained by [foundata](https://foundata.com/).
-If you like it, you might
+This [project](https://foundata.com/en/projects/) was created and is maintained
+by [foundata](https://foundata.com/). If you like it, you might
 [buy us a coffee](https://buy-me-a.coffee/ansible-docsmith/).
 
 The Ansible DocSmith project is *not* associated with
