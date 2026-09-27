@@ -3,6 +3,11 @@
 This file provides information for maintainers and contributors to
 `ansible-docsmith`.
 
+For user documentation, see the
+[project documentation](https://foundata.com/en/projects/ansible-docsmith/#doc).
+For reporting issues and submitting changes, see
+[CONTRIBUTING.md](./CONTRIBUTING.md).
+
 
 ## Table of contents<a id="toc"></a>
 
@@ -43,7 +48,9 @@ For shell-script checks and the release gate, also install
 
 ## Getting started<a id="getting-started"></a>
 
-1. Clone the repository:
+1. Choose a repository from the
+   [available source repositories](https://foundata.com/en/projects/ansible-docsmith/#source)
+   and clone it. For example, using GitHub:
 
    ```sh
    git clone https://github.com/foundata/ansible-docsmith.git
@@ -427,9 +434,12 @@ For shell-script changes, run the shell checks described under
 ## Releases<a id="releases"></a>
 
 The release tooling is the `release` command from foundata's
-[releasing](https://github.com/foundata/releasing) package, a development
+[releasing](https://foundata.com/en/projects/releasing/) package, a development
 dependency of this project. It reads the `[tool.releasing]` table in
 [`pyproject.toml`](./pyproject.toml).
+
+The current release tooling publishes packages to PyPI and creates releases on
+GitHub using `gh`.
 
 1. Run the release checks and only continue if everything passes:
 
@@ -502,9 +512,8 @@ dependency of this project. It reads the `[tool.releasing]` table in
    uv run release tag delete "${version}"
    ```
 
-   This is refused once a
-   [GitHub release](https://github.com/foundata/ansible-docsmith/releases/)
-   exists for the tag. Use a new patch version then.
+   Tag deletion is refused once a GitHub release exists for the tag. Use a new
+   patch version then.
 7. Publish exactly the files that were validated to
    [PyPI](https://pypi.org/project/ansible-docsmith/):
 
