@@ -474,8 +474,11 @@ Supply values for required variables before running the example:
 ## Licensing, copyright<a id="licensing-copyright"></a>
 
 <!--REUSE-IgnoreStart-->
+<!-- rumdl-disable MD034 -->
+<!-- Plain URL retained in the copyright notice for plain-text reuse. -->
 Copyright (c) 2025, 2026, [foundata GmbH](https://foundata.com/)
-(<https://foundata.com>)
+(https://foundata.com)
+<!-- rumdl-enable MD034 -->
 
 This project is licensed under the GNU General Public License v3.0 or later
 (SPDX-License-Identifier: `GPL-3.0-or-later`), see
