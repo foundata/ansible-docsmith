@@ -1,50 +1,58 @@
 # Contributing
 
-Thank you for your interest in contributing. This file provides an overview of
-the contribution workflow. Summary:
+Thank you for your interest in contributing. Use these channels:
 
-- Use Issues if you want to report a problem or want to see a feature.
-- Create a pull requests (PR) to submit code.
+- Open an issue to report a problem or request a feature.
+- Submit code through a pull request (PR) or merge request (MR).
 - Send an email to the maintainer if you have something to discuss (no support
   requests).
 
-
-## Issues
-
-If you spot a problem, have an idea or a feature request,
-[search if an issue already exists](https://github.com/foundata/ansible-docsmith/issues).
-If a related issue doesn't exist, you can simply open a new issue.
-
-As a general rule, we don't assign issues to anyone. If you find an issue to
-work on, you are welcome to open a pull request (PR) with a fix or feature. So
-if there is an existing issue you are interested in, just work on it. You might
-leave a comment there to inform others that there is work going on.
+Development takes place on our internal repository hosting platform. You can
+report issues and submit changes through any of our public repositories on
+platforms such as GitHub, GitLab or Codeberg. We coordinate the work internally
+and follow up on the platform where you contributed.
 
 
-## Discussions
+## Issues<a id="issues"></a>
+
+If you spot a problem, have an idea or want to request a feature, use the issue
+tracker where this project's repository is hosted, such as GitHub, GitLab or
+Codeberg. Search the existing issues there before opening a new one.
+
+You only need to report an issue once, on one platform. If you know of a related
+issue on another platform, include its full URL so we can connect the reports.
+
+We don't assign issues automatically. Leave a comment if you'd like to work on
+an issue or have already started. You can also ask us to assign it to you.
+
+
+## Discussions<a id="discussions"></a>
 
 There is no public discussion or forum. If you have something to discuss or
 comment about the project, feel free to send an email to Andreas Haerter
-<ah@foundata.com> (no support requests, all ressources are provided "as is").
+<ah@foundata.com> (no support requests, all resources are provided "as is").
 
 
-## Pull Requests (PRs)
+## Submitting changes<a id="submitting-changes"></a>
 
-Make sure you read [`DEVELOPMENT.md`](./DEVELOPMENT.md). Make sure:
+Read [`DEVELOPMENT.md`](./DEVELOPMENT.md) before submitting changes. The
+following requirements apply to both pull requests and merge requests:
 
 1. That all source code or other components are compatible with the project's
    [licensing](./REUSE.toml) and are traceable. Otherwise, we cannot accept your
    contribution.
-2. Your code is working / fix the problem / introduce a sane new feature.
-3. Your PR contains a proper commit message with a description of the change and
-   reasoning.<br />Bonus: reference an issue (if any; PRs without an related
-   issue are still welcome).
+2. Your code works and fixes the problem or implements the proposed feature.
+3. Your submission contains a proper commit message with a description of the
+   change and reasoning. You may reference a related issue; submissions without
+   a related issue are also welcome.
 
-If you do not know how to open a PR, there is plenty of useful information
-around on the web. Github is also providing quite good documentation:
+Working on a branch in your own fork lets you make changes without affecting the
+original project until we merge them. For help with forks, branches and
+submitting changes, use the documentation for the platform hosting the
+repository:
 
-- [Forking a repository](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#fork-an-example-repository)
-  so that you can make your changes without affecting the original project until
-  we merge them.
-- [Branches](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches#working-with-branches)
-- [Pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)
+| Platform |  Submission type   | Help |
+| -------- | ------------------ | ---- |
+| GitHub   | Pull request (PR)  | [Quickstart for pull requests](https://docs.github.com/en/pull-requests/get-started/pull-request-quickstart) |
+| GitLab   | Merge request (MR) | [Create merge requests](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/) |
+| Forgejo  | Pull request (PR)  | [Pull requests and Git flow](https://forgejo.org/docs/latest/user/collaboration/pull-requests-and-git-flow/) |
