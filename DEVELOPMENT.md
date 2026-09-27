@@ -418,7 +418,7 @@ dependency of this project. It reads the `[tool.releasing]` table in
 3. Move the version and the changelog to the new release:
 
    ```sh
-   version="<FIXME version>" # major.minor.patch
+   version="CHANGEME version" # major.minor.patch
 
    uv run release version bump "${version}"
    uv run release changelog release "${version}"
