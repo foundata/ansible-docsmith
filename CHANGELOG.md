@@ -9,6 +9,14 @@ and the project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- Generated Markdown tables of contents now link to other documents with a
+  leading `./`, for example `](./roles/run/README.md#variables)`, as the
+  foundata Markdown style guide requires. Links within the same document keep
+  their bare `#anchor` and reStructuredText output is unchanged. Collection
+  READMEs pick this up with the next `generate` run.
+
 ### Fixed
 
 - Invalid values for `--format` and `--readme-toc-list-bulletpoints` now fail

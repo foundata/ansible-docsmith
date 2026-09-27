@@ -197,9 +197,11 @@ class TestEndToEnd:
         assert "[`first_state`](#first-variable-first_state)" in readme
 
         # TOC of a non-embedded role links into the role README
-        assert "[`second_port`](roles/second/README.md#variable-second_port)" in readme
+        assert (
+            "[`second_port`](./roles/second/README.md#variable-second_port)" in readme
+        )
         # Named TOC-FULL lists hand-written headings of the role README
-        assert "[Usage](roles/second/README.md#usage)" in readme
+        assert "[Usage](./roles/second/README.md#usage)" in readme
 
         # Idempotence and check mode
         result = runner.invoke(app, ["generate", str(collection), "--check"])

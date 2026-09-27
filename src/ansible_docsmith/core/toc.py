@@ -231,6 +231,25 @@ class MarkdownTocGenerator(BaseTocGenerator):
         anchor = re.sub(r"[-\s]+", "-", anchor)
         return anchor.strip("-")
 
+    @staticmethod
+    def _relative_link_prefix(link_prefix: str) -> str:
+        """Prepend "./" to a repository path, as the style guide requires.
+
+        An empty prefix (a link within the same document) and a prefix
+        that already states its base ("./" or "../") are returned
+        unchanged. Prefixes are repository-relative paths; absolute paths
+        and URLs are out of scope.
+
+        Args:
+            link_prefix: Link target prefix, before the "#"
+
+        Returns:
+            Link target prefix in the form the style guide expects
+        """
+        if not link_prefix or link_prefix.startswith(("./", "../")):
+            return link_prefix
+        return f"./{link_prefix}"
+
     @override
     def _generate_toc_lines(
         self,
@@ -243,7 +262,9 @@ class MarkdownTocGenerator(BaseTocGenerator):
         Args:
             headings: List of heading dictionaries
             bullet_style: Bullet style to use
-            link_prefix: Prepended to every link target, before the "#"
+            link_prefix: Prepended to every link target, before the "#".
+                Repository paths receive a leading "./"; links within the
+                same document (empty prefix) keep their bare "#anchor".
 
         Returns:
             Generated TOC lines as string
@@ -251,6 +272,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
         if not headings:
             return ""
 
+        link_prefix = self._relative_link_prefix(link_prefix)
         lines = []
         min_level = min(h["level"] for h in headings)
 
