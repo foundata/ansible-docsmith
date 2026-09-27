@@ -205,7 +205,7 @@ uv run ruff format . && uv run ruff check --fix .
 The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
 
 Markdown follows
-[`guidelines/markdown-style-guide.md`](https://github.com/foundata/guidelines/blob/main/markdown-style-guide.md)
+[`guidelines/markdown-style-guide.md`](https://foundata.com/en/guidelines/markdown-style-guide/)
 and is checked with [`.rumdl.toml`](./.rumdl.toml), a verbatim copy of the
 guide's file that [`tests/check_markdown.py`](./tests/check_markdown.py) names
 explicitly, so no other configuration can alter the result;
@@ -224,7 +224,7 @@ output of the generator under test, and formatting them would rewrite the
 oracle the tests compare against.
 
 Shell scripts follow
-[`guidelines/shell-scripting-style-guide.md`](https://github.com/foundata/guidelines/blob/main/shell-scripting-style-guide.md)
+[`guidelines/shell-scripting-style-guide.md`](https://foundata.com/en/guidelines/shell-scripting-style-guide/)
 and are checked with the tools and option sets it prescribes.
 `scripts/release-check.sh` runs them over every shipped script, including
 itself. To check the current shell script without running the full release gate:
@@ -239,7 +239,7 @@ bash -n scripts/release-check.sh
 ### Commit messages and scopes<a id="commit-scopes"></a>
 
 Commit messages follow the
-[foundata guideline](https://github.com/foundata/guidelines/blob/main/git-commits.md):
+[foundata guideline](https://foundata.com/en/guidelines/git-commits/):
 `<scope>: <description>`, imperative, lowercase description, body only for
 context the diff cannot preserve. Scopes in use:
 
