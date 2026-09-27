@@ -14,7 +14,7 @@ This file provides information for maintainers and contributors to
   - [Commit messages and scopes](#commit-scopes)
 - [Testing](#testing)
   - [Running tests](#running-tests)
-  - [Manual testing examples](#manual-testing)
+    - [Manual testing examples](#manual-testing)
   - [Test structure](#test-structure)
   - [Writing tests](#writing-tests)
 - [Recommended development workflow](#development-workflow)
@@ -28,15 +28,17 @@ This file provides information for maintainers and contributors to
 
 ## Prerequisites<a id="prerequisites"></a>
 
-- **Python 3.11 or later** - Required for running the application.
-- **Git** - For version control
-- **[`uv`](https://docs.astral.sh/uv/getting-started/installation/)** - Python
-  package manager (recommended) or `pip` as fallback
-- **[shfmt](https://github.com/mvdan/sh)** and
-  **[shellcheck](https://www.shellcheck.net/)** for `scripts/release-check.sh`'s
-  self-check. Fedora: `sudo dnf install shfmt ShellCheck`. Debian 13+ / Ubuntu
-  24.04+: `sudo apt install shfmt shellcheck`. The release gate fails without
-  them.
+- Python 3.11 or later to run the application.
+- Git for version control.
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) for the
+  development and release commands in this guide. The limited `pip` alternative
+  below supports running the application from source and manual testing.
+
+For shell-script checks and the release gate, also install
+[shfmt](https://github.com/mvdan/sh) and
+[shellcheck](https://www.shellcheck.net/). Fedora:
+`sudo dnf install shfmt ShellCheck`. Debian 13+ / Ubuntu 24.04+:
+`sudo apt install shfmt shellcheck`. The release gate fails without them.
 
 
 ## Getting started<a id="getting-started"></a>
@@ -48,30 +50,38 @@ This file provides information for maintainers and contributors to
    cd ansible-docsmith
    ```
 
-2. Set up development environment:
-   Install dependencies using `uv` (recommended):
+2. Set up the development environment with `uv` (recommended):
 
    ```sh
    # Install all dependencies including development dependencies
-   uv sync --all-groups
+   uv sync --locked --all-groups
 
    # Alternative: Install only production dependencies
-   uv sync
+   uv sync --locked --no-dev
    ```
 
-   Or using `pip` (fallback):
+   Plain `uv sync` includes the `dev` dependency group by default. `--locked`
+   checks that `uv.lock` matches the project configuration without updating it.
+
+   To run the application from source without the full development toolchain,
+   use `pip` in a virtual environment:
 
    ```sh
    # Create virtual environment
    python -m venv .venv
    source .venv/bin/activate
 
-   # Install in development mode
+   # Install the application in editable mode
    pip install -e .
-   pip install pytest  # For testing
+   ansible-docsmith --help
+   ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
    ```
 
-3. Test that the installation works:
+   This alternative installs runtime dependencies only. Use the `uv` setup for
+   the automated tests, coverage, linting, type checks and release commands
+   below.
+
+3. Check the `uv` installation:
 
    ```sh
    # Show help
@@ -140,23 +150,20 @@ ansible-docsmith/
 
 This project follows these coding standards and rules:
 
-- **Python Style**: [PEP 8](https://peps.python.org/pep-0008/) compliance.
-- **Type Hints**: Use [type](https://docs.python.org/3/library/typing.html)
-  annotations for all functions and methods.
-- **Docstrings**: Use
+- Follow [PEP 8](https://peps.python.org/pep-0008/).
+- Use [type annotations](https://docs.python.org/3/library/typing.html) for all
+  functions and methods.
+- Use
   [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-  for all public functions, classes, and modules. Always use the
-  three-double-quote `"""` format for docstrings (per
-  [PEP 257](https://peps.python.org/pep-0257/))
-- **Line Length**: Maximum 88 characters
-  ([Black](https://black.readthedocs.io/en/stable/) default).
-- **Import organization**: Follow [isort](https://pycqa.github.io/isort/)
-  standards.
-- **Error handling**: Use appropriate exception types and provide clear error
-  messages.
-- **Encoding, line ending:** Use UTF-8 encoding with `LF` (Line Feed `\n`) line
-  endings *without* [BOM](https://en.wikipedia.org/wiki/Byte_order_mark) for all
-  files.
+  for all public functions, classes and modules, with three double quotes
+  (`"""`) as specified by [PEP 257](https://peps.python.org/pep-0257/).
+- Keep Python lines within 88 characters
+  ([Black](https://black.readthedocs.io/en/stable/)'s default).
+- Follow [isort](https://pycqa.github.io/isort/) standards for import
+  organization.
+- Use appropriate exception types and provide clear error messages.
+- Use UTF-8 encoding with `LF` (Line Feed `\n`) line endings and no
+  [BOM](https://en.wikipedia.org/wiki/Byte_order_mark) for all files.
 
 The linting and formatting tool can take care of most of the rules (see next
 section).
@@ -191,7 +198,7 @@ uv run ruff format . && uv run ruff check --fix .
 The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
 
 Markdown follows
-[`guidelines/markdown-style-guide.md`](https://github.com/foundata/guidelines)
+[`guidelines/markdown-style-guide.md`](https://github.com/foundata/guidelines/blob/main/markdown-style-guide.md)
 and is checked with [`.rumdl.toml`](./.rumdl.toml), a verbatim copy of the
 guide's file that [`tests/check_markdown.py`](./tests/check_markdown.py) names
 explicitly, so no other configuration can alter the result;
@@ -210,15 +217,22 @@ output of the generator under test, and formatting them would rewrite the
 oracle the tests compare against.
 
 Shell scripts follow
-[`guidelines/shell-scripting-style-guide.md`](https://github.com/foundata/guidelines)
+[`guidelines/shell-scripting-style-guide.md`](https://github.com/foundata/guidelines/blob/main/shell-scripting-style-guide.md)
 and are checked with the tools and option sets it prescribes.
 `scripts/release-check.sh` runs them over every shipped script, including
-itself, so the quickest way to check a shell-script change is to run that step.
+itself. To check the current shell script without running the full release gate:
+
+```sh
+shfmt --language-dialect bash --indent 2 --case-indent --binary-next-line --simplify --diff scripts/release-check.sh
+shellcheck --shell=bash --severity=style --exclude=SC2292 --exclude=SC3040 --exclude=SC3043 --enable=all scripts/release-check.sh
+bash -n scripts/release-check.sh
+```
 
 
 ### Commit messages and scopes<a id="commit-scopes"></a>
 
-Commit messages follow the foundata guideline (`guidelines/git-commits.md`):
+Commit messages follow the
+[foundata guideline](https://github.com/foundata/guidelines/blob/main/git-commits.md):
 `<scope>: <description>`, imperative, lowercase description, body only for
 context the diff cannot preserve. Scopes in use:
 
@@ -372,12 +386,12 @@ When adding new features or fixing bugs:
 1. **Follow the coding standards** mentioned above.
 2. **Write or update tests** for your changes.
 3. **Update documentation** if needed.
-4. **[Tests](#running-tests) your changes** thoroughly.
+4. **[Test](#running-tests) your changes** thoroughly.
 
 
 ### Before committing<a id="before-committing"></a>
 
-Always run this checklist before committing:
+Before committing Python changes, run:
 
 ```sh
 # 1. Format code
@@ -386,13 +400,28 @@ uv run ruff format .
 # 2. Fix linting issues (if any)
 uv run ruff check --fix .
 
-# 3. Run all tests
+# 3. Check types
+uv run mypy src tests
+
+# 4. Run all tests
 uv run pytest
 
-# 4. Test CLI functionality (always use --dry-run with fixtures!)
+# 5. Test CLI functionality (always use --dry-run with fixtures!)
 uv run ansible-docsmith --help
 uv run ansible-docsmith generate tests/fixtures/example-role-simple --dry-run
 ```
+
+For Markdown changes, run the formatter, review its changes, then check the
+result:
+
+```sh
+uv run python tests/check_markdown.py --format
+uv run python tests/check_markdown.py
+```
+
+For shell-script changes, run the shell checks described under
+[Code formatting and linting](#code-linting). Before a release, run the full
+[release gate](#releases).
 
 
 ## Releases<a id="releases"></a>
@@ -464,12 +493,10 @@ dependency of this project. It reads the `[tool.releasing]` table in
 
    `tag create` refuses a dirty working tree, a version the sources and the
    changelog disagree on and, with `--manifest`, a revision other than the one
-   those artifacts were built from. It also refuses a commit that credits a
-   tool as its author; the `Assisted-by:` disclosure this project uses is
-   allowed by `allowed-attribution` in [`pyproject.toml`](./pyproject.toml).
-   `push` sends the branch before the tag and refuses when the branch does not
-   contain the tagged commit. If something minor went wrong, delete the tag and
-   start over:
+   those artifacts were built from. It also checks commit attribution against
+   the rules configured in [`pyproject.toml`](./pyproject.toml). `push` sends
+   the branch before the tag and refuses when the branch does not contain the
+   tagged commit. If something minor went wrong, delete the tag and start over:
 
    ```sh
    uv run release tag delete "${version}"
@@ -535,9 +562,15 @@ dependency of this project. It reads the `[tool.releasing]` table in
 
 ### Common issues<a id="common-issues"></a>
 
-- **Import errors**: Ensure you've installed the package in development mode
-  with `uv sync`.
-- **Test failures**: Check if you have the latest dependencies with
-  `uv sync --all-groups`.
-- **CLI not found**: Make sure you're using `uv run ansible-docsmith` or have
-  activated the virtual environment.
+- **Import errors:** Run commands from the repository root with `uv run` so they
+  use the project's environment. If dependencies are missing, run
+  `uv sync --locked --all-groups`. For the limited `pip` setup, activate the
+  virtual environment and check that `pip install -e .` succeeded.
+- **Test failures:** Read the failing assertion or error first. For missing
+  dependencies or an environment mismatch, run `uv sync --locked --all-groups`
+  and retry the failing test. This installs the locked versions; it does not
+  upgrade dependencies to the latest releases. If the failure persists,
+  investigate the failing test and the code it exercises.
+- **CLI not found:** Run `uv run ansible-docsmith --help` from the repository
+  root. With the `pip` setup, activate the virtual environment before running
+  `ansible-docsmith`.
