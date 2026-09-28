@@ -499,13 +499,23 @@ a
 
 ### Trademarks<a id="trademarks"></a>
 
-- Red Hat® is a trademark of Red Hat, Inc., registered in the US and other
-  countries.
-- Ansible® is a trademark of Red Hat, Inc., registered in the US and other
-  countries.
+Third-party trademarks used in this repository:
+
+- Ansible®, Fedora® and Red Hat® are trademarks of Red Hat, Inc., registered in
+  the United States and other countries.
+- Debian® is a trademark of Software in the Public Interest, Inc., registered in
+  Germany and the United States.
+- Ubuntu® is a trademark of Canonical Ltd., registered in Germany, the European
+  Union and the United States.
 
 Their use here is purely descriptive and does not imply any affiliation with or
 endorsement by the trademark holders.
+
+Own and licensed trademarks used in this repository:
+
+- foundata® is a trademark of [IPAM GmbH](https://ipam-services.com/),
+  registered in Germany and the European Union, licensed to
+  [foundata GmbH](https://foundata.com/).
 
 
 ## Author information<a id="author-information"></a>
