@@ -1,5 +1,5 @@
 # rumdl config implementing foundata's Markdown style guide. Details, reasoning:
-# https://foundata.com/en/guidelines/markdown-style-guide/
+# https://foundata.com/en/guidelines/markdown/
 
 [global]
 extend-enable = [

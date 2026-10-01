@@ -7,7 +7,7 @@ import pytest
 
 from tests import check_markdown
 
-GUIDE = "markdown-style-guide.md"
+GUIDE = "markdown.md"
 ROOT = Path(__file__).resolve().parents[2]
 
 

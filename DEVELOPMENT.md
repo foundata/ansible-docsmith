@@ -205,7 +205,7 @@ uv run ruff format . && uv run ruff check --fix .
 The project has Ruff configured in [`pyproject.toml`](./pyproject.toml)
 
 Markdown follows
-[`guidelines/markdown-style-guide.md`](https://foundata.com/en/guidelines/markdown-style-guide/)
+[`guidelines/markdown.md`](https://foundata.com/en/guidelines/markdown/)
 and is checked with [`.rumdl.toml`](./.rumdl.toml), a verbatim copy of the
 guide's file that [`tests/check_markdown.py`](./tests/check_markdown.py) names
 explicitly, so no other configuration can alter the result;
@@ -224,7 +224,7 @@ output of the generator under test, and formatting them would rewrite the
 oracle the tests compare against.
 
 Shell scripts follow
-[`guidelines/shell-scripting-style-guide.md`](https://foundata.com/en/guidelines/shell-scripting-style-guide/)
+[`guidelines/shell-scripting.md`](https://foundata.com/en/guidelines/shell-scripting/)
 and are checked with the tools and option sets it prescribes.
 `scripts/release-check.sh` runs them over every shipped script, including
 itself. To check the current shell script without running the full release gate:
