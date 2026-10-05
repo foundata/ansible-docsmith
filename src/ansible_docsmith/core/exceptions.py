@@ -25,6 +25,14 @@ class ProcessingError(AnsibleDocSmithError):
     pass
 
 
+class ConfigurationError(AnsibleDocSmithError):
+    """Raised when project configuration cannot be selected or validated."""
+
+
+class FormatterError(ProcessingError):
+    """Raised when a formatter fails or damages the README structure."""
+
+
 class TemplateError(AnsibleDocSmithError):
     """Raised when template rendering fails."""
 

@@ -1,0 +1,24 @@
+---
+argument_specs:
+  main:
+    short_description: "Formatter regression fixture"
+    options:
+      formatter_message:
+        type: "str"
+        default: "hello"
+        description: >-
+          This generated description deliberately exceeds the configured line
+          length so that formatting a generated block must agree with formatting
+          the complete document independently.
+      formatter_items:
+        type: "list"
+        elements: "str"
+        default: []
+        description:
+          - "Entries to include."
+          - |
+            For example:
+            ```yaml
+            - first
+            - second
+            ```

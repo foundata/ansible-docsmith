@@ -125,10 +125,13 @@ ansible-docsmith/
 │   ├── core/                    # Core functionality
 │   │   ├── __init__.py
 │   │   ├── collection.py        # Collection detection and processing
+│   │   ├── config.py            # Project discovery and validated settings
 │   │   ├── defaults_comments.py # Comment blocks for entry-point files
 │   │   ├── doc_generators.py    # README documentation generators (MD, RST)
 │   │   ├── exceptions.py        # Custom exceptions
+│   │   ├── file_updates.py      # Output snapshots and atomic file replacement
 │   │   ├── markdown_ast.py      # Shared Markdown parsing (markdown-it-py)
+│   │   ├── markdown_formatter.py # External Markdown formatter hook
 │   │   ├── markup.py            # Ansible markup conversion
 │   │   ├── parser.py            # YAML parsing
 │   │   ├── processor.py         # Main processing logic
@@ -370,6 +373,9 @@ When adding new features or fixing bugs:
 3. **Use descriptive test names** explaining what is being tested.
 4. **Follow the existing test patterns** in the codebase.
 5. **Ensure tests are isolated** and don't depend on external resources.
+
+Use temporary scripts to simulate formatters in unit tests. Test real formatters
+in integration tests using the locked development dependencies.
 
 
 ## Recommended development workflow<a id="development-workflow"></a>

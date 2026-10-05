@@ -2,17 +2,20 @@
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from ..constants import SPEC_VALID_ENTRYPOINT_KEYS, SPEC_VALID_OPTION_KEYS
+from .config import MarkdownFormatterConfig
 from .defaults_comments import DefaultsCommentGenerator
 from .doc_generators import (
     BaseDocumentationGenerator,
     create_documentation_generator,
 )
 from .exceptions import ProcessingError, ValidationError
+from .file_updates import FileCommitError, FileSnapshot, FileUpdate, apply_file_updates
+from .markdown_formatter import format_markdown
 from .markup import lint_ansible_markup
 from .parser import ArgumentSpecParser
 from .readme_updater import ReadmeUpdater
@@ -44,7 +47,7 @@ def detect_format_from_role(role_path: Path) -> str:
 
 @dataclass
 class ProcessingResults:
-    """Results from role processing operation."""
+    """Prepared outputs and processing results; preparation never writes files."""
 
     operations: list[tuple[Path, str, str]]  # (file, action, status)
     errors: list[str]
@@ -53,6 +56,32 @@ class ProcessingResults:
     # Full README content after the update (also set in dry-run mode);
     # used for collection READMEs referencing role documentation
     readme_content: str | None = None
+    updates: list[FileUpdate] = field(default_factory=list)
+
+    def add_update(self, original: FileSnapshot, content: str) -> None:
+        """Record the same candidate for comparison and eventual writing."""
+        self.updates.append(FileUpdate(original, content))
+        self.file_diffs.append((original.path, original.content or "", content))
+
+    def finish(self, dry_run: bool) -> None:
+        """Commit an error-free plan, or mark pending operations as unwritten."""
+        committed: set[Path] = set()
+        if not dry_run and not self.errors:
+            try:
+                committed = apply_file_updates(self.updates)
+            except FileCommitError as error:
+                committed = error.committed
+                self.errors.append(str(error))
+        changed = {update.original.path for update in self.updates if update.changed}
+        pending_status = "Preview" if dry_run and not self.errors else "Not written"
+        self.operations = [
+            (
+                path,
+                action,
+                pending_status if path in changed and path not in committed else status,
+            )
+            for path, action, status in self.operations
+        ]
 
 
 class RoleProcessor:
@@ -66,11 +95,13 @@ class RoleProcessor:
         format_type: str = "auto",
         role_path: Path | None = None,
         defaults_comments_nested: bool = True,
+        markdown_formatter: MarkdownFormatterConfig | None = None,
     ):
         self.dry_run = dry_run
         self.template_readme = template_readme
         self.toc_bullet_style = toc_bullet_style
         self.role_path = role_path
+        self.markdown_formatter = markdown_formatter
 
         # Resolve format type
         if format_type.lower() == "auto" and role_path:
@@ -209,6 +240,18 @@ class RoleProcessor:
     ) -> ProcessingResults:
         """Process the entire role for documentation generation."""
 
+        results = self.prepare_role(role_path, generate_readme, update_defaults)
+        results.finish(self.dry_run)
+        return results
+
+    def prepare_role(
+        self,
+        role_path: Path,
+        generate_readme: bool = True,
+        update_defaults: bool = True,
+    ) -> ProcessingResults:
+        """Prepare all role output without writing, for standalone or collection use."""
+
         # Resolve auto format if needed
         self._resolve_auto_format(role_path)
 
@@ -259,21 +302,18 @@ class RoleProcessor:
                 specs, role_name, role_path
             )
 
-            # Read original content for diff comparison
-            existed_before = readme_path.exists()
-            original_content = ""
-            if existed_before:
-                original_content = readme_path.read_text(encoding="utf-8")
-
-            # Compute the new content once; write it (unless in dry-run
-            # mode) only when it actually differs
-            new_content = readme_updater._get_updated_content(readme_path, doc_content)
+            original = FileSnapshot.read(readme_path)
+            existed_before = original.content is not None
+            new_content = readme_updater.build_updated_content(
+                original.content, doc_content, readme_path.parent.name
+            )
+            if self.format_type == "markdown" and self.markdown_formatter is not None:
+                new_content = format_markdown(
+                    new_content, readme_path, self.markdown_formatter
+                )
             results.readme_content = new_content
-            changed = new_content != original_content
-            if self.dry_run:
-                results.file_diffs.append((readme_path, original_content, new_content))
-            elif changed:
-                readme_path.write_text(new_content, encoding="utf-8", newline="\n")
+            changed = new_content != original.content
+            results.add_update(original, new_content)
 
             if not existed_before:
                 action = "Created"
@@ -303,6 +343,7 @@ class RoleProcessor:
 
         for entry_point, defaults_path in defaults_files.items():
             try:
+                original = FileSnapshot.read(defaults_path)
                 # Create a spec dict containing only this entry point
                 entry_point_specs = {entry_point: specs[entry_point]}
                 updated_content = self.defaults_generator.add_comments(
@@ -310,22 +351,8 @@ class RoleProcessor:
                 )
 
                 if updated_content:
-                    # Read original content for diff comparison
-                    original_content = ""
-                    if defaults_path.exists():
-                        original_content = defaults_path.read_text(encoding="utf-8")
-
-                    changed = updated_content != original_content
-                    # Store diff information for dry-run display
-                    if self.dry_run:
-                        results.file_diffs.append(
-                            (defaults_path, original_content, updated_content)
-                        )
-                    elif changed:
-                        # Write updated content directly (no backup)
-                        defaults_path.write_text(
-                            updated_content, encoding="utf-8", newline="\n"
-                        )
+                    changed = updated_content != original.content
+                    results.add_update(original, updated_content)
 
                     action = "Comments added" if changed else "Unchanged"
                     results.operations.append((defaults_path, action, "✅"))

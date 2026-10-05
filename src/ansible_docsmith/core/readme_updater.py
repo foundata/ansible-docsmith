@@ -16,6 +16,7 @@ from ..constants import (
     MARKER_README_TOCFULL_START,
 )
 from .exceptions import FileOperationError
+from .file_updates import FileSnapshot, FileUpdate, apply_file_updates
 from .toc import create_toc_generator
 
 # Matches any DocSmith marker, capturing type, optional role name and
@@ -99,8 +100,11 @@ class ReadmeUpdater:
         """Update content between markers in README file."""
 
         try:
-            updated_content = self._get_updated_content(readme_path, new_content)
-            readme_path.write_text(updated_content, encoding="utf-8", newline="\n")
+            original = FileSnapshot.read(readme_path)
+            updated_content = self.build_updated_content(
+                original.content, new_content, readme_path.parent.name
+            )
+            apply_file_updates([FileUpdate(original, updated_content)])
             return True
 
         except Exception as e:
@@ -108,8 +112,19 @@ class ReadmeUpdater:
 
     def _get_updated_content(self, readme_path: Path, new_content: str) -> str:
         """Get the updated content without writing to file."""
-        if readme_path.exists():
-            content = readme_path.read_text(encoding="utf-8")
+        original = (
+            readme_path.read_text(encoding="utf-8") if readme_path.exists() else None
+        )
+        return self.build_updated_content(
+            original, new_content, readme_path.parent.name
+        )
+
+    def build_updated_content(
+        self, original_content: str | None, new_content: str, role_name: str
+    ) -> str:
+        """Merge generated sections into a snapshot, or create a missing README."""
+        if original_content is not None:
+            content = original_content
             # Update main content
             content = self._replace_between_markers(
                 content, new_content, self.start_marker, self.end_marker
@@ -121,7 +136,7 @@ class ReadmeUpdater:
             return content
         else:
             # Create new README with template
-            return self._create_new_readme(new_content, readme_path.parent.name)
+            return self._create_new_readme(new_content, role_name)
 
     def _replace_between_markers(
         self, content: str, new_content: str, start_marker: str, end_marker: str

@@ -9,6 +9,13 @@ and the project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Discover project-wide generate/validate settings from a single DocSmith TOML
+  file, with explicit CLI overrides.
+- Optionally format complete Markdown READMEs before generation, check and
+  dry-run comparisons using a configured external command.
+
 ### Changed
 
 - Generated Markdown tables of contents now link to other documents with a
@@ -19,6 +26,8 @@ and the project adheres to
 
 ### Fixed
 
+- Prepare all role and collection outputs before writing, so preparation
+  failures leave READMEs and defaults files unchanged.
 - Invalid values for `--format` and `--readme-toc-list-bulletpoints` now fail
   during argument parsing with exit code 2, before the command starts. This
   matches the documented exit-code contract.

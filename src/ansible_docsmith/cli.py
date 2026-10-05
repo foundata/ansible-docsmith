@@ -5,19 +5,22 @@ Ansible-DocSmith CLI - Generate Ansible role documentation from argument_specs.y
 
 import difflib
 import logging
+from dataclasses import replace
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import typer
 from rich import print as rprint
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from . import __version__
 from .constants import CLI_HEADER
 from .core.collection import CollectionProcessor, detect_project_type
-from .core.exceptions import ProcessingError, ValidationError
+from .core.config import ProjectConfig, load_project_config
+from .core.exceptions import ConfigurationError, ProcessingError, ValidationError
 from .core.processor import ProcessingResults, RoleProcessor
 from .utils.logging import setup_logging
 
@@ -28,6 +31,7 @@ app = typer.Typer(
 )
 console = Console()
 LOGGER = logging.getLogger(__name__)
+_T = TypeVar("_T")
 
 
 class _FormatType(StrEnum):
@@ -41,6 +45,7 @@ class _FormatType(StrEnum):
 class _TocBulletStyle(StrEnum):
     """Markdown bullet styles accepted by the command line."""
 
+    AUTO = "auto"
     ASTERISK = "*"
     HYPHEN = "-"
 
@@ -50,6 +55,22 @@ def _display_header() -> None:
     header = CLI_HEADER.format(version=__version__)
     console.print(header, style="bold", highlight=False)
     console.print()  # Blank line
+
+
+def _project_config(path: Path, config: Path | None, no_config: bool) -> ProjectConfig:
+    try:
+        return load_project_config(path, config, no_config=no_config)
+    except ConfigurationError as error:
+        raise typer.BadParameter(str(error), param_hint="configuration") from error
+
+
+def _display_config(project: ProjectConfig) -> None:
+    if project.path is not None:
+        console.print(f"Configuration: {project.path}", markup=False)
+
+
+def _override(value: _T | None, configured: _T) -> _T:
+    return configured if value is None else value
 
 
 def version_callback(value: bool) -> None:
@@ -75,50 +96,48 @@ def main(
 @app.command()
 def generate(
     path: Path = typer.Argument(
-        ...,
-        help="Path to an Ansible role or collection directory",
+        Path("."),
+        help="Role or collection directory (also the configuration discovery directory)",
         exists=True,
         file_okay=False,
         dir_okay=True,
     ),
-    output_readme: bool = typer.Option(
-        True, "--readme/--no-readme", help="Generate/update README documentation"
+    output_readme: bool | None = typer.Option(
+        None, "--readme/--no-readme", help="Generate/update README documentation"
     ),
-    format_type: _FormatType = typer.Option(
-        _FormatType.AUTO,
+    format_type: _FormatType | None = typer.Option(
+        None,
         "--format",
         help="Output format: 'auto', 'markdown' or 'rst' (auto detects from files)",
         case_sensitive=False,
     ),
-    update_defaults: bool = typer.Option(
-        True,
+    update_defaults: bool | None = typer.Option(
+        None,
         "--defaults/--no-defaults",
         help="Add inline comments to entry-point variable files like defaults/main.yml",
     ),
-    defaults_comments_nested: bool = typer.Option(
-        True,
+    defaults_comments_nested: bool | None = typer.Option(
+        None,
         "--defaults-comments-nested/--no-defaults-comments-nested",
         help=("Document nested options (dict attributes) in entry-point file comments"),
     ),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Preview changes without writing files"
+    dry_run: bool | None = typer.Option(
+        None, "--dry-run/--no-dry-run", help="Preview changes without writing files"
     ),
-    check: bool = typer.Option(
-        False,
-        "--check",
+    check: bool | None = typer.Option(
+        None,
+        "--check/--no-check",
         help="Check whether the documentation is up to date without writing "
         "files (implies --dry-run): exit code 1 if changes would be made. "
         "Useful for CI/CD pipelines and pre-commit hooks.",
     ),
-    verbose: bool = typer.Option(
-        False, "-v", "--verbose", help="Enable verbose logging"
+    verbose: bool | None = typer.Option(
+        None, "--verbose/--no-verbose", "-v", help="Enable verbose logging"
     ),
     readme_toc_list_bulletpoints: _TocBulletStyle | None = typer.Option(
         None,
         "--readme-toc-list-bulletpoints",
-        help=(
-            "Bullet style for README TOC ('*' or '-'). Auto-detected if not specified."
-        ),
+        help=("Bullet style for README TOC ('*', '-' or 'auto')."),
     ),
     template_readme: Path | None = typer.Option(
         None,
@@ -128,15 +147,72 @@ def generate(
         file_okay=True,
         dir_okay=False,
     ),
+    no_template_readme: bool = typer.Option(
+        False, "--no-template-readme", help="Use the built-in README template"
+    ),
+    config: Path | None = typer.Option(
+        None, "--config", help="Use exactly this TOML file instead of discovery"
+    ),
+    no_config: bool = typer.Option(
+        False, "--no-config", help="Ignore project configuration"
+    ),
+    markdown_formatter: bool | None = typer.Option(
+        None,
+        "--markdown-formatter/--no-markdown-formatter",
+        help="Run the configured formatter, including during check and dry-run",
+    ),
 ) -> None:
-    """Generate comprehensive documentation for an Ansible role."""
+    """Generate role/collection documentation, trusting discovered formatter commands."""
+
+    project = _project_config(path, config, no_config)
+    if no_template_readme and template_readme is not None:
+        raise typer.BadParameter(
+            "--template-readme conflicts with --no-template-readme"
+        )
+    settings = replace(
+        project.generate,
+        readme=_override(output_readme, project.generate.readme),
+        defaults=_override(update_defaults, project.generate.defaults),
+        defaults_comments_nested=_override(
+            defaults_comments_nested, project.generate.defaults_comments_nested
+        ),
+        dry_run=_override(dry_run, project.generate.dry_run),
+        check=_override(check, project.generate.check),
+        markdown_formatter=_override(
+            markdown_formatter, project.generate.markdown_formatter
+        ),
+        readme_toc_list_bulletpoints=_override(
+            readme_toc_list_bulletpoints, project.generate.readme_toc_list_bulletpoints
+        ),
+        template_readme=_override(template_readme, project.generate.template_readme),
+    )
+    if no_template_readme:
+        settings = replace(settings, template_readme=None)
+    settings = replace(settings, dry_run=settings.dry_run or settings.check)
+    output_readme = settings.readme
+    update_defaults = settings.defaults
+    defaults_comments_nested = settings.defaults_comments_nested
+    check = settings.check
+    dry_run = settings.dry_run
+    verbose = project.verbose if verbose is None else verbose
+    format_type = _FormatType(project.format) if format_type is None else format_type
+    bullet_style = settings.readme_toc_list_bulletpoints
+    toc_bullet_style = None if bullet_style == "auto" else bullet_style
+    if template_readme is None and settings.template_readme and output_readme:
+        if (
+            not settings.template_readme.is_file()
+            or not settings.template_readme.name.endswith(".j2")
+        ):
+            raise typer.BadParameter(
+                "Configured template_readme must be an existing .j2 file"
+            )
+    template_readme = settings.template_readme if output_readme else None
+    formatter = project.markdown_formatter if settings.markdown_formatter else None
 
     setup_logging(verbose)
     _display_header()
-
-    # Check mode never writes files
-    if check:
-        dry_run = True
+    _display_config(project)
+    LOGGER.debug("Effective generate settings: %s; format=%s", settings, format_type)
 
     # Validate template file extension if provided
     if template_readme and not template_readme.name.endswith(".j2"):
@@ -171,18 +247,20 @@ def generate(
                     collection_path=path,
                     dry_run=dry_run,
                     template_readme=template_readme,
-                    toc_bullet_style=readme_toc_list_bulletpoints,
+                    toc_bullet_style=toc_bullet_style,
                     format_type=format_type,
                     defaults_comments_nested=defaults_comments_nested,
+                    markdown_formatter=formatter,
                 )
             else:
                 processor = RoleProcessor(
                     dry_run=dry_run,
                     template_readme=template_readme,
-                    toc_bullet_style=readme_toc_list_bulletpoints,
+                    toc_bullet_style=toc_bullet_style,
                     format_type=format_type,
                     role_path=path,
                     defaults_comments_nested=defaults_comments_nested,
+                    markdown_formatter=formatter,
                 )
         except ValueError as e:
             LOGGER.error("Template error: %s", e)
@@ -247,40 +325,62 @@ def generate(
 @app.command()
 def validate(
     path: Path = typer.Argument(
-        ...,
-        help="Path to an Ansible role or collection directory",
+        Path("."),
+        help="Role or collection directory (also the configuration discovery directory)",
         exists=True,
         file_okay=False,
         dir_okay=True,
     ),
-    format_type: _FormatType = typer.Option(
-        _FormatType.AUTO,
+    format_type: _FormatType | None = typer.Option(
+        None,
         "--format",
         help="Expected format: 'auto', 'markdown' or 'rst' (auto detects from files)",
         case_sensitive=False,
     ),
-    verbose: bool = typer.Option(
-        False, "-v", "--verbose", help="Enable verbose logging"
+    verbose: bool | None = typer.Option(
+        None, "--verbose/--no-verbose", "-v", help="Enable verbose logging"
     ),
-    validate_readme: bool = typer.Option(
-        True, "--readme/--no-readme", help="Validate README documentation"
+    validate_readme: bool | None = typer.Option(
+        None, "--readme/--no-readme", help="Validate README documentation"
     ),
-    validate_argument_specs: bool = typer.Option(
-        True,
+    validate_argument_specs: bool | None = typer.Option(
+        None,
         "--argument-specs/--no-argument-specs",
         help="Validate argument_specs file",
     ),
-    strict: bool = typer.Option(
-        False,
-        "--strict",
+    strict: bool | None = typer.Option(
+        None,
+        "--strict/--no-strict",
         help="Treat warnings as errors (exit code 1). Useful for CI/CD "
         "pipelines and pre-commit hooks. Notices do not fail validation.",
+    ),
+    config: Path | None = typer.Option(
+        None, "--config", help="Use exactly this TOML file instead of discovery"
+    ),
+    no_config: bool = typer.Option(
+        False, "--no-config", help="Ignore project configuration"
     ),
 ) -> None:
     """Validate argument_specs.yml structure and content."""
 
+    project = _project_config(path, config, no_config)
+    settings = replace(
+        project.validate,
+        readme=_override(validate_readme, project.validate.readme),
+        argument_specs=_override(
+            validate_argument_specs, project.validate.argument_specs
+        ),
+        strict=_override(strict, project.validate.strict),
+    )
+    validate_readme = settings.readme
+    validate_argument_specs = settings.argument_specs
+    strict = settings.strict
+    verbose = project.verbose if verbose is None else verbose
+    format_type = _FormatType(project.format) if format_type is None else format_type
     setup_logging(verbose)
     _display_header()
+    _display_config(project)
+    LOGGER.debug("Effective validate settings: %s; format=%s", settings, format_type)
 
     console.print(f"[green]Validating:[/green] {path}")
 
@@ -447,7 +547,7 @@ def _display_results(
     if results.errors:
         console.print("\n[red]Errors:[/red]")
         for error in results.errors:
-            console.print(f"  • {error}", style="red")
+            console.print(f"  • {escape(error)}", style="red")
 
 
 def _display_file_diff(file_path: Path, old_content: str, new_content: str) -> None:

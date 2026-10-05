@@ -17,6 +17,9 @@ collection README are simply not referenced there.
 from pathlib import Path
 from typing import Any
 
+from .config import MarkdownFormatterConfig
+from .file_updates import FileSnapshot
+from .markdown_formatter import format_markdown
 from .processor import ProcessingResults, RoleProcessor, detect_format_from_role
 from .readme_updater import MARKER_PATTERN, ReadmeUpdater, marker_comment
 from .toc import create_toc_generator
@@ -61,12 +64,14 @@ class CollectionProcessor:
         toc_bullet_style: str | None = None,
         format_type: str = "auto",
         defaults_comments_nested: bool = True,
+        markdown_formatter: MarkdownFormatterConfig | None = None,
     ):
         self.collection_path = collection_path
         self.dry_run = dry_run
         self.template_readme = template_readme
         self.toc_bullet_style = toc_bullet_style
         self.defaults_comments_nested = defaults_comments_nested
+        self.markdown_formatter = markdown_formatter
         self.roles = find_collection_roles(collection_path)
 
         # Format of the collection README (role READMEs are detected
@@ -84,6 +89,7 @@ class CollectionProcessor:
             format_type="auto",
             role_path=role_path,
             defaults_comments_nested=self.defaults_comments_nested,
+            markdown_formatter=self.markdown_formatter,
         )
 
     def process_collection(
@@ -95,12 +101,20 @@ class CollectionProcessor:
         combined = ProcessingResults(
             operations=[], errors=[], warnings=[], file_diffs=[]
         )
+        if generate_readme:
+            try:
+                errors, _, _ = self._validate_collection_readme_markers()
+                combined.errors.extend(errors)
+            except Exception as error:
+                combined.errors.append(f"Collection README validation failed: {error}")
+            if combined.errors:
+                return combined
         # role name -> (role README path, its content after this run)
         role_readmes: dict[str, tuple[Path, str]] = {}
 
         for role_name, role_path in self.roles.items():
             processor = self._role_processor(role_path, self.dry_run)
-            results = processor.process_role(
+            results = processor.prepare_role(
                 role_path,
                 generate_readme=generate_readme,
                 update_defaults=update_defaults,
@@ -108,6 +122,7 @@ class CollectionProcessor:
 
             combined.operations.extend(results.operations)
             combined.file_diffs.extend(results.file_diffs)
+            combined.updates.extend(results.updates)
             combined.errors.extend(
                 f"Role '{role_name}': {error}" for error in results.errors
             )
@@ -125,6 +140,7 @@ class CollectionProcessor:
         if generate_readme:
             self._process_collection_readme(role_readmes, combined)
 
+        combined.finish(self.dry_run)
         return combined
 
     def _has_named_section(
@@ -176,8 +192,10 @@ class CollectionProcessor:
             return
 
         try:
-            original_content = readme_path.read_text(encoding="utf-8")
+            original = FileSnapshot.read(readme_path)
+            original_content = original.content or ""
             content = original_content
+            eligible = False
 
             updater = ReadmeUpdater(
                 format_type=self.format_type, toc_bullet_style=self.toc_bullet_style
@@ -207,6 +225,7 @@ class CollectionProcessor:
                     )
                 if updated is not None:
                     content = updated
+                    eligible = True
 
                 # TOC <role>: variables documentation only. When a MAIN
                 # embed exists in this (Markdown) document, link to it
@@ -227,6 +246,7 @@ class CollectionProcessor:
                 )
                 if updated is not None:
                     content = updated
+                    eligible = True
 
                 # TOC-FULL <role>: all headings of the role README (always
                 # links into the role README, which is what it indexes)
@@ -240,6 +260,7 @@ class CollectionProcessor:
                 )
                 if updated is not None:
                     content = updated
+                    eligible = True
 
             # Warn about role-named markers referencing unknown roles
             referenced_roles = {
@@ -253,10 +274,13 @@ class CollectionProcessor:
                     f"in DocSmith markers."
                 )
 
-            if self.dry_run:
-                results.file_diffs.append((readme_path, original_content, content))
-            elif content != original_content:
-                readme_path.write_text(content, encoding="utf-8", newline="\n")
+            if (
+                eligible
+                and self.format_type == "markdown"
+                and self.markdown_formatter is not None
+            ):
+                content = format_markdown(content, readme_path, self.markdown_formatter)
+            results.add_update(original, content)
 
             action = "Updated" if content != original_content else "Unchanged"
             results.operations.append((readme_path, action, "✅"))
