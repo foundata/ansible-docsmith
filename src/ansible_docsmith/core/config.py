@@ -29,6 +29,7 @@ class GenerateConfig:
     readme: bool = True
     defaults: bool = True
     defaults_comments_nested: bool = True
+    defaults_include_missing: bool = False
     readme_toc_list_bulletpoints: str = "auto"
     template_readme: Path | None = None
     dry_run: bool = False
@@ -191,6 +192,9 @@ def load_project_config(
                 defaults=_boolean(generate, "defaults", True),
                 defaults_comments_nested=_boolean(
                     generate, "defaults_comments_nested", True
+                ),
+                defaults_include_missing=_boolean(
+                    generate, "defaults_include_missing", False
                 ),
                 readme_toc_list_bulletpoints=_choice(
                     generate, "readme_toc_list_bulletpoints", "auto", ("auto", "*", "-")

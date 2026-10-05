@@ -24,6 +24,7 @@ def test_discovery_is_limited_to_target(tmp_path: Path, name: str) -> None:
     assert config.format == "auto"
     assert not config.generate.readme
     assert config.markdown_formatter is None
+    assert not config.generate.defaults_include_missing
 
 
 def test_one_authoritative_file(
@@ -53,6 +54,7 @@ verbose = true
 readme = false
 defaults = false
 defaults_comments_nested = false
+defaults_include_missing = true
 readme_toc_list_bulletpoints = "-"
 template_readme = "templates/custom.j2"
 check = true
@@ -69,6 +71,7 @@ command = ["tool", "{config_dir}/policy", "{readme}", "{{literal}}"]
     assert config.format == "rst" and config.verbose
     assert not config.generate.readme and not config.generate.defaults
     assert not config.generate.defaults_comments_nested
+    assert config.generate.defaults_include_missing
     assert config.generate.readme_toc_list_bulletpoints == "-"
     assert config.generate.template_readme == tmp_path / "templates/custom.j2"
     assert config.generate.check and config.generate.dry_run
@@ -90,6 +93,7 @@ command = ["tool", "{config_dir}/policy", "{readme}", "{{literal}}"]
         "generate = false",
         "[generate]\nunknown = true",
         "[generate]\nreadme = 0",
+        "[generate]\ndefaults_include_missing = 1",
         '[generate]\nreadme_toc_list_bulletpoints = "+"',
         "[generate]\ntemplate_readme = false",
         "[validate]\nstrict = 1",

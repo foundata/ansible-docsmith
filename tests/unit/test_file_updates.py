@@ -90,6 +90,33 @@ def test_staging_failure_leaves_targets_intact(tmp_path: Path) -> None:
     assert not list(tmp_path.glob(".ansible-docsmith-*"))
 
 
+def test_create_parent_only_during_commit(tmp_path: Path) -> None:
+    path = tmp_path / "defaults/main.yml"
+    update = FileUpdate(
+        FileSnapshot.read(path), "# Documentation\n", create_parent=True
+    )
+    assert not path.parent.exists()
+
+    assert apply_file_updates([update]) == {path}
+    assert path.read_text(encoding="utf-8") == "# Documentation\n"
+
+
+def test_staging_failure_removes_new_empty_parent(tmp_path: Path) -> None:
+    path = tmp_path / "defaults/main.yml"
+    missing = tmp_path / "other/file.yml"
+    updates = [
+        FileUpdate(FileSnapshot.read(path), "# Documentation\n", create_parent=True),
+        FileUpdate(FileSnapshot.read(missing), "unwritable"),
+    ]
+
+    with pytest.raises(FileCommitError) as caught:
+        apply_file_updates(updates)
+
+    assert not caught.value.committed
+    assert not path.parent.exists()
+    assert not missing.parent.exists()
+
+
 def test_replace_failure_reports_partial_commit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

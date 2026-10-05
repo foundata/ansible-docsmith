@@ -58,9 +58,11 @@ class ProcessingResults:
     readme_content: str | None = None
     updates: list[FileUpdate] = field(default_factory=list)
 
-    def add_update(self, original: FileSnapshot, content: str) -> None:
+    def add_update(
+        self, original: FileSnapshot, content: str, *, create_parent: bool = False
+    ) -> None:
         """Record the same candidate for comparison and eventual writing."""
-        self.updates.append(FileUpdate(original, content))
+        self.updates.append(FileUpdate(original, content, create_parent=create_parent))
         self.file_diffs.append((original.path, original.content or "", content))
 
     def finish(self, dry_run: bool) -> None:
@@ -96,12 +98,14 @@ class RoleProcessor:
         role_path: Path | None = None,
         defaults_comments_nested: bool = True,
         markdown_formatter: MarkdownFormatterConfig | None = None,
+        defaults_include_missing: bool = False,
     ):
         self.dry_run = dry_run
         self.template_readme = template_readme
         self.toc_bullet_style = toc_bullet_style
         self.role_path = role_path
         self.markdown_formatter = markdown_formatter
+        self.defaults_include_missing = defaults_include_missing
 
         # Resolve format type
         if format_type.lower() == "auto" and role_path:
@@ -128,7 +132,8 @@ class RoleProcessor:
             )
 
         self.defaults_generator = DefaultsCommentGenerator(
-            nested_options=defaults_comments_nested
+            nested_options=defaults_comments_nested,
+            include_missing=defaults_include_missing,
         )
 
     def _resolve_auto_format(self, role_path: Path) -> None:
@@ -271,7 +276,13 @@ class RoleProcessor:
 
             # Update defaults with comments
             if update_defaults:
-                self._process_defaults(role_path, specs, results)
+                # Normalization loses the distinction between absent and null defaults.
+                defaults_specs = (
+                    self._parse_original_specs(role_data["spec_file"])
+                    if self.defaults_include_missing
+                    else specs
+                )
+                self._process_defaults(role_path, defaults_specs, results)
 
         except (ValidationError, ProcessingError) as e:
             results.errors.append(str(e))
@@ -333,6 +344,24 @@ class RoleProcessor:
 
         # Find defaults files for all entry points
         defaults_files = self._find_defaults_files(role_path, specs)
+        if self.defaults_include_missing:
+            for entry_point, spec in specs.items():
+                if entry_point in defaults_files or not any(
+                    "default" not in option
+                    for option in spec.get("options", {}).values()
+                ):
+                    continue
+                if (
+                    not entry_point
+                    or Path(entry_point).name != entry_point
+                    or entry_point in {".", ".."}
+                ):
+                    raise ProcessingError(
+                        f"Cannot create defaults for invalid entry point: {entry_point!r}"
+                    )
+                defaults_files[entry_point] = (
+                    role_path / "defaults" / f"{entry_point}.yml"
+                )
 
         if not defaults_files:
             results.warnings.append(
@@ -346,15 +375,25 @@ class RoleProcessor:
                 original = FileSnapshot.read(defaults_path)
                 # Create a spec dict containing only this entry point
                 entry_point_specs = {entry_point: specs[entry_point]}
-                updated_content = self.defaults_generator.add_comments(
-                    defaults_path, entry_point_specs
+                updated_content = self.defaults_generator.build_updated_content(
+                    original.content, entry_point_specs
                 )
 
-                if updated_content:
+                if updated_content is not None:
                     changed = updated_content != original.content
-                    results.add_update(original, updated_content)
+                    results.add_update(
+                        original,
+                        updated_content,
+                        create_parent=self.defaults_include_missing,
+                    )
 
-                    action = "Comments added" if changed else "Unchanged"
+                    action = (
+                        "Created"
+                        if original.content is None
+                        else "Comments added"
+                        if changed
+                        else "Unchanged"
+                    )
                     results.operations.append((defaults_path, action, "✅"))
                 else:
                     results.operations.append(

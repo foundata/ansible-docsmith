@@ -65,12 +65,14 @@ class CollectionProcessor:
         format_type: str = "auto",
         defaults_comments_nested: bool = True,
         markdown_formatter: MarkdownFormatterConfig | None = None,
+        defaults_include_missing: bool = False,
     ):
         self.collection_path = collection_path
         self.dry_run = dry_run
         self.template_readme = template_readme
         self.toc_bullet_style = toc_bullet_style
         self.defaults_comments_nested = defaults_comments_nested
+        self.defaults_include_missing = defaults_include_missing
         self.markdown_formatter = markdown_formatter
         self.roles = find_collection_roles(collection_path)
 
@@ -89,6 +91,7 @@ class CollectionProcessor:
             format_type="auto",
             role_path=role_path,
             defaults_comments_nested=self.defaults_comments_nested,
+            defaults_include_missing=self.defaults_include_missing,
             markdown_formatter=self.markdown_formatter,
         )
 

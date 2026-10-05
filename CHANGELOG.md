@@ -11,6 +11,8 @@ and the project adheres to
 
 ### Added
 
+- Optionally document variables without defaults in a managed comment section
+  with `--defaults-include-missing` or project configuration (#33).
 - Warn when a required top-level variable has a role default, including null.
 - Discover project-wide generate/validate settings from a single DocSmith TOML
   file, with explicit CLI overrides.
@@ -27,6 +29,8 @@ and the project adheres to
 
 ### Fixed
 
+- Preserve trailing blank lines in defaults files and avoid extending YAML
+  block scalars when inserting comment separators.
 - Prepare all role and collection outputs before writing, so preparation
   failures leave READMEs and defaults files unchanged.
 - Invalid values for `--format` and `--readme-toc-list-bulletpoints` now fail

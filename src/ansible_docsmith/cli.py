@@ -121,6 +121,11 @@ def generate(
         "--defaults-comments-nested/--no-defaults-comments-nested",
         help=("Document nested options (dict attributes) in entry-point file comments"),
     ),
+    defaults_include_missing: bool | None = typer.Option(
+        None,
+        "--defaults-include-missing/--no-defaults-include-missing",
+        help="Document variables without defaults in an owned comment section",
+    ),
     dry_run: bool | None = typer.Option(
         None, "--dry-run/--no-dry-run", help="Preview changes without writing files"
     ),
@@ -175,6 +180,9 @@ def generate(
         defaults=_override(update_defaults, project.generate.defaults),
         defaults_comments_nested=_override(
             defaults_comments_nested, project.generate.defaults_comments_nested
+        ),
+        defaults_include_missing=_override(
+            defaults_include_missing, project.generate.defaults_include_missing
         ),
         dry_run=_override(dry_run, project.generate.dry_run),
         check=_override(check, project.generate.check),
@@ -250,6 +258,7 @@ def generate(
                     toc_bullet_style=toc_bullet_style,
                     format_type=format_type,
                     defaults_comments_nested=defaults_comments_nested,
+                    defaults_include_missing=settings.defaults_include_missing,
                     markdown_formatter=formatter,
                 )
             else:
@@ -260,6 +269,7 @@ def generate(
                     format_type=format_type,
                     role_path=path,
                     defaults_comments_nested=defaults_comments_nested,
+                    defaults_include_missing=settings.defaults_include_missing,
                     markdown_formatter=formatter,
                 )
         except ValueError as e:

@@ -230,7 +230,7 @@ def test_defaults_failure_prevents_readme_write(
     def fail(*args: object, **kwargs: object) -> str:
         raise OSError("failed to prepare defaults")
 
-    monkeypatch.setattr(DefaultsCommentGenerator, "add_comments", fail)
+    monkeypatch.setattr(DefaultsCommentGenerator, "build_updated_content", fail)
     result = RoleProcessor().process_role(role)
     assert result.errors
     assert _snapshot(role) == before

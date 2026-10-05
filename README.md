@@ -42,6 +42,7 @@ and within
 - [Usage](#usage)
   - [Preparations](#usage-preparations)
   - [Generate or update documentation](#usage-generate)
+    - [Variables without defaults](#usage-defaults-missing)
   - [Project configuration](#usage-config)
     - [Markdown formatter](#usage-formatter)
   - [Collections](#usage-collections)
@@ -244,6 +245,45 @@ ansible-docsmith generate /path/to/role --verbose
 ```
 
 
+#### Variables without defaults<a id="usage-defaults-missing"></a>
+
+Use `generate --defaults-include-missing` to append an owned comment section for
+required and optional top-level variables absent from the entry-point defaults
+mapping and without an explicit specification `default:`. Nested options stay
+under their parent; example values are not invented.
+
+```yaml
+# ANSIBLE DOCSMITH MISSING START
+#
+# The following variables have no default values. They are documented
+# here as comments for easier discovery:
+#
+# Server hostname.
+#
+# - Type: str
+# - Required: Yes
+# app_host:
+#
+# ANSIBLE DOCSMITH MISSING END
+```
+
+The option is off by default. Empty and comment-only files are supported.
+Missing `defaults/<entry-point>.yml` files and their directory are created only
+when there are eligible variables; existing `.yaml` files are reused. An
+explicit specification `default: null` is still a default, not a placeholder.
+
+DocSmith regenerates this section in specification order. Removing a variable
+from the spec or assigning it outside the markers removes its placeholder.
+Keep assignments outside the section: malformed markers or active YAML inside
+it stop generation before any files are written.
+
+`--no-defaults-include-missing` removes the owned section on the next
+generation, retaining the file. `--no-defaults` leaves defaults files entirely
+untouched. Set `defaults_include_missing = true` under `[generate]` to enable
+the feature through project configuration. It also applies to every role in a
+collection.
+
+
 ### Project configuration<a id="usage-config"></a>
 
 Use `ansible-docsmith.toml` or `.ansible-docsmith.toml` in the selected role or
@@ -270,6 +310,7 @@ verbose = false
 readme = true
 defaults = true
 defaults_comments_nested = true
+defaults_include_missing = false
 readme_toc_list_bulletpoints = "auto"
 dry_run = false
 check = false

@@ -8,6 +8,7 @@ from typing import Any
 from markdown_it.tree import SyntaxTreeNode
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
+from ruamel.yaml.tokens import ScalarToken
 
 from ..constants import COMMENT_MAX_NESTED_DEPTH
 from .exceptions import FileOperationError
@@ -18,19 +19,23 @@ from .text import normalize_description
 # Total line budget for generated comment lines, including the "# "
 # prefix. Descriptions are wrapped to the same budget (max_width=78).
 COMMENT_LINE_LENGTH = 80
+MISSING_START = "# ANSIBLE DOCSMITH MISSING START"
+MISSING_END = "# ANSIBLE DOCSMITH MISSING END"
 
 
 class DefaultsCommentGenerator:
     """Add block comments above variables in entry-point files from argument specs."""
 
-    def __init__(self, nested_options: bool = True):
+    def __init__(self, nested_options: bool = True, include_missing: bool = False):
         """Initialize the comment generator.
 
         Args:
             nested_options: Whether to document nested options ("dict
                 attributes") of a variable inside its comment block.
+            include_missing: Document absent options without a spec default.
         """
         self.nested_options = nested_options
+        self.include_missing = include_missing
         self.yaml = YAML()
         self.yaml.preserve_quotes = True
         self.yaml.explicit_start = True
@@ -38,65 +43,139 @@ class DefaultsCommentGenerator:
 
     def add_comments(self, defaults_path: Path, specs: dict[str, Any]) -> str | None:
         """Add block comments above variables in defaults file."""
-
-        if not defaults_path.exists():
-            return None
-
         try:
-            # Read the original file as text
-            with open(defaults_path, encoding="utf-8") as file:
-                original_content = file.read()
+            original = (
+                defaults_path.read_text(encoding="utf-8")
+                if defaults_path.exists()
+                else None
+            )
+            return self.build_updated_content(original, specs)
+        except (OSError, FileOperationError) as error:
+            raise FileOperationError(
+                f"Failed to update {defaults_path}: {error}"
+            ) from error
 
-            # Parse YAML to validate and get variable names
-            data = self.yaml.load(original_content)
-            if not data:
+    def build_updated_content(
+        self, original: str | None, specs: dict[str, Any]
+    ) -> str | None:
+        """Prepare comments without writing; missing-option selection needs raw specs.
+
+        Return None when there is no applicable output. An empty string means
+        an existing section was removed from an otherwise empty file.
+        """
+        try:
+            content, had_section = self._remove_missing_section(original or "")
+            data = self.yaml.load(content)
+            if data is not None and not isinstance(data, dict):
+                raise FileOperationError("Defaults must contain a YAML mapping")
+            if not data and not self.include_missing and not had_section:
                 return None
 
-            # Get the first (and typically only) entry point's options
-            entry_point_name = next(iter(specs.keys()))
-            entry_point_spec = specs[entry_point_name]
+            entry_point_spec = next(iter(specs.values()))
             options = entry_point_spec.get("options", {})
+            updated = self._add_existing_comments(content, options) if data else content
 
-            # Clean the file first - remove all existing variable comments
-            cleaned_content = self._remove_existing_variable_comments(
-                original_content, options
-            )
-
-            # Process the cleaned file line by line to insert new comments
-            lines = cleaned_content.splitlines()
-            result_lines: list[str] = []
-
-            for line in lines:
-                # Check if this line defines a variable
-                variable_match = self._get_variable_from_line(line)
-
-                if variable_match and variable_match in options:
-                    var_spec = options[variable_match]
-                    description = var_spec.get("description", "")
-
-                    if description:
-                        # Generate block comment with full variable details
-                        comment_lines = self._format_block_comment(var_spec)
-
-                        # Add blank line before comment (if previous line isn't blank)
-                        if result_lines and result_lines[-1].strip():
-                            result_lines.append("")
-
-                        # Add comment lines
-                        result_lines.extend(comment_lines)
-
-                    # Clean any inline comments from the variable line
-                    line = self._remove_inline_comment(line)
-
-                # Add the original line
-                result_lines.append(line)
-
-            return "\n".join(result_lines) + "\n"
+            if self.include_missing:
+                missing = {
+                    name: spec
+                    for name, spec in options.items()
+                    if name not in (data or {}) and "default" not in spec
+                }
+                if missing:
+                    if original is None:
+                        updated = "---\n"
+                    elif updated and not updated.endswith("\n"):
+                        updated += "\n"
+                    # A blank separator could extend a preceding |+ or >+ scalar.
+                    updated += self._format_missing_section(missing)
+            if original is None and not updated:
+                return None
+            if self.include_missing or had_section:
+                self._remove_missing_section(updated)
+                if self._yaml_value_signature(
+                    original or ""
+                ) != self._yaml_value_signature(updated):
+                    raise FileOperationError(
+                        "Comment generation would change defaults values"
+                    )
+            return updated
 
         except YAMLError as e:
-            raise FileOperationError(f"Failed to parse {defaults_path}: {e}") from e
-        except Exception as e:
-            raise FileOperationError(f"Failed to add comments: {e}") from e
+            raise FileOperationError(f"Failed to parse defaults: {e}") from e
+
+    def _yaml_value_signature(self, content: str) -> str:
+        # Compare values and tags, including !vault, without comment metadata.
+        yaml = YAML(typ="safe")
+        node = yaml.compose(content)
+        if node is None or node.tag == "tag:yaml.org,2002:null":
+            return ""
+        stream = StringIO()
+        yaml.serialize(node, stream)
+        return stream.getvalue()
+
+    def _remove_missing_section(self, content: str) -> tuple[str, bool]:
+        lines = content.splitlines(keepends=True)
+        starts = [
+            i for i, line in enumerate(lines) if line.rstrip("\r\n") == MISSING_START
+        ]
+        ends = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == MISSING_END]
+        if not starts and not ends:
+            return content, False
+        if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0]:
+            raise FileOperationError("Expected one ordered pair of MISSING markers")
+        start, end = starts[0], ends[0]
+        if any(
+            line.strip() and not line.lstrip().startswith("#")
+            for line in lines[start + 1 : end]
+        ):
+            raise FileOperationError(
+                "MISSING section must contain only comments; "
+                "move assignments outside the markers"
+            )
+        return "".join(lines[:start] + lines[end + 1 :]), True
+
+    def _format_missing_section(self, options: dict[str, Any]) -> str:
+        lines = [
+            MISSING_START,
+            "#",
+            "# The following variables have no default values. They are documented",
+            "# here as comments for easier discovery:",
+            "#",
+        ]
+        for name, spec in options.items():
+            if not isinstance(name, str) or not re.fullmatch(
+                r"[a-zA-Z_][a-zA-Z0-9_]*", name
+            ):
+                raise FileOperationError(f"Invalid missing variable name: {name!r}")
+            lines.extend(self._format_block_comment(spec))
+            lines.extend([f"# {name}:", "#"])
+        lines.append(MISSING_END)
+        return "\n".join(lines) + "\n"
+
+    def _add_existing_comments(self, content: str, options: dict[str, Any]) -> str:
+        cleaned_content = self._remove_existing_variable_comments(content, options)
+        scalar_ends = {
+            token.end_mark.line
+            for token in self.yaml.scan(cleaned_content)
+            if isinstance(token, ScalarToken) and token.style in {"|", ">"}
+        }
+        result_lines: list[str] = []
+        # Cleanup has already removed the final line terminator, not blank lines.
+        for index, line in enumerate(cleaned_content.split("\n")):
+            variable = self._get_variable_from_line(line)
+            if variable and variable in options:
+                var_spec = options[variable]
+                if var_spec.get("description"):
+                    if (
+                        result_lines
+                        and result_lines[-1].strip()
+                        and index not in scalar_ends
+                    ):
+                        result_lines.append("")
+                    result_lines.extend(self._format_block_comment(var_spec))
+                line = self._remove_inline_comment(line)
+            result_lines.append(line)
+        return "\n".join(result_lines) + "\n"
 
     def _get_variable_from_line(self, line: str) -> str | None:
         """Extract a top-level variable name from a YAML line.

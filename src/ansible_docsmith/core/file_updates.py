@@ -54,6 +54,7 @@ class FileUpdate:
 
     original: FileSnapshot
     content: str
+    create_parent: bool = False
 
     @property
     def changed(self) -> bool:
@@ -67,6 +68,13 @@ class FileCommitError(FileOperationError):
     def __init__(self, message: str, committed: set[Path]) -> None:
         super().__init__(message)
         self.committed = committed
+
+
+def _remove_empty_directory(path: Path) -> None:
+    try:
+        path.rmdir()
+    except OSError:
+        pass  # A committed output or concurrent change may now occupy it.
 
 
 def apply_file_updates(updates: list[FileUpdate]) -> set[Path]:
@@ -91,6 +99,9 @@ def apply_file_updates(updates: list[FileUpdate]) -> set[Path]:
             for target, update in destinations.items():
                 if not update.changed:
                     continue
+                if update.create_parent and not target.parent.exists():
+                    target.parent.mkdir()
+                    stack.callback(_remove_empty_directory, target.parent)
                 directory = stack.enter_context(
                     tempfile.TemporaryDirectory(
                         prefix=".ansible-docsmith-", dir=target.parent
