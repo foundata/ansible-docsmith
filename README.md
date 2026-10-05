@@ -681,7 +681,7 @@ a
 
 Third-party trademarks used in this repository:
 
-- Ansible®, Fedora® and Red Hat® are trademarks of Red Hat, Inc., registered in
+- Ansible®, Fedora® and Red Hat® are trademarks of Red Hat, LLC, registered in
   the United States and other countries.
 - Debian® is a trademark of Software in the Public Interest, Inc., registered in
   Germany and the United States.
