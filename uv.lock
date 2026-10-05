@@ -17,7 +17,7 @@ wheels = [
 
 [[package]]
 name = "ansible-docsmith"
-version = "2.2.0"
+version = "2.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "antsibull-docs-parser" },
@@ -748,6 +748,7 @@ wheels = [
 name = "rumdl"
 version = "0.2.77"
 source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/9e/dae5c1b451cddc6d82a9c0c5a84cc7d0a1c5087ae15dd916db89ed4f9bb2/rumdl-0.2.77.tar.gz", hash = "sha256:81a35938965a2153149c1351db13007f146149d49504e3ef81f5f1eb5656d412", size = 4878672, upload-time = "2026-09-26T14:54:23.375Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/c0/15494f04e84fb67a76b5889c9fefe46b96e79aac9757a9f55d2af0c31bc2/rumdl-0.2.77-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:46a86c67dbfc8d4ec7643c0696e69bd0672d4105584b55e436e43982f6e74ab5", size = 6911721, upload-time = "2026-09-23T13:25:47.365Z" },
     { url = "https://files.pythonhosted.org/packages/9e/d2/23708cdeadd1b352e988a277d050478eba9504a96b55149e6531990004ea/rumdl-0.2.77-py3-none-macosx_11_0_arm64.whl", hash = "sha256:cef5890e4995e968bf87f1d6b3ec129092204987242fe68c55781c9c90829552", size = 6449218, upload-time = "2026-09-23T13:25:41.335Z" },
