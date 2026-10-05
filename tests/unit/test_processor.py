@@ -26,6 +26,56 @@ from ansible_docsmith.core.processor import (
 class TestRoleProcessor:
     """Test the RoleProcessor class."""
 
+    @pytest.mark.parametrize("value", ["null", "", "false", "0", "example.org"])
+    @pytest.mark.parametrize("extension", ["yml", "yaml"])
+    def test_required_option_with_role_default_warns(
+        self, tmp_path: Path, value: str, extension: str
+    ) -> None:
+        defaults = tmp_path / "defaults"
+        defaults.mkdir()
+        (defaults / f"install.{extension}").write_text(
+            f"app_host: {value}\n", encoding="utf-8"
+        )
+        specs = {"install": {"options": {"app_host": {"required": True}}}}
+
+        errors, warnings, notices = RoleProcessor()._validate_defaults_consistency(
+            tmp_path, specs, specs
+        )
+
+        assert errors == []
+        assert notices == []
+        assert len(warnings) == 1
+        assert "Variable 'app_host' is marked required" in warnings[0]
+        assert f"defaults/install.{extension}" in warnings[0]
+
+    def test_required_default_warning_excludes_comments_optional_and_nested(
+        self, tmp_path: Path
+    ) -> None:
+        defaults = tmp_path / "defaults"
+        defaults.mkdir()
+        (defaults / "main.yml").write_text(
+            "# app_host:\noptional: null\nsettings:\n  nested: value\n",
+            encoding="utf-8",
+        )
+        specs = {
+            "main": {
+                "options": {
+                    "app_host": {"required": True},
+                    "optional": {"required": False},
+                    "settings": {"options": {"nested": {"required": True}}},
+                }
+            },
+            "install": {"options": {"settings": {"required": True}}},
+        }
+
+        errors, warnings, notices = RoleProcessor()._validate_defaults_consistency(
+            tmp_path, specs, specs
+        )
+
+        assert errors == []
+        assert warnings == []
+        assert notices == []
+
     def test_validate_role_success(
         self, sample_role_with_specs_and_defaults: Path
     ) -> None:

@@ -11,6 +11,7 @@ and the project adheres to
 
 ### Added
 
+- Warn when a required top-level variable has a role default, including null.
 - Discover project-wide generate/validate settings from a single DocSmith TOML
   file, with explicit CLI overrides.
 - Optionally format complete Markdown READMEs before generation, check and

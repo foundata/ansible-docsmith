@@ -436,6 +436,9 @@ Checks include:
 - Warnings for unknown keys in `argument_specs.yml` and invalid Ansible markup
   in descriptions, such as `M()` without a fully qualified collection name
   (FQCN).
+- Warnings for required top-level variables assigned in the corresponding
+  defaults file, including null values. A role default may satisfy Ansible's
+  required check without caller input.
 - Notices for non-required variables listed in the specification but absent from
   an otherwise populated entry-point defaults file, and names suggesting secrets
   (such as `*_password` or `*_token`) without `no_log: true`.

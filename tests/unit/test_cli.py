@@ -10,6 +10,28 @@ from ansible_docsmith.cli import app
 runner = CliRunner()
 
 
+@pytest.mark.parametrize(
+    ("flags", "exit_code", "warns"),
+    [([], 0, True), (["--strict"], 1, True), (["--no-argument-specs"], 0, False)],
+)
+def test_required_role_default_warning_respects_strict(
+    tmp_path: Path, flags: list[str], exit_code: int, warns: bool
+) -> None:
+    (tmp_path / "meta").mkdir()
+    (tmp_path / "defaults").mkdir()
+    (tmp_path / "meta/argument_specs.yml").write_text(
+        "argument_specs:\n  main:\n    options:\n"
+        "      app_host:\n        type: str\n        required: true\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "defaults/main.yml").write_text("app_host:\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["validate", str(tmp_path), "--no-readme", *flags])
+
+    assert result.exit_code == exit_code, result.output
+    assert ("is marked required" in result.output) is warns
+
+
 def test_version() -> None:
     """Test version command."""
     result = runner.invoke(app, ["--version"])

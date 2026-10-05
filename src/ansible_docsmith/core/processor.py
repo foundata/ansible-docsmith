@@ -728,6 +728,27 @@ class RoleProcessor:
                     f"{sorted(missing_defaults)}"
                 )
 
+            source_options = (
+                original_options
+                if original_options is not None
+                else spec.get("options", {})
+            )
+            for var_name, var_spec in source_options.items():
+                if (
+                    isinstance(var_spec, dict)
+                    and var_spec.get("required") is True
+                    and var_name in defaults_vars
+                ):
+                    defaults_file = str(
+                        defaults_files[entry_point].relative_to(role_path)
+                    )
+                    warnings.append(
+                        f"Entry point '{entry_point}': Variable '{var_name}' is marked "
+                        f"required but has a role default in {defaults_file}. "
+                        "The default may satisfy the required check without "
+                        "caller input."
+                    )
+
             # NOTICE: Variables in specs but not in defaults (potential oversight)
             # Skip variables that are required (no need for defaults)
             if defaults_vars:
@@ -735,11 +756,6 @@ class RoleProcessor:
                 if missing_in_defaults:
                     # Filter out required variables - they don't need defaults
                     non_required_missing = set()
-                    source_options = (
-                        original_options
-                        if original_options is not None
-                        else spec.get("options", {})
-                    )
                     for var_name in missing_in_defaults:
                         var_spec = source_options.get(var_name, {})
                         if not (
