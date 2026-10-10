@@ -167,7 +167,7 @@ def generate(
         help="Run the configured formatter, including during check and dry-run",
     ),
 ) -> None:
-    """Generate role/collection documentation, trusting discovered formatter commands."""
+    """Generate role/collection documentation; trusts discovered formatter commands."""
 
     project = _project_config(path, config, no_config)
     if no_template_readme and template_readme is not None:
