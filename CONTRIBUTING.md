@@ -1,5 +1,10 @@
 # Contributing
 
+<!--
+SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 Thank you for your interest in contributing. Use these channels:
 
 - Open an issue to report a problem or request a feature.

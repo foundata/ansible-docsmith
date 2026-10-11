@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 <svg height="315" preserveAspectRatio="xMidYMid" viewBox="0 0 256 315" width="256" xmlns="http://www.w3.org/2000/svg">
  <g fill="#1a1918" transform="translate(0 281.86)">
   <path d="m67.5168 32.0035c-.54152 0-1.12617-.13685-1.53212-.68583l-17.3835-22.8612v23.3187h-3.96431v-28.7142c0-1.14253.94592-2.0571 2.0278-2.0571.62971 0 1.17084.1826 1.57485.73158l17.3396 22.8159v-23.2276h3.96392v28.6681c0 1.18907-.94592 2.01175-2.02625 2.01175"/>

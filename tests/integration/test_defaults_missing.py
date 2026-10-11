@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Missing-variable documentation through the CLI and collection pipeline."""
 
 from pathlib import Path

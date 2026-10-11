@@ -1,3 +1,9 @@
+# Ignore config implementing foundata's guideline. Details, reasoning:
+# https://foundata.com/en/guidelines/git-ignore/
+#
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Created by https://www.toptal.com/developers/gitignore/api/git,vim,linux,macos,windows,jetbrains+all,visualstudiocode,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=git,vim,linux,macos,windows,jetbrains+all,visualstudiocode,python
 

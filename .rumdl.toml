@@ -1,5 +1,8 @@
 # rumdl config implementing foundata's guideline. Details, reasoning:
 # https://foundata.com/en/guidelines/markdown/
+#
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 [global]
 extend-enable = [

@@ -1,5 +1,10 @@
 # Security policy
 
+<!--
+SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 ## Reporting a vulnerability<a id="reporting"></a>
 
 Please report security vulnerabilities or concerns **privately** using one of

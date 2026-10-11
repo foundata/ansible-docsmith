@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Global constants for ansible-docsmith."""
 
 # README section markers for managed documentation sections (content only)

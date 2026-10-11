@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Processing of Ansible collections (multiple roles + collection README).
 
 A collection is detected by the presence of roles with argument specs

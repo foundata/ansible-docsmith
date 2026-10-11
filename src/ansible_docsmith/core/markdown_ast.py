@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Shared Markdown parsing seam based on markdown-it-py.
 
 All internal Markdown parsing goes through this module so that the

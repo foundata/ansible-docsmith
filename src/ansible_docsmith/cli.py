@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """
 Ansible-DocSmith CLI - Generate Ansible role documentation from argument_specs.yml
 """

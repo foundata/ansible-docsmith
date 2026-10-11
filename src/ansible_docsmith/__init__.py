@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """DocSmith for Ansible: automating role documentation (using argument_specs.yml)"""
 
 from importlib.metadata import version as _distribution_version

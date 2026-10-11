@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """The Markdown gate runs with the foundata guide's .rumdl.toml."""
 
 import os

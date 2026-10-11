@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Convert Ansible documentation markup to Markdown or reStructuredText.
 
 Ansible argument specs commonly use `Ansible markup`_ such as ``C(...)``,

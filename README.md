@@ -1,5 +1,10 @@
 # DocSmith for Ansible
 
+<!--
+SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 **Automating role documentation (using `argument_specs.yml`)**
 
 DocSmith is a documentation generator. It reads a role's

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 version = 1
 SPDX-PackageName = "Ansible DocSmith: role documentation automation (helper using argument_specs.yml)"
 SPDX-PackageDownloadLocation = "https://foundata.com/en/projects/ansible-docsmith/#releases"

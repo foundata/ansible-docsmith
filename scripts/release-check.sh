@@ -20,6 +20,9 @@
 # revision, prepares the README that ships in them, refuses developer litter
 # inside them and records their digests. Building with it here means the gate
 # smoke-tests what a release uploads. See DEVELOPMENT.md.
+#
+# SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Consistent environment for predictable tool and shell behavior.
 export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin}"
