@@ -92,6 +92,7 @@ TOC_CORPUS = {
     "inline_code_heading": "## Configure `nginx` Settings",
     "anchor_heading": '## Custom Title<a id="custom-anchor"></a>',
     "anchor_and_code_heading": '### The `code` part<a id="code-part"></a>',
+    "anchor_above_heading": '<a id="variable-long"></a>\n\n### `long`',
     "setext_headings": "Heading\n=======\n\nSubheading\n----------",
     "hash_in_code_block": "```\n# not a heading\n```\n\n# Real Heading",
     "hash_in_indented_code": "    # also not a heading\n\n## Real",

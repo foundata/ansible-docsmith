@@ -14,6 +14,8 @@ from .markdown_ast import parse_markdown
 
 LOGGER = logging.getLogger(__name__)
 
+_STANDALONE_ANCHOR = re.compile(r'<a\s+id="([^"]+)"></a>')
+
 
 class BaseTocGenerator(ABC):
     """Abstract base class for Table of Contents generators."""
@@ -129,7 +131,7 @@ class MarkdownTocGenerator(BaseTocGenerator):
                     # Remove the anchor tag from the text
                     text = re.sub(r'<a\s+id="[^"]+"></a>', "", text).strip()
                 else:
-                    anchor = self._create_anchor_link(text)
+                    anchor = self._anchor_above(node) or self._create_anchor_link(text)
 
                 headings.append({"text": text, "level": level, "anchor": anchor})
 
@@ -141,6 +143,25 @@ class MarkdownTocGenerator(BaseTocGenerator):
                 "Markdown AST parsing failed; using regex fallback", exc_info=True
             )
             return self._extract_headings_fallback(content)
+
+    @staticmethod
+    def _anchor_above(heading: SyntaxTreeNode) -> str | None:
+        """Return the ID of an anchor that stands alone right above a heading.
+
+        Templates put an anchor on its own line before the heading when the
+        inline form would make the heading line too long. Only a block that
+        consists of nothing but ``<a id="..."></a>`` counts.
+        """
+        block = heading.previous_sibling
+        if block is None or block.type != "paragraph":
+            return None
+        parts = [
+            node for node in block.walk() if node.type not in ("paragraph", "inline")
+        ]
+        if not all(node.type == "html_inline" for node in parts):
+            return None
+        match = _STANDALONE_ANCHOR.fullmatch("".join(node.content for node in parts))
+        return match.group(1) if match else None
 
     def _extract_text_from_node(self, node: SyntaxTreeNode) -> str:
         """Extract text from a Markdown AST node preserving inline formatting.
@@ -186,15 +207,23 @@ class MarkdownTocGenerator(BaseTocGenerator):
         """
         headings = []
         heading_pattern = r'^(#{1,6})\s+(.+?)(?:<a\s+id="([^"]+)"></a>)?$'
+        anchor_above = None
 
         for line in content.split("\n"):
             match = re.match(heading_pattern, line.strip(), re.MULTILINE)
             if match:
                 level = len(match.group(1))
                 text = match.group(2).strip()
-                anchor = match.group(3) or self._create_anchor_link(text)
+                anchor = (
+                    match.group(3) or anchor_above or self._create_anchor_link(text)
+                )
 
                 headings.append({"text": text, "level": level, "anchor": anchor})
+                anchor_above = None
+            elif standalone := _STANDALONE_ANCHOR.fullmatch(line.strip()):
+                anchor_above = standalone.group(1)
+            elif line.strip():
+                anchor_above = None
 
         return headings
 

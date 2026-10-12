@@ -2920,6 +2920,39 @@ but no headings at all."""
         assert headings[1]["text"] == "Section Title"
         assert headings[2]["text"] == "Subsection"
 
+    def test_standalone_anchor_above_heading(self) -> None:
+        """Test that an anchor on its own line names the heading below it."""
+        generator = MarkdownTocGenerator()
+
+        content = """<a id="variable-long_name"></a>
+
+### `long_name`
+
+<a id="ignored"></a>
+## Inline wins<a id="inline"></a>
+
+Text ending with <a id="not-standalone"></a>
+
+## Derived
+
+<a id="separated"></a>
+
+Text in between.
+
+## Also derived"""
+
+        expected = [
+            ("`long_name`", "variable-long_name"),
+            ("Inline wins", "inline"),
+            ("Derived", "derived"),
+            ("Also derived", "also-derived"),
+        ]
+        for headings in (
+            generator._extract_headings(content),
+            generator._extract_headings_fallback(content),
+        ):
+            assert [(h["text"], h["anchor"]) for h in headings] == expected
+
     def test_link_prefix_gets_relative_marker(self) -> None:
         """Test that repository paths are linked with a leading "./"."""
         generator = MarkdownTocGenerator()

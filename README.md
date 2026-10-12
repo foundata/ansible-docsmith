@@ -175,7 +175,8 @@ most of our projects) so DocSmith runs on
    <!-- ANSIBLE DOCSMITH TOC-FULL END -->
    ```
 
-   Headings with an explicit anchor (like `## Usage<a id="usage"></a>`) are
+   Headings with an explicit anchor (like `## Usage<a id="usage"></a>`, or the
+   same `<a id="usage"></a>` alone in the block right above the heading) are
    linked exactly; for other headings, the anchor is derived from the heading
    text and `validate` emits a notice, as the derivation cannot be guaranteed to
    match your rendering platform for exotic titles.

@@ -115,6 +115,13 @@
         "anchor": "code-part"
       }
     ],
+    "anchor_above_heading": [
+      {
+        "text": "`long`",
+        "level": 3,
+        "anchor": "variable-long"
+      }
+    ],
     "setext_headings": [
       {
         "text": "Heading",
