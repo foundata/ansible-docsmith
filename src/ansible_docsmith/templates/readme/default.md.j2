@@ -2,13 +2,22 @@
 SPDX-FileCopyrightText: foundata GmbH <https://foundata.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 #}
+{# Longer anchor IDs go on their own line above the heading, so headings of
+   long role and option names stay within common Markdown line limits. #}
+{% set anchor_inline_max_length = 60 %}
 {% macro render_nested_sections(options_dict, var_path, depth, parent_var_name) -%}
 {% if options_dict %}
 {% for option_name, option_spec in options_dict.items() %}
 {% set heading_level = "####" if depth == 1 else "#####" if depth == 2 else "######" %}
 {% set anchor_id = var_path + "-sub-" + option_name %}
 {% set display_name = parent_var_name + "['" + option_name + "']" %}
+{% if anchor_id | length > anchor_inline_max_length %}
+<a id="{{ anchor_id }}"></a>
+
+{{ heading_level }} `{{ display_name }}`
+{% else %}
 {{ heading_level }} `{{ display_name }}`<a id="{{ anchor_id }}"></a>
+{% endif %}
 
 [*⇑ Back to ToC ⇑*](#toc)
 
@@ -73,7 +82,13 @@ The following variables can be configured for this {{ "entry point" if multiple_
 {% endfor %}
 
 {% for var_name, var_spec in entry_options.items() %}
+{% if (var_anchor_prefix ~ var_name) | length > anchor_inline_max_length %}
+<a id="{{ var_anchor_prefix }}{{ var_name }}"></a>
+
+### `{{ var_name }}`
+{% else %}
 ### `{{ var_name }}`<a id="{{ var_anchor_prefix }}{{ var_name }}"></a>
+{% endif %}
 
 [*⇑ Back to ToC ⇑*](#toc)
 

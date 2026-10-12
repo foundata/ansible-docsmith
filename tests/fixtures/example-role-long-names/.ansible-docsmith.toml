@@ -1,0 +1,7 @@
+[markdown_formatter]
+command = [
+  "rumdl", "fmt", "--config", "{config_dir}/.rumdl.toml",
+  "--deny-config-warnings", "--no-cache", "--stderr",
+  "--stdin-filename", "{readme}", "-",
+]
+mode = "stdin"

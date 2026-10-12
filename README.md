@@ -583,6 +583,14 @@ Copy the built-in
 template for a starting point that also includes nested options, defaults and
 other option metadata, with conditional sections.
 
+The built-in Markdown template puts each anchor inline after its heading, as in
+the example above. Anchor IDs longer than 60 characters go on their own line
+before the heading instead, followed by a blank line. Long role and option
+names, such as a role name of Galaxy's maximum length, would otherwise produce
+heading lines far beyond common Markdown line-length limits, which a formatter
+cannot shorten. The IDs are the same in both forms, so existing links keep
+working, and generated ToCs link to either.
+
 **Available template variables** (the context contract):
 
 |       Variable        |    Type     | Description |

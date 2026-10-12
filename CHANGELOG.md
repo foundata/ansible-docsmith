@@ -14,7 +14,14 @@ and the project adheres to
 
 ## [Unreleased]
 
-- Nothing worth mentioning right now.
+### Changed
+
+- The default Markdown template puts anchors with IDs longer than 60 characters
+  on their own line before the heading, so READMEs of roles and options with
+  long names, up to Galaxy's maximum role name length, keep their headings
+  within line-length limits. Anchor IDs stay the same and shorter ones stay
+  inline. Generated tables of contents also link a heading to an anchor that
+  stands alone right above it.
 
 
 ## [2.3.0] - 2026-10-05

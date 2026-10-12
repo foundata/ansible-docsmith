@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+from ansible_docsmith.core.doc_generators import create_documentation_generator
 from ansible_docsmith.templates import TemplateManager
 
 
@@ -227,3 +228,48 @@ class TestTemplateManager:
         # Should raise ValueError for missing file
         with pytest.raises(ValueError, match="Error reading template file"):
             TemplateManager(template_file=non_existent)
+
+
+def _option(options: dict[str, Any] | None = None) -> dict[str, Any]:
+    """A normalized option specification, as the parser returns it."""
+    return {
+        "type": "dict" if options else "str",
+        "required": False,
+        "default": None,
+        "description": "Description.",
+        "choices": [],
+        "elements": None,
+        "options": options or {},
+        "version_added": None,
+        "no_log": False,
+        "aliases": [],
+    }
+
+
+@pytest.mark.parametrize(
+    ("anchor_id", "options"),
+    [
+        # "variable-" plus the name: 60 and 61 characters
+        ("variable-" + "a" * 51, {"a" * 51: _option()}),
+        ("variable-" + "a" * 52, {"a" * 52: _option()}),
+        # "variable-v-sub-" plus the nested name: 60 and 61 characters
+        ("variable-v-sub-" + "b" * 45, {"v": _option({"b" * 45: _option()})}),
+        ("variable-v-sub-" + "b" * 46, {"v": _option({"b" * 46: _option()})}),
+    ],
+)
+def test_default_template_anchor_placement(
+    anchor_id: str, options: dict[str, Any]
+) -> None:
+    """Anchor IDs over 60 characters go on their own line above the heading."""
+    readme = create_documentation_generator().generate_role_documentation(
+        {"main": {"short_description": "", "description": "", "options": options}},
+        "role",
+        Path("role"),
+    )
+    anchor = f'<a id="{anchor_id}"></a>'
+    if len(anchor_id) > 60:
+        assert f"\n{anchor}\n\n#" in readme
+        assert f"`{anchor}" not in readme
+    else:
+        assert f"`{anchor}\n" in readme
+    assert readme.count(anchor) == 1

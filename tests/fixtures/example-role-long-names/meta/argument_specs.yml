@@ -1,0 +1,55 @@
+# Please note: This file is just a dummy for testing. The role name prefix of
+# every variable has 64 characters, the maximum Galaxy accepts for a role name.
+
+---
+
+argument_specs:
+  main:
+    short_description: Example role with maximum-length names
+    description:
+      - "This role checks the anchor placement for long names."
+    author:
+      - "foundata GmbH"
+    options:
+
+      another_long_product_name_with_a_galaxy_maximum_length_role_name_state:
+        type: "str"
+        default: "present"
+        choices:
+          - "present"
+          - "absent"
+        description: "Whether the managed resources shall exist."
+
+      another_long_product_name_with_a_galaxy_maximum_length_role_name_default_option:
+        type: "dict"
+        default: {}
+        description: "Settings with nested options."
+        options:
+          sub:
+            type: "str"
+            default: "value"
+            description: "A nested option."
+          listeners:
+            type: "list"
+            elements: "dict"
+            description: "Listeners (second nesting level)."
+            options:
+              address:
+                type: "str"
+                required: true
+                description: "Address to listen on."
+              tls:
+                type: "dict"
+                description: "TLS settings (third nesting level)."
+                options:
+                  certificate_path:
+                    type: "path"
+                    description: "Path of the certificate."
+
+      another_long_product_name_with_a_galaxy_maximum_length_role_name_service_state:
+        type: "str"
+        default: "enabled"
+        choices:
+          - "enabled"
+          - "disabled"
+        description: "Status of the service."
