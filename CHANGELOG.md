@@ -14,6 +14,11 @@ and the project adheres to
 
 ## [Unreleased]
 
+- Nothing worth mentioning right now.
+
+
+## [2.4.0] - 2026-10-13
+
 ### Changed
 
 - The default Markdown template puts anchors with IDs longer than 60 characters
@@ -341,7 +346,8 @@ the **small but breaking change in the marker syntax.**
   memory of my beloved father, who recently passed away. May he rest in peace.
 
 
-[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.3.0...HEAD
+[unreleased]: https://github.com/foundata/ansible-docsmith/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.4.0
 [2.3.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.3.0
 [2.2.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.2.0
 [2.1.0]: https://github.com/foundata/ansible-docsmith/releases/tag/v2.1.0
